@@ -26,7 +26,7 @@ struct Output
 };
 
 StructuredBuffer<Particle> Particles : t0;
-// StructuredBuffer<int> AliveParticles : u1;
+StructuredBuffer<int> AliveParticles : t1;
 
 Output vsMain(uint id: SV_VertexID)
 {
@@ -35,12 +35,12 @@ Output vsMain(uint id: SV_VertexID)
     int quadIndex = id % 6;
     int particleId = id / 6;
     float3 quadPos = Quad[quadIndex];
-    // Particle particle = Particles[AliveParticles[particleId]];
-    Particle particle = Particles[particleId];
-    output.position = float4(particle.position*0.001 + quadPos*0.01/abs(particle.position.z), 1.0);
+    Particle particle = Particles[AliveParticles[particleId]];
+    // Particle particle = Particles[particleId];
+    output.position = float4(particle.position*0.01 + quadPos*0.1/abs(particle.position.z), 1.0);
     output.position.x *= 9.0/16.0;
     output.color = particle.color;
-    // output.color.a = 1.0;
+    output.color.a = saturate(particle.lifetime);
  //   output.texCoord = float2((id << 1) & 2, id & 2);
 
     return output;
