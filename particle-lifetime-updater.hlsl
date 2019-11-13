@@ -25,10 +25,21 @@ struct Particle
 };
 
 RWStructuredBuffer<Particle> Particles : u0;
+ConsumeStructuredBuffer<int> AliveParticles : u1;
+AppendStructuredBuffer<int> DeadParticles : u2;
 
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
-    Particles[i.x].lifetime -= 0.001;//(1000.0/60.0);
+    float lifetime = Particles[AliveParticles[i.x]].lifetime;
+    lifetime -= (1.0/60.0);
+
+    if (lifetime < 0.0)
+    {
+        int index = AliveParticles.Consume();
+        DeadParticles.Append(index);
+    }
+
+    Particles[i.x].lifetime = lifetime;
 }
 
