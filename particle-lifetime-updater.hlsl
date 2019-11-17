@@ -7,12 +7,9 @@ cbuffer TimeConstants : register(b0)
     float2 dummy;
 }
 
-cbuffer ParamConstants : register(b1)
+cbuffer CountConstants : register(b1)
 {
-    float param1;
-    float param2;
-    float param3;
-    float param4;
+    int4 bufferCount;
 }
 
 struct Particle
@@ -31,19 +28,21 @@ AppendStructuredBuffer<int> DeadParticles : u2;
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
-    float lifetime = Particles[i.x].lifetime;
-    lifetime -= (1.0/60.0);
+    float oldLifetime = Particles[i.x].lifetime;
+    float newLifetime = oldLifetime - (1.0/60.0);
 
-    if (lifetime < 0.0)
+    if (newLifetime < 0.0)
     {
-        DeadParticles.Append(i.x);
+        if (oldLifetime >= 0.0)
+            DeadParticles.Append(i.x);
     }
     else
     {
         uint index = AliveParticles.IncrementCounter();
         AliveParticles[index] = i.x;
+        Particles[i.x].position += (1.0/60.)*Particles[i.x].velocity;
     }
 
-    Particles[i.x].lifetime = lifetime;
+    Particles[i.x].lifetime = newLifetime;
 }
 
