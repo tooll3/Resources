@@ -61,7 +61,7 @@ void main(uint3 i : SV_DispatchThreadID)
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    particle.color = float4(f0,f1,f2,0.25);
+    particle.color = float4(f0,f1,f2,1.0);
 
     Particles[index] = particle;
 }

@@ -21,7 +21,7 @@ struct Particle
 struct Output
 {
     float4 position : SV_POSITION;
-    // float2 texCoord : TEXCOORD;
+    float2 texCoord : TEXCOORD;
     float4 color : COLOR;
 };
 
@@ -40,15 +40,10 @@ Output vsMain(uint id: SV_VertexID)
     output.position = float4(particle.position*0.01 + quadPos*0.1/abs(particle.position.z), 1.0);
     output.position.x *= 9.0/16.0;
     output.color = particle.color;
-    output.color.a = saturate(particle.lifetime);
- //   output.texCoord = float2((id << 1) & 2, id & 2);
+    float lifetime = 1.0 - saturate(particle.lifetime);
+    float particleType = float(AliveParticles[particleId] % 8)/8.0;
+    output.texCoord = (quadPos.xy * 0.5 + 0.5)/float2(16.0, 8.0) + float2(floor(lifetime*16.0)/16.0, particleType); 
 
     return output;
 }
 
-
-float4 psMain(Output input) : SV_TARGET
-{
-    return input.color;
-    // return float4(1,0,1,1);
-}
