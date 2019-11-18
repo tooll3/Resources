@@ -7,11 +7,6 @@ cbuffer TimeConstants : register(b0)
     float2 dummy;
 }
 
-cbuffer CountConstants : register(b1)
-{
-    int4 bufferCount;
-}
-
 struct Particle
 {
     float3 position;
