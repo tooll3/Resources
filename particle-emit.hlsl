@@ -48,14 +48,15 @@ void main(uint3 i : SV_DispatchThreadID)
     float f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     float f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     particle.position = float3(f0*200.0,f1*200.0,f2*200.0);
+    particle.position = float3(0, -80, 5);
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    particle.lifetime = f0 * 8.0 + 2.0;
+    particle.lifetime = f0 * 2.0 + 2.0;
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
-    f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
+    f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);// - 0.5;
     f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
-    particle.velocity = float3(f0*10.0, f1*10.0, f2);
+    particle.velocity = float3(f0*20.0, f1*40.0, f2);
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
