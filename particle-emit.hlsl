@@ -51,7 +51,7 @@ void main(uint3 i : SV_DispatchThreadID)
     particle.position = float3(0, -80, 5);
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    particle.lifetime = f0 * 2.0 + 2.0;
+    particle.lifetime = f0 * 8.0 + 2.0;
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);// - 0.5;
