@@ -12,7 +12,8 @@ cbuffer TimeConstants : register(b0)
 {
     float globalTime;
     float time;
-    float2 dummy;
+    float runTime;
+    float dummy;
 }
 
 cbuffer CountConstants : register(b1)
@@ -42,7 +43,7 @@ void main(uint3 i : SV_DispatchThreadID)
     int index = DeadParticles.Consume();
         
     Particle particle = Particles[index];
-    uint rng_state = uint(globalTime*1000.0) ^ i.x;
+    uint rng_state = uint(runTime*1000.0) + i.x;
 
     float f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     float f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
