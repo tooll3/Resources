@@ -2,11 +2,21 @@
 static const float3 Quad[] = 
 {
   float3(-1, -1, 0),
-  float3(1, -1, 0), 
-  float3(-1, 1, 0), 
-  float3(-1, 1, 0), 
-  float3(1, -1, 0), 
-  float3(1, 1, 0), 
+  float3( 1, -1, 0), 
+  float3( 1,  1, 0), 
+  float3( 1,  1, 0), 
+  float3(-1,  1, 0), 
+  float3(-1, -1, 0), 
+};
+
+cbuffer Transforms : register(b0)
+{
+    float4x4 clipSpaceTcamera;
+    float4x4 cameraTclipSpace;
+    float4x4 cameraTworld;
+    float4x4 worldTcamera;
+    float4x4 clipSpaceTworld;
+    float4x4 worldTclipSpace;
 };
 
 struct Particle
@@ -36,9 +46,9 @@ Output vsMain(uint id: SV_VertexID)
     int particleId = id / 6;
     float3 quadPos = Quad[quadIndex];
     Particle particle = Particles[AliveParticles[particleId]];
-    // Particle particle = Particles[particleId];
-    output.position = float4(particle.position*0.01 + quadPos*0.1/abs(particle.position.z), 1.0);
-    output.position.x *= 9.0/16.0;
+    float4 cameraPparticleQuadPos = mul(cameraTworld, float4(particle.position,1));
+    cameraPparticleQuadPos.xy += quadPos.xy*10.0;
+    output.position = mul(clipSpaceTcamera, cameraPparticleQuadPos);
     output.color = particle.color;
     float lifetime = 1.0 - saturate(particle.lifetime);
     float particleType = float(AliveParticles[particleId] % 8)/8.0;
