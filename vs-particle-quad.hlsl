@@ -17,6 +17,10 @@ cbuffer Transforms : register(b0)
     float4x4 worldTcamera;
     float4x4 clipSpaceTworld;
     float4x4 worldTclipSpace;
+    float4x4 worldTobject;
+    float4x4 objectTworld;
+    float4x4 cameraTobject;
+    float4x4 clipSpaceTobject;
 };
 
 struct Particle
@@ -46,7 +50,7 @@ Output vsMain(uint id: SV_VertexID)
     int particleId = id / 6;
     float3 quadPos = Quad[quadIndex];
     Particle particle = Particles[AliveParticles[particleId]];
-    float4 cameraPparticleQuadPos = mul(cameraTworld, float4(particle.position,1));
+    float4 cameraPparticleQuadPos = mul(cameraTobject, float4(particle.position,1));
     cameraPparticleQuadPos.xy += quadPos.xy*10.0;
     output.position = mul(clipSpaceTcamera, cameraPparticleQuadPos);
     output.color = particle.color;
