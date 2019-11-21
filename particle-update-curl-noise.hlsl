@@ -130,7 +130,7 @@ float3 snoiseVec3(float3 x)
 
 float3 curlNoise(float3 p)
 {
-  const float e = .1;
+  const float e = .001;
   float3 dx = float3(  e, 0.0, 0.0);
   float3 dy = float3(0.0,   e, 0.0);
   float3 dz = float3(0.0, 0.0,   e);
@@ -181,7 +181,7 @@ void main(uint3 i : SV_DispatchThreadID)
         float distToCenter = length(Particles[i.x].position);
 
         float v1 = Particles[i.x].velocity;
-        float v2 = 9.0*curlNoise((Particles[i.x].position + float3(float(i.x)/10.0,0,0))/15.0);
+        float v2 = 5.0*curlNoise(Particles[i.x].position/145.0);
 
         Particles[i.x].velocity = lerp(v1, v2, 0.5);
         Particles[i.x].position += (1.0/60.)*Particles[i.x].velocity;
