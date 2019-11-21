@@ -52,11 +52,11 @@ void main(uint3 i : SV_DispatchThreadID)
     particle.position = float3(f0*200.0,f1*200.0,f2*200.0);
     float y = fmod(runTime*21.0,200.0);
     float x = f0*200.0 + 100.0;
-    particle.position = float3(x-100.0, y - 100.0,f2*20.0);
+    particle.position = float3((x-100.0)*2.0, (y - 100.0)*2.0,f2*20.0);
     // particle.position = float3(f0*200.0,21.0,f2*20.0);
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    particle.lifetime = f0 * 8.0 + 2.0;
+    particle.lifetime = f0 * 10.0 + 5.0;
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;

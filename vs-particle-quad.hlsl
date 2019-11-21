@@ -54,8 +54,8 @@ Output vsMain(uint id: SV_VertexID)
     cameraPparticleQuadPos.xy += quadPos.xy*10.0;
     output.position = mul(clipSpaceTcamera, cameraPparticleQuadPos);
     output.color = particle.color;
-    float lifetime = 1.0 - saturate(particle.lifetime);
-    float particleType = float(AliveParticles[particleId] % 8)/8.0;
+    float lifetime = 1.0 - saturate(particle.lifetime/4.0);
+    float particleType = 7.0/8.0;//float(AliveParticles[particleId] % 8)/8.0;
     output.texCoord = (quadPos.xy * 0.5 + 0.5)/float2(16.0, 8.0) + float2(floor(lifetime*16.0)/16.0, particleType); 
 
     return output;
