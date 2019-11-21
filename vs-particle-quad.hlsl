@@ -1,3 +1,4 @@
+#include "particle.hlsl"
 
 static const float3 Quad[] = 
 {
@@ -23,15 +24,6 @@ cbuffer Transforms : register(b0)
     float4x4 clipSpaceTobject;
 };
 
-struct Particle
-{
-    float3 position;
-    float lifetime;
-    float3 velocity;
-    float dummy;
-    float4 color;
-};
-
 struct Output
 {
     float4 position : SV_POSITION;
@@ -51,9 +43,9 @@ Output vsMain(uint id: SV_VertexID)
     float3 quadPos = Quad[quadIndex];
     Particle particle = Particles[AliveParticles[particleId]];
     float4 cameraPparticleQuadPos = mul(cameraTobject, float4(particle.position,1));
-    cameraPparticleQuadPos.xy += quadPos.xy*10.0;
+    cameraPparticleQuadPos.xy += quadPos.xy*6.0;
     output.position = mul(clipSpaceTcamera, cameraPparticleQuadPos);
-    output.color = particle.color;
+    output.color = float4(0.1,0.1,0.1,0.1);//particle.color;
     float lifetime = 1.0 - saturate(particle.lifetime/4.0);
     float particleType = 7.0/8.0;//float(AliveParticles[particleId] % 8)/8.0;
     output.texCoord = (quadPos.xy * 0.5 + 0.5)/float2(16.0, 8.0) + float2(floor(lifetime*16.0)/16.0, particleType); 

@@ -1,4 +1,4 @@
-
+#include "particle.hlsl"
 
 cbuffer TimeConstants : register(b0)
 {
@@ -6,15 +6,6 @@ cbuffer TimeConstants : register(b0)
     float time;
     float2 dummy;
 }
-
-struct Particle
-{
-    float3 position;
-    float lifetime;
-    float3 velocity;
-    float dummy;
-    float4 color;
-};
 
 RWStructuredBuffer<Particle> Particles : u0;
 RWStructuredBuffer<int> AliveParticles : u1;

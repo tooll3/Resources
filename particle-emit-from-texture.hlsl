@@ -1,12 +1,4 @@
-
-struct Particle
-{
-    float3 position;
-    float lifetime;
-    float3 velocity;
-    float dummy;
-    float4 color;
-};
+#include "particle.hlsl"
 
 cbuffer TimeConstants : register(b0)
 {

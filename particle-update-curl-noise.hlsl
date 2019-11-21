@@ -1,4 +1,4 @@
-
+#include "particle.hlsl"
 
 cbuffer TimeConstants : register(b0)
 {
@@ -7,15 +7,6 @@ cbuffer TimeConstants : register(b0)
     float runTime;
     float dummy;
 }
-
-struct Particle
-{
-    float3 position;
-    float lifetime;
-    float3 velocity;
-    float dummy;
-    float4 color;
-};
 
 RWStructuredBuffer<Particle> Particles : u0;
 RWStructuredBuffer<int> AliveParticles : u1;
@@ -188,27 +179,13 @@ void main(uint3 i : SV_DispatchThreadID)
         uint index = AliveParticles.IncrementCounter();
         AliveParticles[index] = i.x;
         float distToCenter = length(Particles[i.x].position);
-        float RADIUS1 = 200.0;
-        float RADIUS2 = 350.0;
-float3 v1, v2;
-        if (distToCenter < RADIUS1)
-        {
-            // Particles[i.x].velocity = (1.0 - distToCenter/RADIUS1)*10.0*normalize(Particles[i.x].position);
-            v1 = (1.0 - distToCenter/RADIUS1)*10.0*normalize(Particles[i.x].position);
-        }
-        // else 
-        if (distToCenter < RADIUS2)
-        {
-            // Particles[i.x].velocity = (9.0*RADIUS2/distToCenter)*curlNoise(Particles[i.x].position/100.0);
-            // Particles[i.x].velocity = (45.0/newLifetime)*curlNoise(Particles[i.x].position/100.0);
-            v2 = (9.0*RADIUS2/distToCenter)*curlNoise(Particles[i.x].position/200.0);
-        }
-        Particles[i.x].velocity = lerp(v1, v2, distToCenter/RADIUS1);
-        // else
-        // {
-        //     Particles[i.x].velocity = 0.0;
-        // }
+
+        float v1 = Particles[i.x].velocity;
+        float v2 = 9.0*curlNoise((Particles[i.x].position + float3(float(i.x)/10.0,0,0))/15.0);
+
+        Particles[i.x].velocity = lerp(v1, v2, 0.5);
         Particles[i.x].position += (1.0/60.)*Particles[i.x].velocity;
+
         uint originalValue;
         InterlockedAdd(IndirectArgs[0], 6, originalValue);
     }
