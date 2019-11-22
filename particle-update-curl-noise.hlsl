@@ -41,7 +41,7 @@ void main(uint3 i : SV_DispatchThreadID)
     {
         uint index = AliveParticles.IncrementCounter();
         AliveParticles[index] = i.x;
-        float distToCenter = length(Particles[i.x].position);
+        // float distToCenter = length(Particles[i.x].position);
 
         float v1 = Particles[i.x].velocity;
         float v2 = 5.0*curlNoise(Particles[i.x].position/145.0);

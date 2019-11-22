@@ -16,6 +16,8 @@ cbuffer CountConstants : register(b1)
 cbuffer Parameter : register(b2)
 {
     float4 color;
+    float4 scatterColor;
+    float4 randomVelocity;
     float lifetime;
 }
 
@@ -30,6 +32,12 @@ uint wang_hash(in out uint seed)
     seed *= 0x27d4eb2d;
     seed = seed ^ (seed >> 15);
     return seed;
+}
+
+
+float getRandomFloat(in out uint rng_state)
+{
+    return float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
 }
 
 [numthreads(1,1,1)]
@@ -54,13 +62,14 @@ void main(uint3 i : SV_DispatchThreadID)
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
-    particle.velocity = float3(f0*40.0, f1*40.0, f2*40.0);
+    particle.velocity = float3(f0, f1, f2)*randomVelocity.xyz*randomVelocity.w*40.0;
     // particle.velocity = float3(0,0,0);
 
-    f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    particle.color = color;//float4(f0,f1,f2,1.0);
+    f0 = getRandomFloat(rng_state) - 0.5;
+    f1 = getRandomFloat(rng_state) - 0.5;
+    f2 = getRandomFloat(rng_state) - 0.5;
+    float f3 = saturate(getRandomFloat(rng_state) - 0.5);
+    particle.color = color + scatterColor*float4(f0,f1,f2,f3);
 
     Particles[index] = particle;
 }
