@@ -1,5 +1,5 @@
 #include "particle.hlsl"
-#include "nosie-functions.hlsl"
+#include "noise-functions.hlsl"
 
 cbuffer TimeConstants : register(b0)
 {
