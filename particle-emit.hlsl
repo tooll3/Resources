@@ -13,6 +13,12 @@ cbuffer CountConstants : register(b1)
     int4 bufferCount;
 }
 
+cbuffer Parameter : register(b2)
+{
+    float4 color;
+    float lifetime;
+}
+
 RWStructuredBuffer<Particle> Particles : u0;
 ConsumeStructuredBuffer<int> DeadParticles : u1;
 
@@ -43,7 +49,7 @@ void main(uint3 i : SV_DispatchThreadID)
     particle.position = float3(f0*200.0,f1*200.0,f2*200.0);
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    particle.lifetime = f0 * 8.0 + 2.0;
+    particle.lifetime = lifetime;//f0 * 8.0 + 2.0;
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
@@ -54,7 +60,7 @@ void main(uint3 i : SV_DispatchThreadID)
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    particle.color = float4(f0,f1,f2,1.0);
+    particle.color = color;//float4(f0,f1,f2,1.0);
 
     Particles[index] = particle;
 }
