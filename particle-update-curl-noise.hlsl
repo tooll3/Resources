@@ -9,6 +9,12 @@ cbuffer TimeConstants : register(b0)
     float dummy;
 }
 
+cbuffer Params : register(b1)
+{
+    float amount;
+    float frequency;
+}
+
 RWStructuredBuffer<Particle> Particles : u0;
 RWStructuredBuffer<int> AliveParticles : u1;
 AppendStructuredBuffer<int> DeadParticles : u2;
@@ -44,9 +50,10 @@ void main(uint3 i : SV_DispatchThreadID)
         // float distToCenter = length(Particles[i.x].position);
 
         float v1 = Particles[i.x].velocity;
-        float v2 = 5.0*curlNoise(Particles[i.x].position/145.0);
+        float v2 = curlNoise(Particles[i.x].position/frequency) * amount;
 
-        Particles[i.x].velocity = lerp(v1, v2, 0.5);
+        //Particles[i.x].velocity = lerp(v1, v2, 0.5);
+        Particles[i.x].velocity = v2;
         Particles[i.x].position += (1.0/60.)*Particles[i.x].velocity;
 
         uint originalValue;

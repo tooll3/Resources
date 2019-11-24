@@ -11,6 +11,7 @@ cbuffer ParamConstants : register(b0)
     float PreSaturate;
 }
 
+
 [numthreads(16,16,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
@@ -19,6 +20,7 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float2 uv = (float2)i.xy/ float2(width - 1, height - 1);
     float4 c = inputTexture.SampleLevel(texSampler, uv, 0.0);
+    c.r= PreSaturate;
 
     float a = c.a;
     c.rgb = clamp( c.rgb, 0.000001,1000);

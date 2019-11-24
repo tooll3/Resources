@@ -1,3 +1,8 @@
+cbuffer ParamConstants : register(b1)
+{
+    float4 Color;
+}
+
 
 struct Output
 {
@@ -12,5 +17,5 @@ sampler texSampler : register(s0);
 float4 psMain(Output input) : SV_TARGET
 {
     float f = inputTexture.Sample(texSampler, input.texCoord).r;
-    return input.color * float4(f,f,f,18.0*f);
+    return input.color * f * Color;
 }
