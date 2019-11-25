@@ -11,8 +11,9 @@ cbuffer TimeConstants : register(b0)
 
 cbuffer Params : register(b1)
 {
-    float amount;
-    float frequency;
+    float Amount;
+    float Frequency;
+    float Phase;
 }
 
 RWStructuredBuffer<Particle> Particles : u0;
@@ -50,7 +51,7 @@ void main(uint3 i : SV_DispatchThreadID)
         // float distToCenter = length(Particles[i.x].position);
 
         float v1 = Particles[i.x].velocity;
-        float v2 = curlNoise(Particles[i.x].position/frequency) * amount;
+        float v2 = curlNoise((Particles[i.x].position+ float3(Phase,0,Phase) ) /Frequency) * Amount;
 
         //Particles[i.x].velocity = lerp(v1, v2, 0.5);
         Particles[i.x].velocity = v2;
