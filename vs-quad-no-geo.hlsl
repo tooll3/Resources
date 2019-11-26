@@ -9,6 +9,7 @@ static const float3 Quad[] =
   float3(-1, -1, 0), 
 };
 
+
 cbuffer Transforms : register(b0)
 {
     float4x4 clipSpaceTcamera;
@@ -22,6 +23,12 @@ cbuffer Transforms : register(b0)
     float4x4 cameraTobject;
     float4x4 clipSpaceTobject;
 };
+
+cbuffer Params : register(b1)
+{
+    float4 Color;
+};
+
 
 struct Output
 {
@@ -43,6 +50,6 @@ Output vsMain(uint id: SV_VertexID)
 
 float4 psMain(Output input) : SV_TARGET
 {
-    return float4(0.5, 0, 0.5, 1.0);
+    return float4(1,1,1,1) * Color;
 }
 
