@@ -39,10 +39,9 @@ Output vsMain(uint id: SV_VertexID)
 {
     Output output;
 
-    float4 wrldTquad = mul(worldTobject, float4(Quad[id]*120.0, 1));
-    float4 camTquad = mul(cameraTworld, wrldTquad);
-    output.position = mul(clipSpaceTcamera, camTquad);
-    // output.position = mul(clipSpaceTobject, float4(Quad[id]*100.0, 1));
+    float4 camPquad = mul(cameraTobject, float4(Quad[id]*120.0, 1));
+    output.position = mul(clipSpaceTcamera, camPquad);
+    // output.position = mul(clipSpaceTobject, float4(Quad[id]*120.0, 1));
 
     return output;
 }
