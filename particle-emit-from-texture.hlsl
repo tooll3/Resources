@@ -13,6 +13,16 @@ cbuffer CountConstants : register(b1)
     int4 bufferCount;
 }
 
+cbuffer Params : register(b3)
+{
+    float EmitPosY;
+    float EmitPosYScatter;
+    float Size;
+    float Mass;
+    float LifeTime;
+}
+
+
 Texture2D<float4> inputTexture : register(t0);
 RWStructuredBuffer<Particle> Particles : u0;
 ConsumeStructuredBuffer<int> DeadParticles : u1;
