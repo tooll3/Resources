@@ -13,7 +13,7 @@ cbuffer CountConstants : register(b1)
     int4 bufferCount;
 }
 
-cbuffer Params : register(b3)
+cbuffer Params : register(b2)
 {
     float EmitPosY;
     float EmitPosYScatter;
