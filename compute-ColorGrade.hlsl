@@ -20,7 +20,6 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float2 uv = (float2)i.xy/ float2(width - 1, height - 1);
     float4 c = inputTexture.SampleLevel(texSampler, uv, 0.0);
-    c.r= PreSaturate;
 
     float a = c.a;
     c.rgb = clamp( c.rgb, 0.000001,1000);
@@ -51,7 +50,6 @@ void main(uint3 i : SV_DispatchThreadID)
     //c.a = 1;
     c.a = a;
     
-    outputTexture[i.xy] = c;
-	//outputTexture[i.xy] = Light;
+	outputTexture[i.xy] = c;
     
 }
