@@ -47,7 +47,7 @@ void main(uint3 i : SV_DispatchThreadID)
     //c.rgb = lerp( float3(gray2, gray2,gray2), c.rgb, PostSaturate); 
     //c.rgb = clamp(c.rgb, 0.000001,1000);
         
-    //c.a = 1;
+
     c.a = a;
     
 	outputTexture[i.xy] = c;
