@@ -29,6 +29,10 @@ cbuffer Params : register(b1)
     float4 Color;
     float Width;
     float Height;
+    float Time;
+    float WobbleAmount;
+    float WobbleFrequency;
+    float Noise;
 };
 
 
@@ -55,6 +59,12 @@ vsOutput vsMain(uint id: SV_VertexID)
 
 float4 psMain(vsOutput input) : SV_TARGET
 {
-    float4 c = inputTexture.Sample(texSampler, input.texCoord);
-    return float4(1,1,1,1) * Color *c;
+    float2 uv = input.texCoord.xy;
+
+    float2  distToCenter = (uv + 0.5) * WobbleFrequency;
+    float wobbleFactor =  pow( (sin(Time + length(distToCenter)) ) /2, 2);
+    float2 wobble = distToCenter * wobbleFactor * WobbleAmount;
+
+    float4 c = inputTexture.Sample(texSampler, uv + wobble);
+    return float4(1,1,1,1) * Color * c * (wobbleFactor /2 + 0.5) * Noise;
 }
