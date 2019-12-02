@@ -27,8 +27,6 @@ cbuffer Transforms : register(b0)
 cbuffer Params : register(b1)
 {
     float4 Color;
-    float Width;
-    float Height;
     float Time;
     float WobbleAmount;
     float WobbleFrequency;
@@ -50,7 +48,7 @@ vsOutput vsMain(uint id: SV_VertexID)
     vsOutput output;
     float4 quadPos = float4(Quad[id], 1) ;
     output.texCoord = quadPos.xy*float2(0.5, -0.5) - 0.5;
-    float4 worldPquad = mul(worldTobject, quadPos * float4(Width,Height,1,1));
+    float4 worldPquad = mul(worldTobject, quadPos * float4(1,1,1,1));
     float4 camPquad = mul(cameraTworld, worldPquad);
     output.position = mul(clipSpaceTcamera, camPquad); //todo: check why using clipSpaceTobject directly doesn't work
     return output; 
@@ -62,7 +60,7 @@ float4 psMain(vsOutput input) : SV_TARGET
     float2 uv = input.texCoord.xy;
 
     float2  distToCenter = (uv + 0.5) * WobbleFrequency;
-    float wobbleFactor =  pow( (sin(Time + length(distToCenter)) ) /2, 2);
+    float wobbleFactor =  pow( (sin(Time * 2 * 3.1417 + length(distToCenter)) ) /2, 2);
     float2 wobble = distToCenter * wobbleFactor * WobbleAmount;
 
     float4 c = inputTexture.Sample(texSampler, uv + wobble);
