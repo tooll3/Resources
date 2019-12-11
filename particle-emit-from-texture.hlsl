@@ -40,8 +40,8 @@ uint wang_hash(in out uint seed)
 [numthreads(1,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
-    if (i.x >= bufferCount.x)
-        return; // no particles available
+    //if (i.x >= bufferCount.x)
+    //    return; // no particles available
 
     int index = DeadParticles.Consume();
         
@@ -58,13 +58,13 @@ void main(uint3 i : SV_DispatchThreadID)
     // particle.position = float3(f0*200.0,21.0,f2*20.0);
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    particle.lifetime = f0 * 10.0 + 5.0;
+    particle.lifetime = LifeTime;
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     particle.velocity = float3(f0*10.0, f1*10.0, f2*10.0);
-    particle.velocity = float3(0,0,0);
+    //particle.velocity = float3(0,0,0);
 
     // f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     // f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
