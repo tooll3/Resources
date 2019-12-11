@@ -19,6 +19,7 @@ cbuffer Parameter : register(b2)
     float4 scatterColor;
     float4 randomVelocity;
     float lifetime;
+    float ScatterPosition;
 }
 
 RWStructuredBuffer<Particle> Particles : u0;
@@ -49,12 +50,12 @@ void main(uint3 i : SV_DispatchThreadID)
     int index = DeadParticles.Consume();
         
     Particle particle = Particles[index];
-    uint rng_state = uint(runTime*1000.0) + i.x;
+    uint rng_state = uint(runTime%1000*1000) + i.x * 12;
 
     float f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     float f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     float f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
-    particle.position = float3(f0*200.0,f1*200.0,f2*200.0);
+    particle.position = float3(f0,f1,f2) * ScatterPosition;
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     particle.lifetime = lifetime;//f0 * 8.0 + 2.0;

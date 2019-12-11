@@ -58,6 +58,7 @@ void main(uint3 input : SV_DispatchThreadID)
         gray += IsBetween( average, lowBound, highBound) / SampleCount; 
     }
         
+    rgba = pow(rgba, 0.2) * 0.05;
     
     if( uv.x < 0.25) {
         c.r += rgba.r * RGB;
