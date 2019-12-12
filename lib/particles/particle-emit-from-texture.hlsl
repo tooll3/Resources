@@ -5,7 +5,7 @@ cbuffer TimeConstants : register(b0)
     float globalTime;
     float time;
     float runTime;
-    float dummy;
+    float beatTime;
 }
 
 cbuffer CountConstants : register(b1)
@@ -52,7 +52,7 @@ void main(uint3 i : SV_DispatchThreadID)
     float f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     float f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     particle.position = float3(f0*200.0,f1*200.0,f2*200.0);
-    float y = fmod(runTime*21.0,200.0);
+    float y = fmod(beatTime,4) * 100;
     float x = f0*200.0 + 100.0;
     particle.position = float3((x-100.0)*2.0, (y - 100.0)*2.0,f2*20.0);
     // particle.position = float3(f0*200.0,21.0,f2*20.0);
@@ -72,7 +72,7 @@ void main(uint3 i : SV_DispatchThreadID)
     // particle.color = float4(f0,f1,f2,1.0);
     // particle.color = float4(1,0,0,1);
     particle.color = inputTexture[int2(4*int(x), 800-4*int(y))];
-
-    Particles[index] = particle;
+    particle.color = float4(1,0,0,1);
+    Particles[index] = particle;    
 }
 
