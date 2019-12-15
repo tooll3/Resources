@@ -15,11 +15,12 @@ cbuffer CountConstants : register(b1)
 
 cbuffer Params : register(b2)
 {
+    float4 Color;
     float EmitPosY;
     float EmitPosYScatter;
     float Size;
     float Mass;
-    float LifeTime;
+    float LifeTime;    
 }
 
 
@@ -71,8 +72,10 @@ void main(uint3 i : SV_DispatchThreadID)
     // f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     // particle.color = float4(f0,f1,f2,1.0);
     // particle.color = float4(1,0,0,1);
-    particle.color = inputTexture[int2(4*int(x), 800-4*int(y))];
-    particle.color = float4(1,0,0,1);
+    particle.color = inputTexture[int2(4*int(x), 800-4*int(y))]*Color;
+    //particle.color = float4(1,1,1,0.2);
+    particle.color = Color;
+    //particle.color.a = 1;
     Particles[index] = particle;    
 }
 
