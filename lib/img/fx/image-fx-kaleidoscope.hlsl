@@ -1,6 +1,14 @@
 cbuffer ParamConstants : register(b0)
 {
-    float Param1;
+    float Scale;
+    float CenterX;
+    float CenterY;
+
+    float OffsetX;
+    float OffsetY;
+
+    float Angle;    // <--- not working?
+    float AngleOffset;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -31,7 +39,8 @@ float IsBetween( float value, float low, float high) {
 //===================
 // https://www.shadertoy.com/view/XslGz7
 
-static int numPoints = 3;
+static int numPoints = 4;
+static float PI = 3.141578;
 //bool showFolds = true;
 
 struct Ray
@@ -67,22 +76,40 @@ Ray GetRay(float i)
     return ray;	
 }
 
+Ray GetRay2(float i)
+{
+	Ray ray;
+    ray.Origin =float2(CenterX + OffsetX *i, CenterY + OffsetY *i);
 
-float4 psMain(vsOutput input) : SV_TARGET
+    float angle= Angle * 3.141578 / 180 + AngleOffset * 3.141578 / 180 * i;
+    ray.Direction = float2(
+            sin(angle), 
+            cos(angle)
+        )*1;
+    return ray;	
+}
+
+
+float fmod(float x, float y)
+{
+  return x - y * floor(x/y);
+}
+
+float4 psMain2(vsOutput input) : SV_TARGET
 {
 	float2 curPos = input.texCoord;
 	bool showFolds = true;
-    
+    float foldCount =0;
 	for(int i=0; i < numPoints; i++)
 	{
-		Ray ray=GetRay(float(i+1) * 3 );	
+		Ray ray=GetRay(float(i+1));	
 
-		if(showFolds && length(ray.Origin-curPos)<0.01)
+		if(showFolds && length(ray.Origin-curPos)<0.01 * (i+1))
 		{
 			return float4(1,1,1,1);
 		}
 
-		if (showFolds && length(curPos-(ray.Origin+ray.Direction*0.1))<0.01)
+		if (showFolds && length(curPos-(ray.Origin+ray.Direction*0.1))<0.01 * (i+1))
 		{
 			return  float4(1,0,0,1);
 		}
@@ -94,14 +121,63 @@ float4 psMain(vsOutput input) : SV_TARGET
             return  float4(0,0,1,1);
         }
 
-        if(offset < 0)
+        if( offset > 0)
         {
             curPos -= ray.Direction * offset * 2;
+            foldCount++;
         }									
 		
 	}
 
 
     float4 c = inputTexture.Sample(texSampler, curPos);
+    c.r = foldCount *0.3;
+    return c;
+}
+
+
+float2 Fold(float2 p, float ang)
+{
+    float2 n= float2(cos(-ang),sin(-ang));
+    p-=2 * min(0.,dot(p,n))*n;
+    return p;    
+}
+
+float2 KochFold(float2 pt) {
+
+    // Fold horizontally
+    pt.x = abs(pt.x);
+    pt.x-=.5;
+    //Fold across PI/6
+    pt = Fold(pt,PI/6.);
+    return pt;
+}
+
+float2 KochCurve(float2 pt) {
+    //Fold and scale a few times
+    for(int i=0;i<2;i++){
+        pt*=3.;
+        pt.x-=1.5;
+        pt=KochFold(pt);
+    }
+    return pt;
+}
+
+float4 psMain(vsOutput input) : SV_TARGET
+{	
+    float2 pt = input.texCoord;
+    pt.y-=CenterY;
+    pt.x-=CenterX;
+    
+    pt/=Scale;
+    pt = Fold(pt,-2.*PI/3.);
+
+    pt.x += 1.;
+    pt = Fold(pt,-PI/3.);
+    pt= KochCurve(pt);
+
+
+    float4 c = inputTexture.Sample(texSampler, pt);
+    c.rgb+= abs(pt.y) < 0.05;
     return c;
 }
