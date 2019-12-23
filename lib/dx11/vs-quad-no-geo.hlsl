@@ -27,28 +27,37 @@ cbuffer Transforms : register(b0)
 cbuffer Params : register(b1)
 {
     float4 Color;
+    float Width;
+    float Height;
 };
 
+Texture2D<float4> InputTexture : register(t0);
+sampler texSampler : register(s0);
 
-struct Output
+
+struct vsOutput
 {
     float4 position : SV_POSITION;
+    float2 texCoord : TEXCOORD;
 };
 
-Output vsMain(uint id: SV_VertexID)
+vsOutput vsMain(uint vertexId: SV_VertexID)
 {
-    Output output;
-
-    float4 worldPquad = mul(worldTobject, float4(Quad[id]*120.0, 1));
+    vsOutput output;
+    float4 quadPos = float4(Quad[vertexId], 1) ;
+    float4 size = float4(Width,Height,1,1);
+    float4 worldPquad = mul(worldTobject, float4(Quad[vertexId]*1,1) * size );
     float4 camPquad = mul(cameraTworld, worldPquad);
     output.position = mul(clipSpaceTcamera, camPquad); //todo: check why using clipSpaceTobject directly doesn't work
+    output.texCoord = quadPos.xy*float2(0.5, -0.5) + 0.5;
 
     return output;
 }
 
 
-float4 psMain(Output input) : SV_TARGET
+float4 psMain(vsOutput input) : SV_TARGET
 {
-    return float4(1,1,1,1) * Color;
+    float4 c = InputTexture.Sample(texSampler, input.texCoord);
+    return float4(1,1,1,1) * Color * c;
 }
 

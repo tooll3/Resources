@@ -1,16 +1,12 @@
 cbuffer ParamConstants : register(b0)
 {
-    float Scale;
-    float CenterX;
-    float CenterY;
-
-    float OffsetX;
-    float OffsetY;
-
+    float SampleRadius;
+    float Displacement;
+    float DisplaceOffset;
+    float SampleCount;
+    float ShiftX;
+    float ShiftY;
     float Angle;
-    float AngleOffset;
-    float Steps;
-    float Fade;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -27,7 +23,8 @@ struct vsOutput
     float2 texCoord : TEXCOORD;
 };
 
-Texture2D<float4> inputTexture : register(t0);
+Texture2D<float4> ImageA : register(t0);
+Texture2D<float4> ImageB : register(t1);
 sampler texSampler : register(s0);
 
 
@@ -36,105 +33,48 @@ float IsBetween( float value, float low, float high) {
 }
 
 
+float4 psMain(vsOutput psInput) : SV_TARGET
+{    
+    float width, height;
+    ImageA.GetDimensions(width, height);
+    float2 uv = psInput.texCoord;
+    float2 uv2= uv+ float2(ShiftX, ShiftY);
+    float4 ccc = ImageA.Sample(texSampler, uv);
+   
+    float sx = SampleRadius / width;
+    float sy = SampleRadius / height;
+    
+    float4 cy1= ImageB.Sample(texSampler, float2(uv2.x,       uv2.y + sy));
+    float4 cy2= ImageB.Sample(texSampler, float2(uv2.x,       uv2.y - sy));
+    
+    float4 cx1= ImageB.Sample(texSampler,  float2(uv2.x + sx, uv2.y));
+    float4 cx2= ImageB.Sample(texSampler,  float2(uv2.x - sx, uv2.y)); 
+    float4 c =  ImageB.Sample(texSampler, float2(uv2.x,      uv2.y)); 
 
+    float cc= (c.r+ c.g +c.b);
+    float x1= (cx1.r + cx1.g + cx1.b) / 3;
+    float x2= (cx2.r + cx2.g + cx2.b) / 3;
+    float y1= (cy1.r + cy1.g + cy1.b) / 3;
+    float y2= (cy2.r + cy2.g + cy2.b) / 3;
 
-//===================
-// https://www.shadertoy.com/view/XslGz7
+    
+    float2 d = float2( (x1-x2) , (y1-y2));
+    float len = length(d);
+    float a = length(d) ==0 ? 0 :  atan2(d.x, d.y) + Angle / 180 * 3.14158;
 
-static int numPoints = 4;
-static float PI = 3.141578;
-//bool showFolds = true;
+    float2 direction = float2( sin(a), cos(a));
+    float2 p2 = direction * (Displacement * len + DisplaceOffset) * float2(height/ height, 1);
+    
+    
+    float4 t1= float4(0,0,0,0);
+    for(float i=-0.5; i< 0.5; i+= 1.0/ abs(SampleCount)) 
+    {    
+        t1+=ImageA.Sample(texSampler, uv + p2 * i); 
+    }    
 
-struct Ray
-{
-	float2 Origin;
-	float2 Direction;
-};
-
-float rand( float2 n ) {
-	return frac(sin(dot(n.xy, float2(12.9898, 78.233)))* 43758.5453);
-}
-
-
-float noise(float2 n) {
-	float2 d = float2(0.0, 1.0);
-	float2 b = floor(n), f = smoothstep(float2(0,0 ), float2(1,1), frac(n));
-	return lerp(lerp(rand(b), rand(b + d.yx), f.x), lerp(rand(b + d.xy), rand(b + d.yy), f.x), f.y);
-}
-
-float2 noise2(float2 n)
-{
-	return float2(
-        noise(float2(n.x+0.2, n.y-0.6)), 
-        noise(float2(n.y+3., n.x-4.))
-    );
-}
-
-Ray GetRay(float i)
-{
-	Ray ray;
-    ray.Origin = noise2(float2(i*6.12+beatTime*0.1, i*4.43+beatTime*0.1)) * float2(OffsetX, OffsetY);
-    ray.Direction = normalize(noise2(float2(i*7 + beatTime*0.05, i*6))*2-1);		
-    return ray;	
-}
-
-Ray GetRay2(float i)
-{
-	Ray ray;
-    ray.Origin =float2(CenterX + OffsetX *i, CenterY + OffsetY *i);
-
-    float angle= Angle * 3.141578 / 180 + AngleOffset * 3.141578 / 180 * i;
-    ray.Direction = float2(
-            sin(angle), 
-            cos(angle)
-        )*1;
-    return ray;	
-}
-
-
-float fmod(float x, float y)
-{
-  return x - y * floor(x/y);
-}
-
-
-float4 psMain(vsOutput input) : SV_TARGET
-{
-	float2 curPos = input.texCoord;
-    curPos += float2(CenterX, CenterY);
-	bool showFolds = false;
-    float foldCount =0;
-	for(int i=0; i < Steps; i++)
-	{
-		Ray ray=GetRay(float(i+1));	
-
-		if(showFolds && length(ray.Origin-curPos)<0.01 * (i+1))
-		{
-			return float4(1,1,1,1);
-		}
-
-		if (showFolds && length(curPos-(ray.Origin+ray.Direction*0.1))<0.01 * (i+1))
-		{
-			return  float4(1,0,0,1);
-		}
-
-        float offset=dot(curPos-ray.Origin, ray.Direction);
-
-        if(showFolds && abs(offset)<0.001)
-        {
-            return  float4(0,0,1,1);
-        }
-
-        if( offset > 0)
-        {
-            curPos -= ray.Direction * offset * 2;
-            foldCount++;
-        }									
-		
-	}
-
-
-    float4 c = inputTexture.Sample(texSampler, curPos);
-    c.rgb -= foldCount * Fade;
-    return c;
+    //c.r=1;
+    float4 c2=t1/SampleCount;
+    c2.a = clamp( c2.a, 0.00001,1);
+    //outputTexture[input.xy] = c2;
+    return c2;
 }

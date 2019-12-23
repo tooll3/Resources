@@ -135,7 +135,7 @@ float4 psMain(vsOutput input) : SV_TARGET
 
 
     float4 c = inputTexture.Sample(texSampler, curPos);
-    c.rgb -= foldCount * Fade;
+    c.rgb -= foldCount * Fade;    
     return c;
 }
 
