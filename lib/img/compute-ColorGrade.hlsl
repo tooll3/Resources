@@ -5,9 +5,9 @@ sampler texSampler : register(s0);
 
 cbuffer ParamConstants : register(b0)
 {
-    float4 Lift;
-    float4 Gamma;
     float4 Gain;
+    float4 Gamma;
+    float4 Lift;
     float PreSaturate;
 }
 
