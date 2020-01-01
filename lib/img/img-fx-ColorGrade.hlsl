@@ -25,8 +25,6 @@ struct vsOutput
     float2 texCoord : TEXCOORD;
 };
 
-Texture2D<float4> inputTexture : register(t0);
-sampler texSampler : register(s0);
 
 float4 psMain(vsOutput psInput) : SV_TARGET
 {
