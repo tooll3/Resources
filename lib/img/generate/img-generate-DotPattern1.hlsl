@@ -176,22 +176,27 @@ static float2 P;
 
 float4 subDivideCel(float4 cel, float2 splitProbability) 
 {
+    float4 orgCel = cel;
     float2 hash = hash22(cel.xy + float2(Seed, cel.w) - cel.zw);
+
+    float2 scrollFactor = hash > ScrollProbability ? 0: hash;
+    float2 randomShift =(beatTime * ScrollSpeed  - orgCel.zw) * scrollFactor; //2
+    P= frac(P);
+    P -= randomShift;    
+
+
     if(hash.x > splitProbability.x && hash.y > splitProbability.y ) 
         return cel;
 
-    float2 subdiv = float2( 
+    // Subdivide
+    cel.zw /= float2( 
         hash.x < splitProbability.x ? Subdivisions.x : 1,
         hash.y < splitProbability.y ? Subdivisions.y : 1);
-    
-    cel.zw /= subdiv;
+
     float2 positionInCel= P - cel.xy;
     float2 splitAlignedPosition = floor(positionInCel / cel.zw) * cel.zw;
     cel.xy += splitAlignedPosition;
 
-    float2 scrollFactor = hash > ScrollProbability ? 0:1;
-    float2 randomShift =(beatTime * ScrollSpeed  - cel.zw) * scrollFactor;
-    P -= randomShift;    
     return cel;
 }
 
@@ -206,12 +211,13 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         cel = subDivideCel(cel, SplitProbability);
     }
     
-    float2 posInCel = P - cel.xy;
-    float padding = (posInCel.x < Padding.x * 0.1 || posInCel.y < Padding.y * 0.1) ? 1:0;
-    if(padding > 0.5) {
+    float2 pp = P - cel.xy;
+    float2 posInCel = mod(pp, cel.zw);
+    //return float4(posInCel*1,0,1);
+    if(posInCel.x < Padding.x * 0.1 || posInCel.y < Padding.y * 0.1){
         return Background;
     }
-
+    
     float hashForCel = hash12(cel.xy + float2(Seed, cel.w));
     float4 originalColor = ImageA.Sample(texSampler, P);
     float gray = lerp(

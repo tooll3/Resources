@@ -7,6 +7,7 @@ cbuffer ParamConstants : register(b0)
     float4 MapWhiteTo;
     float4 ChannelWeights;
     float Amount;
+    float Bias;
 }
 
 
@@ -32,6 +33,11 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float4 c = inputTexture.SampleLevel(texSampler, uv, 0.0);
 
     float t = length(c * normalize(ChannelWeights)) + 0.0001;
+    //float b = Bias +1;
+    t = Bias> 0 
+        ? pow( t, Bias+1)
+        : 1-pow( 1-t, -Bias+1);
+
     float4 mapped = lerp(MapBlackTo, MapWhiteTo, t); 
 
     return lerp(c, mapped, Amount);

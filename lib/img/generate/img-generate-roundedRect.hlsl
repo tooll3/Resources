@@ -60,8 +60,12 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float d = sdBox(p, Size);
 
     //float dBiased=   pow( abs(d), pow( abs(0.5), abs(GradientBias)));       
-    float dBiased = d;
+    //float dBiased = d;
     //float d2 = smoothstep(0,1,dBiased);
+
+        float dBiased = GradientBias>= 0 
+        ? pow( d, GradientBias+1)
+        : 1-pow( clamp(1-d,0,10), -GradientBias+1);
 
     d = smoothstep(Round, Round+Feather, dBiased);
 
