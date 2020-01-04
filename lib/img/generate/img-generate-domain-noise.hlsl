@@ -7,6 +7,8 @@
 
 cbuffer ParamConstants : register(b0)
 {
+    float4 ColorA;
+    float4 ColorB;
     // float Scale;
     // float CenterX;
     // float CenterY;
@@ -147,9 +149,9 @@ float3 domainNoise(float2 st) {
 
     //float f = fbmAbs(st+ q2*1);
     float3 col = lerp(
-        float3(1,0,0),
-        float3(0,1,0),
-        atan2(q1.x, q1.y)/2);
+        ColorA.rgb,
+        ColorB.rgb,
+        atan2(q1.x, q1.y));
 
     return col*f;
 

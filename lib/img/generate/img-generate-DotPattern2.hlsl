@@ -4,7 +4,7 @@ cbuffer ParamConstants : register(b0)
     float4 Foreground;
     float4 Highlight;
 
-    float2 Subdivisions;
+    float2 SplitA;
     float2 SplitB;
     float2 SplitC;
     float2 SplitProbability;
@@ -193,8 +193,8 @@ static float2 P;
 
 //     // Subdivide
 //     cel.zw /= float2( 
-//         hash.x < splitProbability.x ? Subdivisions.x : 1,
-//         hash.y < splitProbability.y ? Subdivisions.y : 1);
+//         hash.x < splitProbability.x ? SplitA.x : 1,
+//         hash.y < splitProbability.y ? SplitA.y : 1);
 
 //     float2 positionInCel= P - cel.xy;
 //     float2 splitAlignedPosition = floor(positionInCel / cel.zw) * cel.zw;
@@ -204,8 +204,13 @@ static float2 P;
 // }
 
 
-float4 subDivideCel2(float4 cel, float2 splitProbability, float2 split) 
+float4 subDivideCel2(float4 cel, float2 splitProbability, float2 split, float2 scrollProbability) 
 {
+    float2 hash2 = hash22(cel.xy + Seed);
+    float2 scrollFactor = hash2 > scrollProbability ? 0:1;
+    float2 randomShift =(beatTime * ScrollSpeed +1 + ScrollOffset) * scrollFactor * scrollProbability* hash2.x;
+    P += randomShift;    
+
     float2 hash = hash22(cel.xy + float2(Seed, cel.w) - cel.zw);
     if(hash.x > splitProbability.x && hash.y > splitProbability.y ) 
         return cel;
@@ -221,12 +226,11 @@ float4 subDivideCel2(float4 cel, float2 splitProbability, float2 split)
     float2 splitAlignedPosition = floor(positionInCel / cel.zw) * cel.zw;
     cel.xy += splitAlignedPosition;
 
-    float2 hash2 = hash22(cel.xy);
-    float2 scrollFactor = hash2 > ScrollProbability ? 0:1;
-    float2 randomShift =(beatTime * ScrollSpeed  - cel.zw) * scrollFactor;
-    P -= randomShift;    
     return cel;
 }
+
+//////////////////////////////////
+//   |              |         |  |
 
 // float4 subDivideVertically(float4 cel, float2 splitProbability) 
 // {
@@ -235,8 +239,8 @@ float4 subDivideCel2(float4 cel, float2 splitProbability, float2 split)
 //         return cel;
 
 //     float2 subdiv = float2( 
-//         hash.x < splitProbability.x ? Subdivisions.x : 1,
-//         hash.y < splitProbability.y ? Subdivisions.y : 1);
+//         hash.x < splitProbability.x ? SplitA.x : 1,
+//         hash.y < splitProbability.y ? SplitA.y : 1);
     
 //     cel.zw /= subdiv;
 //     float2 positionInCel= P - cel.xy;
@@ -259,18 +263,18 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     //int steps = min( Iterations, 10);
 
 
-//    cel = subDivideCel2(cel, float2(1,0), Subdivisions);
-//    cel = subDivideCel2(cel, float2(0,1), Subdivisions);
+//    cel = subDivideCel2(cel, float2(1,0), SplitA);
+//    cel = subDivideCel2(cel, float2(0,1), SplitA);
 
-    cel = subDivideCel2(cel, float2(1,0), Subdivisions);
-    cel = subDivideCel2(cel, float2(0,SplitProbability.y), Subdivisions);
+    cel = subDivideCel2(cel, float2(1,0), SplitA, 0 );
+    cel = subDivideCel2(cel, float2(0,SplitProbability.y), SplitA, ScrollProbability);
 
 
-    cel = subDivideCel2(cel, float2(SplitProbability.x,0), SplitB);
-    cel = subDivideCel2(cel, float2(0,SplitProbability.y), SplitB);
+    cel = subDivideCel2(cel, float2(SplitProbability.x,0), SplitB, ScrollProbability);
+    cel = subDivideCel2(cel, float2(0,SplitProbability.y), SplitB, ScrollProbability);
 
-    cel = subDivideCel2(cel, float2(SplitProbability.x,0), SplitC);
-    cel = subDivideCel2(cel, float2(0,SplitProbability.y), SplitC);
+    cel = subDivideCel2(cel, float2(SplitProbability.x,0), SplitC, ScrollProbability);
+    cel = subDivideCel2(cel, float2(0,SplitProbability.y), SplitC, ScrollProbability);
 
     // for(int i=0; i < steps; i ++) {
 
@@ -285,10 +289,11 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         return Background;
     }
     
-    float hashForCel = hash12(cel.xy + float2(Seed, cel.w));
+    float2 hashForCel1 = hash22(cel.xy + float2(cel.z, cel.w)/2);
+    float hashForCel = hash12(cel.xy + hashForCel1);
     float4 originalColor = ImageA.Sample(texSampler, P);
     float gray = lerp(
-                    hashForCel,   
+                    1-hashForCel,   
                     hashForCel > ForegroundRatio ? 0:1,
                     Contrast);
                     
