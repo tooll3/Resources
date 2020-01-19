@@ -5,6 +5,7 @@ cbuffer ParamConstants : register(b0)
     float4 Background;
     float4 Foreground;
     float4 Highlight;
+    float BrightnessOffset;
 
     float2 SplitA;
     float2 SplitB;
@@ -43,10 +44,24 @@ sampler texSampler : register(s0);
 
 #define mod(x, y) (x - y * floor(x / y))
 
+
+
 static float2 P;
-static float2 NumberSize = float2(4,6);
+static const float2 DigitSize = float2(4,6);
+static float2 NumberCelSize = float2(5,1) * DigitSize;
 static float2 ImageSize; 
 static float2 NumberImageSize; 
+
+
+
+
+bool IsPointInsideCel(float2 p, float4 cel) {
+     return 
+        p.x >= cel.x
+     && p.x <= cel.x+ cel.z 
+     && p.y >= cel.y
+     && p.y <= cel.y+cel.w;
+}
 
 
 float4 DrawNumber(float4 cel, float number, float scale) 
@@ -56,35 +71,14 @@ float4 DrawNumber(float4 cel, float number, float scale)
         return float4(0,0,0,0);
 
     float celHash = hash12(cel.xy);
-    //return float4(posInCel/10, 0,1);
-    float2 digitSlot = floor(posInCel / NumberSize);
-    float2 pixelInDigit = floor(posInCel % NumberSize)+ 0.5;
-    //return float4(pixelInDigit.xy/4,0,1);
- //   return float4( (posInCel % NumberSize) / NumberSize, 0,1);
-    
- //   float2 posInNumberCel = posInCel - digitSlot * NumberSize;
-
+    float2 digitSlot = floor(posInCel / DigitSize);
+    float2 pixelInDigit = floor(posInCel % DigitSize)+ 0.5;
     float4 imgColor = ImageA.Sample(texSampler, cel.xy/ImageSize);
 
-
-    // float2 hash = hash22(digitSlot + beatTime*0.1);
-    // //float2 value = float2(sin((digitSlot.x + beatTime)*0.1)+ cos(digitSlot.y+beatTime*0.3),1) ;
-    // float value = hash.x*1;
-    // value += digitSlot/10;
-    // value %= 1;
-    
     float value = number;
-    //float digitIndex = digitSlot.x%12;
+
     float digit = floor(value * pow(10+sin(beatTime+celHash) *0.0001,digitSlot.x))%10;
-    //value = pow(10,value* digitSlot6);
-    //float2 digit = float2(digit1, 0);
-
-
-    //float digit = floor(value.x*10%10);
-    //return float4(digit/10,0,0,1);
-
-    float2 numberUv = (float2( digit * NumberSize.x,0) + pixelInDigit) / NumberImageSize;
-    //return float4(numberUv,0,1);
+    float2 numberUv = (float2( digit * DigitSize.x,0) + pixelInDigit) / NumberImageSize;
     float4 numberColor= ImageB.Sample(texSampler, numberUv);
     
     return numberColor * Foreground;
@@ -92,6 +86,61 @@ float4 DrawNumber(float4 cel, float number, float scale)
 }
 
 
+//static float BrightnessOffset= 100;
+
+
+
+float4 DrawCel(float4 cel) 
+{
+    //return float4((P-cel.xy)/cel.zw,0,1);
+    if(!IsPointInsideCel(P, cel))
+        return float4(0,1,0,1);
+
+    float2 pInside = P - cel.xy;
+    // if(pInside.x < 1 || pInside.y < 1)
+    //     return float4(1,0,0,1);
+
+    // Center line
+    if(IsPointInsideCel( P, float4(cel.xy+ cel.zw/2 - float2(0,2), 1,5)))
+        return float4(1,1,1,1);
+
+
+    if(IsPointInsideCel( P, float4(cel.xy+ cel.zw/2 - float2(0,2), 1,5)))
+        return float4(1,1,1,1);
+
+    float2 center = cel.xy+cel.zw/2;
+    float4 celColor = ImageA.Sample(texSampler, center/ImageSize);
+    float4 color = 0;
+
+
+    // Draw Brighness on right
+    float brightness = celColor.r;
+    float width = brightness * BrightnessOffset;
+
+    if(IsPointInsideCel( P, float4(center, width-2,1)))
+        return float4(1,1,1,1);
+
+
+    color+= DrawNumber(
+        float4(
+            center + float2(width,0) - float2(0,2), 
+            NumberCelSize
+        ), brightness * 10, 1);
+
+    // Draw hue
+    float hue = atan2(celColor.r, celColor.g);
+    color+= DrawNumber(
+        float4(
+            center - float2(40,2), 
+            NumberCelSize
+        ), hue, 1);
+
+
+    return color;
+    //return celColor + number;
+
+    return float4(0,0,0,0);
+}
 
 
 
@@ -105,25 +154,11 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     NumberImageSize = float2(width,height);
 
     P = psInput.texCoord * ImageSize;
-    P.y+= beatTime * 100;
 
-    float4 col = ImageA.Sample(texSampler, psInput.texCoord);
-
-    float2 celSize = float2(30,2) * NumberSize;
-    float2 celPos = floor(P/celSize)*celSize;
-    float4 celCol = ImageA.Sample(texSampler, celPos/ImageSize);
-    P +=  float2(sin(beatTime) * 0,0) - float2(celCol.r,0)*100;
-
-    float number = celCol.r*10;
-
-    float2 numberCelSize = float2(10,1) * NumberSize;
-    //float4 cel = float4(floor(P/celSize)*celSize, numberCelSize);
-    float4 cel  = float4(floor(celPos/celSize)*celSize, numberCelSize);
-
+    float2 offset = float2(0, floor(runTime*30));
+    float2 celSize = float2(300,8);
+    float2 celPos = floor((P+offset) /celSize) * celSize-offset;
     
-    float4 numberColor = DrawNumber(cel, number, 2);
-    //return float4(cel.xy/10,0,1);
-
-    return numberColor + col;
-
+    return DrawCel(float4(celPos, celSize))
+            +ImageA.Sample(texSampler, psInput.texCoord);
 }
