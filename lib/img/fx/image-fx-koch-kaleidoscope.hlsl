@@ -39,7 +39,8 @@ struct vsOutput
 
 Texture2D<float4> inputTexture : register(t0);
 sampler texSampler : register(s0);
-
+static float2x2 rotation;
+static float aspect;
 
 float fmod(float x, float y)
 {
@@ -55,19 +56,9 @@ float2x2 rotate2d(float _angle){
                 sin(_angle),cos(_angle));
 }
 
-float4 psMain(vsOutput input) : SV_TARGET
+
+float4 KochKaleidoscope(float2 uv) 
 {
-	float2 curPos = input.texCoord;
-
-    uint width, height;
-    inputTexture.GetDimensions(width, height);
-    float aspect = float(width)/height;
-
-    float2 uv = curPos;
-    float2x2 rotation = rotate2d(Rotate);
-
-    uv-= float2(CenterX, CenterY);    
-    uv.x *= aspect;
     uv =  mul(rotation,uv);
     uv *= Scale;    
     uv.x = abs(uv.x);
@@ -105,14 +96,31 @@ float4 psMain(vsOutput input) : SV_TARGET
     col += smoothstep(1./100, .0, d/scale);
     uv /= scale;	// normalization
     
-    //col += texture(iChannel0, uv*2.-iTime*.03).rgb;
-    
-    //fragColor = float4(col,1.0);
-
     uv.x /=aspect;
     float4 c = inputTexture.Sample(texSampler, uv + float2(OffsetX, OffsetY));
     c.rgb -= foldCount / Steps;    
-    //c.r *= ShadeFolds;
-    //c.g *= ShadeSteps;
-    return c;
+    return c;    
+}
+
+float4 psMain(vsOutput input) : SV_TARGET
+{
+    uint width, height;
+    inputTexture.GetDimensions(width, height);
+    aspect = float(width)/height;
+    //return float4(width/4000.,0, 0,1);
+
+    float2 uv = input.texCoord;
+    rotation = rotate2d(Rotate);
+
+    uv-= float2(CenterX, CenterY);    
+    uv.x *= aspect;
+
+    float strength = .37;
+    float2 offset = float2(strength/(float)width , strength/float(height));
+    return (
+        KochKaleidoscope(uv + offset * float2(1,0))
+        +KochKaleidoscope(uv + offset * float2(-1,0))
+        +KochKaleidoscope(uv + offset * float2(0,1))
+        +KochKaleidoscope(uv + offset * float2(0,-1))        
+    )/4;
 }
