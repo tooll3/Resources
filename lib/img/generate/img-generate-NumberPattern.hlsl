@@ -7,20 +7,20 @@ cbuffer ParamConstants : register(b0)
     float4 Highlight;
     float BrightnessOffset;
 
-    float2 SplitA;
-    float2 SplitB;
-    float2 SplitC;
-    float2 SplitProbability;
-    float2 ScrollSpeed;
-    float2 ScrollProbability;
-    float2 Padding;
-    float Contrast;
-    //float Iterations;
-    float Seed; 
-    float ForegroundRatio;
-    float HighlightProbability;
-    float MixOriginal;
-    float ScrollOffset;
+    // float2 SplitA;
+    // float2 SplitB;
+    // float2 SplitC;
+    // float2 SplitProbability;
+    // float2 ScrollSpeed;
+    // float2 ScrollProbability;
+    // float2 Padding;
+    // float Contrast;
+    // //float Iterations;
+    // float Seed; 
+    // float ForegroundRatio;
+    // float HighlightProbability;
+    // float MixOriginal;
+    // float ScrollOffset;
 }
 
 
@@ -81,7 +81,7 @@ float4 DrawNumber(float4 cel, float number, float scale)
     float2 numberUv = (float2( digit * DigitSize.x,0) + pixelInDigit) / NumberImageSize;
     float4 numberColor= ImageB.Sample(texSampler, numberUv);
     
-    return numberColor * Foreground;
+    return (1-numberColor) * Foreground;
     return float4(digitSlot.xy/10,0,1);
 }
 
@@ -92,13 +92,11 @@ float4 DrawNumber(float4 cel, float number, float scale)
 
 float4 DrawCel(float4 cel) 
 {
-    //return float4((P-cel.xy)/cel.zw,0,1);
     if(!IsPointInsideCel(P, cel))
         return float4(0,1,0,1);
 
+
     float2 pInside = P - cel.xy;
-    // if(pInside.x < 1 || pInside.y < 1)
-    //     return float4(1,0,0,1);
 
     // Center line
     if(IsPointInsideCel( P, float4(cel.xy+ cel.zw/2 - float2(0,2), 1,5)))
@@ -108,6 +106,7 @@ float4 DrawCel(float4 cel)
     if(IsPointInsideCel( P, float4(cel.xy+ cel.zw/2 - float2(0,2), 1,5)))
         return float4(1,1,1,1);
 
+
     float2 center = cel.xy+cel.zw/2;
     float4 celColor = ImageA.Sample(texSampler, center/ImageSize);
     float4 color = 0;
@@ -116,6 +115,7 @@ float4 DrawCel(float4 cel)
     // Draw Brighness on right
     float brightness = celColor.r;
     float width = brightness * BrightnessOffset;
+
 
     if(IsPointInsideCel( P, float4(center, width-2,1)))
         return float4(1,1,1,1);
@@ -129,17 +129,15 @@ float4 DrawCel(float4 cel)
 
     // Draw hue
     float hue = atan2(celColor.r, celColor.g);
+    hue=2342342.2342;
     color+= DrawNumber(
         float4(
             center - float2(40,2), 
             NumberCelSize
         ), hue, 1);
 
-
     return color;
-    //return celColor + number;
-
-    return float4(0,0,0,0);
+    
 }
 
 
@@ -147,6 +145,7 @@ float4 DrawCel(float4 cel)
 float4 psMain(vsOutput psInput) : SV_TARGET
 {   
     uint width, height;
+
     ImageA.GetDimensions(width, height);
     ImageSize = float2(width,height);
 
@@ -160,5 +159,5 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float2 celPos = floor((P+offset) /celSize) * celSize-offset;
     
     return DrawCel(float4(celPos, celSize))
-            +ImageA.Sample(texSampler, psInput.texCoord);
+            +ImageA.Sample(texSampler, psInput.texCoord) * Background;
 }
