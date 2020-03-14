@@ -1,23 +1,15 @@
-// by CandyCat https://www.shadertoy.com/view/4sc3z2
+// This shader is heavily based on a ShaderToy Project by CandyCat https://www.shadertoy.com/view/4sc3z2
 
-//#define Use_Perlin
-//#define Use_Value
 #define Use_Simplex
-
 
 cbuffer ParamConstants : register(b0)
 {
-    // float Scale;
-    // float CenterX;
-    // float CenterY;
-
-    // float OffsetX;
-    // float OffsetY;
-
-    // float Angle;
-    // float AngleOffset;
-    // float Steps;
-    // float Fade;
+    float4 ColorA;
+    float4 ColorB;
+    float2 Offset;
+    float2 Scale;
+    float Evolution;
+    float Bias;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -206,13 +198,17 @@ float noise_sum_abs_sin(float3 p)
 float4 psMain(vsOutput psInput) : SV_TARGET
 {    
 	float2 uv = psInput.texCoord; 
-    float3 pos = float3(uv, beatTime * 0.1);
+    uv-= 0.5;
+    uv*= Scale; 
+    uv+= Offset;
+    float3 pos = float3(uv, Evolution);
     float f = noise_sum_abs(pos);
-    float f2 = noise_sum_abs(pos /2 + float3(1,1,0));
+    float f2 = noise_sum_abs(pos /2 + float3(2,3,0));
     f *= sin(f2)/2 + 0.5;
-    //float f = noise_sum_abs(pos);
-    //float f = noise_itself(pos);
-    //float f = noise_sum(pos);
-    //float3 col = getNoise(p);    
-    return float4(f,f,f, 1.0);
+
+    float fBiased = Bias>= 0 
+        ? pow( f, Bias+1)
+        : 1-pow( clamp(1-f,0,10), -Bias+1);    
+
+    return lerp(ColorA, ColorB, fBiased);
 }
