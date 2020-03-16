@@ -15,8 +15,9 @@ sampler texSampler : register(s0);
 
 float4 psMain(Output input) : SV_TARGET
 {
-    float f = inputTexture.Sample(texSampler, input.texCoord).r;
-    float c2= float4(1,1,1,1);
-    return c2;//input.color * f * c2;
+    float4 texColor = inputTexture.Sample(texSampler, input.texCoord);
+    //float c2= input.color;
+    return texColor * input.color;
+    //return c2;//input.color * f * c2;
     //return float4(1,1,1,1) * Color;
 }
