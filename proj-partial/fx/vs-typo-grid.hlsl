@@ -26,7 +26,9 @@ cbuffer Transforms : register(b0)
 cbuffer Params : register(b1)
 {
     float4 Color;
-    float1 Size;
+    float3 DisplaceAmount;
+    float Size;
+    float Scale;
 };
 
 struct GridEntry
@@ -65,11 +67,13 @@ Output vsMain(uint id: SV_VertexID)
     //texColor = float4(0.5,1,1,1);
 
 
-    float4 worldPquadPos = mul(worldTobject, float4(entry.position,1) + float4( texColor.b * -3, 0,0,0));
-    worldPquadPos.xy += quadPos.xy * entry.size * Size * texColor.g*4;
+    float4 worldPquadPos = mul(worldTobject, float4(entry.position,1) + float4( texColor.b * DisplaceAmount, 1));
+    
+    worldPquadPos.xy += quadPos.xy * entry.size * Size * (1+texColor.g* Scale);
+    
     float4 cameraPquadPos = mul(cameraTworld, worldPquadPos);
     output.position = mul(clipSpaceTcamera, cameraPquadPos);
-    output.position.z = 0;
+    //output.position.z = 0;
     output.color = Color * texColor;
     output.texCoord = (entry.uv + quadPos * float2(0.5, -0.5) + 0.5)/16;
 
