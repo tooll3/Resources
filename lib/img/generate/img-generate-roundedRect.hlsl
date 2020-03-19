@@ -50,7 +50,6 @@ float sdBox( in float2 p, in float2 b )
 float4 psMain(vsOutput psInput) : SV_TARGET
 {    
     float2 p = psInput.texCoord;
-    float4(1,1,0,1);
 
     float4 orgColor = ImageA.Sample(texSampler, psInput.texCoord);
 

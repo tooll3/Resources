@@ -59,6 +59,8 @@ float2x2 rotate2d(float _angle){
 
 float4 KochKaleidoscope(float2 uv) 
 {
+    
+    //uv.x *= 1.77;
     uv =  mul(rotation,uv);
     uv *= Scale;    
     uv.x = abs(uv.x);
@@ -77,6 +79,7 @@ float4 KochKaleidoscope(float2 uv)
     float foldCount = 0;
     n = GetDirection(Angle*(2./3.)*3.1415);
     uv.x += .5;
+
     for(int i=0; i<Steps; i++) {
         uv *= 3.;
         scale *= 3.;
@@ -96,7 +99,7 @@ float4 KochKaleidoscope(float2 uv)
     col += smoothstep(1./100, .0, d/scale);
     uv /= scale;	// normalization
     
-    uv.x /=aspect;
+    //uv.x /=aspect;
     float4 c = inputTexture.Sample(texSampler, uv + float2(OffsetX, OffsetY));
     c.rgb -= foldCount / Steps;    
     return c;    
@@ -106,7 +109,10 @@ float4 psMain(vsOutput input) : SV_TARGET
 {
     uint width, height;
     inputTexture.GetDimensions(width, height);
-    aspect = float(width)/height;
+    //aspect = float(width)/height;
+    //aspect = destination.GetDimenstions(width,height);
+    //float r1 = texture.Width / texture.Height; 
+    aspect =1.77;
     //return float4(width/4000.,0, 0,1);
 
     float2 uv = input.texCoord;
@@ -114,6 +120,9 @@ float4 psMain(vsOutput input) : SV_TARGET
 
     uv-= float2(CenterX, CenterY);    
     uv.x *= aspect;
+
+    //uv.x *= aspect;
+    //uv.x *=2;
 
     float strength = .37;
     float2 offset = float2(strength/(float)width , strength/float(height));
