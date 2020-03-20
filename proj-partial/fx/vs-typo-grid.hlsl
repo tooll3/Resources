@@ -69,7 +69,7 @@ Output vsMain(uint id: SV_VertexID)
 
     float4 worldPquadPos = mul(worldTobject, float4(entry.position,1) + float4( texColor.b * DisplaceAmount, 1));
     
-    worldPquadPos.xy += quadPos.xy * entry.size * Size * (1+texColor.g* Scale);
+    worldPquadPos.xy += quadPos.xy * entry.size * Size * (1+texColor.g* Scale) /2;
     
     float4 cameraPquadPos = mul(cameraTworld, worldPquadPos);
     output.position = mul(clipSpaceTcamera, cameraPquadPos);
