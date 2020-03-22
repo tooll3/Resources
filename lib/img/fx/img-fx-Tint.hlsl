@@ -39,6 +39,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         : 1-pow( 1-t, -Bias+1);
 
     float4 mapped = lerp(MapBlackTo, MapWhiteTo, t); 
-
-    return lerp(c, mapped, Amount);
+    float4 cout = lerp(c, mapped, Amount);
+    cout.a = clamp(cout.a, 0,1);
+    return cout;
 }

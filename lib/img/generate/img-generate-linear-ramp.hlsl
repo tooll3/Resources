@@ -47,5 +47,10 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         c= smoothstep(0,1,c);
     }
 
-    return lerp(Fill, Background, c);
+    float4 cOut= lerp(Fill, Background, c);
+
+    float a = orgColor.a + cOut.a - orgColor.a*cOut.a;
+    float3 rgb = (1.0 - cOut.a)*orgColor.rgb + cOut.a*cOut.rgb;   
+
+    return float4(rgb,a);
 }

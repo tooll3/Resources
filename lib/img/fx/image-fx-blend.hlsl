@@ -32,8 +32,11 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 {    
     float4 tA = ImageA.Sample(texSampler, psInput.texCoord); 
     float4 tB = ImageB.Sample(texSampler, psInput.texCoord);    
+    tA.a = clamp(tA.a, 0,1);
 
-    float a = tA.a + tB.a - tA.a*tB.a;
+    tB.a = clamp(tB.a, 0,1);
+
+    float a = tA.a + tB.a - tA.a*tB.a;    
     float3 rgb = (1.0 - tB.a)*tA.rgb + tB.a*tB.rgb;   
     
     switch( (int)ColorMode) {
