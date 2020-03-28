@@ -32,12 +32,15 @@ cbuffer Params : register(b1)
     float4 Color;
     float3 OverridePosition;
     float OverrideScale;
+    float4 HighlightColor;
 };
 
 struct GridEntry
 {
     float2 gridPos;
     float2 charUv;
+    float highlight;
+    float3 __filldummy;
     //float2 size;
     //float2 __filldummy;
 };
@@ -86,7 +89,7 @@ Output vsMain(uint id: SV_VertexID)
     float4 cameraPquadPos = mul(cameraTworld, worldPquadPos);
     output.position = mul(clipSpaceTcamera, cameraPquadPos);
     //output.position.z = 0;
-    output.color = Color * texColor.rrra;
+    output.color = lerp(Color, HighlightColor, entry.highlight) * texColor.rrra;
     output.texCoord = (entry.charUv + quadPos * float2(0.5, -0.5) + 0.5)/16;
     return output;
 }
