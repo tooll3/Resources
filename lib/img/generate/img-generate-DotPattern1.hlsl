@@ -14,7 +14,7 @@ cbuffer ParamConstants : register(b0)
     float ForegroundRatio;
     float HighlightProbability;
     float MixOriginal;
-    
+    float HighlightSeed;    
 }
 
 
@@ -218,7 +218,8 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         return Background;
     }
     
-    float hashForCel = hash12(cel.xy + float2(Seed, cel.w));
+    float hashForCel = hash12(cel.xy + float2(Seed , cel.w));
+    
     float4 originalColor = ImageA.Sample(texSampler, P);
     float gray = lerp(
                     hashForCel,   
@@ -226,7 +227,8 @@ float4 psMain(vsOutput psInput) : SV_TARGET
                     Contrast);
                     
     float4 color =  lerp(Background, lerp(Foreground, originalColor, MixOriginal), gray);
-    if(hashForCel < HighlightProbability) {
+    float hashForCelHighlight =   hash11(hashForCel+ HighlightSeed);
+    if(hashForCelHighlight < HighlightProbability) {
         color = Highlight;
     }
     return color;
