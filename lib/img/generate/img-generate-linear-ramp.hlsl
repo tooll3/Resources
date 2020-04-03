@@ -7,6 +7,7 @@ cbuffer ParamConstants : register(b0)
     float Rotation;
     float PingPong;
     float Smooth;
+    float Bias;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -47,7 +48,13 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         c= smoothstep(0,1,c);
     }
 
-    float4 cOut= lerp(Fill, Background, c);
+    float dBiased = Bias>= 0 
+        ? pow( c, Bias+1)
+        : 1-pow( clamp(1-c,0,10), -Bias+1);
+
+    //d = smoothstep(Round, Round+Feather, dBiased);
+
+    float4 cOut= lerp(Fill, Background, dBiased);
 
     float a = orgColor.a + cOut.a - orgColor.a*cOut.a;
     float3 rgb = (1.0 - cOut.a)*orgColor.rgb + cOut.a*cOut.rgb;   
