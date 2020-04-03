@@ -67,10 +67,8 @@ Output vsMain(uint id: SV_VertexID)
 
 
     GridEntry entry = GridEntries[entryIndex];
-
-    float4 texColor = displaceTexture.SampleLevel(texSampler, entry.gridPos - (TextOffset.xy * float2(1,-1) % 1) / GridSize, 0);
-    //float4 texColor = displaceTexture.SampleLevel(texSampler, float2(0,0) ,0 );
-    //texColor = float4(0.5,1,1,1);
+    float2 samplePos = float2(0,1)+entry.gridPos * float2(1,-1);
+    float4 texColor = displaceTexture.SampleLevel(texSampler, samplePos - (TextOffset.xy * float2(1,-1) % 1) / GridSize, 0);
 
     float2 centeredGridPos = float2( (entry.gridPos.x - 0.5) * GridSize.x, 
                                     (-0.5 + entry.gridPos.y ) * GridSize.y
@@ -84,7 +82,7 @@ Output vsMain(uint id: SV_VertexID)
 
     float4 worldPquadPos = mul(worldTobject, float4(objectPos.xyz,1));
     
-    worldPquadPos.xy += quadPos.xy * CellSize * (1+texColor.g* OverrideScale) /2;
+    worldPquadPos.xy += quadPos.xy * CellSize *  (1- CellPadding) * (1+texColor.g* OverrideScale) /2;
     
     float4 cameraPquadPos = mul(cameraTworld, worldPquadPos);
     output.position = mul(clipSpaceTcamera, cameraPquadPos);
