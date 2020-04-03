@@ -126,10 +126,12 @@ float4 psMain(vsOutput input) : SV_TARGET
 
     float strength = .37;
     float2 offset = float2(strength/(float)width , strength/float(height));
-    return (
+
+    float4 c= (
         KochKaleidoscope(uv + offset * float2(1,0))
         +KochKaleidoscope(uv + offset * float2(-1,0))
         +KochKaleidoscope(uv + offset * float2(0,1))
         +KochKaleidoscope(uv + offset * float2(0,-1))        
     )/4;
+    return clamp(c, float4(0,0,0,0), float4(1000,1000,1000,1));
 }
