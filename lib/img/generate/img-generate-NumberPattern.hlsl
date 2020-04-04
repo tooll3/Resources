@@ -65,13 +65,13 @@ float4 DrawNumber(float4 cel, float number, float scale)
     float celHash = hash12(cel.xy);
     float2 digitSlot = floor(posInCel / DigitSize);
     float2 pixelInDigit = floor(posInCel % DigitSize)+ 0.5;
-    float4 imgColor = ImageA.Sample(texSampler, cel.xy/ImageSize);
+    float4 imgColor = clamp(ImageA.Sample(texSampler, cel.xy/ImageSize), 0, 1);
 
     float value = number;
 
     float digit = floor(value * pow(10+sin(beatTime+celHash) *0.0001,digitSlot.x))%10;
     float2 numberUv = (float2( digit * DigitSize.x,0) + pixelInDigit) / NumberImageSize;
-    float4 numberColor= ImageB.Sample(texSampler, numberUv);
+    float4 numberColor= clamp(ImageB.Sample(texSampler, numberUv), 0,1);
     
     //return (1-numberColor);
     return float4(1,1,1,1-numberColor.r);
@@ -102,7 +102,7 @@ float4 DrawCel(float4 cel)
 
 
     float2 center = cel.xy+cel.zw/2;
-    float4 celColor = ImageA.Sample(texSampler, center/ImageSize);
+    float4 celColor = ImageA.Sample(texSampler, center/ImageSize + Position);
     float4 color = float4(0,0,0,0);
 
 

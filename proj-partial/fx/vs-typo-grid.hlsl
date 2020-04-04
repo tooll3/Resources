@@ -27,12 +27,16 @@ cbuffer Params : register(b1)
 {
     float2 GridSize;
     float2 CellSize;
+
     float2 CellPadding;
     float2 TextOffset;
     float4 Color;
+
     float3 OverridePosition;
     float OverrideScale;
+
     float4 HighlightColor;
+    float OverrideBrightness;
 };
 
 struct GridEntry
@@ -67,8 +71,12 @@ Output vsMain(uint id: SV_VertexID)
 
 
     GridEntry entry = GridEntries[entryIndex];
-    float2 samplePos = float2(0,1)+entry.gridPos * float2(1,-1);
-    float4 texColor = displaceTexture.SampleLevel(texSampler, samplePos - (TextOffset.xy * float2(1,-1) % 1) / GridSize, 0);
+    float2 samplePos = float2(0,0)+entry.gridPos * float2(1,1);
+    float4 overrideColor = displaceTexture.SampleLevel(texSampler, samplePos - (TextOffset.xy * float2(1,-1) % 1) / GridSize, 0);
+    overrideColor = clamp(overrideColor, 0, float4(1,100,100,1));    
+    float overrideDisplace = overrideColor.b;
+    float overrideScale = overrideColor.g;
+    float overrideBrightness = clamp((overrideColor.r * 0.5 + overrideColor.b * 0.3 + overrideColor.g * 0.2) * overrideColor.a,0,1);
 
     float2 centeredGridPos = float2( (entry.gridPos.x - 0.5) * GridSize.x, 
                                     (-0.5 + entry.gridPos.y ) * GridSize.y
@@ -78,16 +86,16 @@ Output vsMain(uint id: SV_VertexID)
     float3 objectPos =  float3( centeredGridPos * CellSize,0 );
 
     //objectPos += float3(GridSize.x *-0.5, +GridSize.y * 0.5 ,0);
-    objectPos+= float3( texColor.b * OverridePosition);
+    objectPos+= float3( overrideDisplace * OverridePosition);
 
     float4 worldPquadPos = mul(worldTobject, float4(objectPos.xyz,1));
     
-    worldPquadPos.xy += quadPos.xy * CellSize *  (1- CellPadding) * (1+texColor.g* OverrideScale) /2;
+    worldPquadPos.xy += quadPos.xy * CellSize *  (1- CellPadding) * (1+overrideScale* OverrideScale) /2;
     
     float4 cameraPquadPos = mul(cameraTworld, worldPquadPos);
     output.position = mul(clipSpaceTcamera, cameraPquadPos);
     //output.position.z = 0;
-    output.color = lerp(Color, HighlightColor, entry.highlight) * texColor.rrra;
+    output.color = lerp(Color, HighlightColor, entry.highlight) * overrideBrightness;
     output.texCoord = (entry.charUv + quadPos * float2(0.5, -0.5) + 0.5)/16;
     return output;
 }
