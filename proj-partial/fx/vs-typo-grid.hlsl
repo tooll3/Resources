@@ -71,7 +71,8 @@ Output vsMain(uint id: SV_VertexID)
 
 
     GridEntry entry = GridEntries[entryIndex];
-    float2 samplePos = float2(0,0)+entry.gridPos * float2(1,1);
+    float2 samplePos = float2(0,1)+entry.gridPos * float2(1,-1);
+
     float4 overrideColor = displaceTexture.SampleLevel(texSampler, samplePos - (TextOffset.xy * float2(1,-1) % 1) / GridSize, 0);
     overrideColor = clamp(overrideColor, 0, float4(1,100,100,1));    
     float overrideDisplace = overrideColor.b;

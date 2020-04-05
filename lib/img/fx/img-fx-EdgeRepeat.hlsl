@@ -39,9 +39,10 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float2 p = psInput.texCoord;
     p.x *= aspectRatio;
 
-    if( length(p - Center) < 0.01) {
-        return float4(1,1,0,1);
-    }
+    // Show Center
+    // if( length(p - Center) < 0.01) {
+    //     return float4(1,1,0,1);
+    // }
 
     float radians = Rotation / 180 *3.141578;
     float2 angle =  float2(sin(radians),cos(radians));

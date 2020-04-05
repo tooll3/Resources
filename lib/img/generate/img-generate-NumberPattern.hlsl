@@ -12,7 +12,9 @@ cbuffer ParamConstants : register(b0)
     float BrightnessOffset;
     float ScrollOffset;
     float HighlightThreshold;
-
+    float buffer;
+    float ResolutionWidth;
+    float ResolutionHeight;
 }
 
 
@@ -143,8 +145,9 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 {   
     uint width, height;
 
-    ImageA.GetDimensions(width, height);
-    ImageSize = float2(width,height);
+    //ImageA.GetDimensions(width, height);
+    //ImageSize = float2(width,height);
+    ImageSize = float2(ResolutionWidth, ResolutionHeight);
 
     ImageB.GetDimensions(width, height);
     NumberImageSize = float2(width,height);
