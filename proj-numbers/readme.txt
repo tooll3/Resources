@@ -11,8 +11,8 @@ lucid   >> soundtrack
 
 Made with tooll3 developed by cynic and pixtur.
 
-uses imgui, .net4.0, directx, bass, newtonsoft json, sharpdx
-
+uses dear imgui and imgui.net, .net 4.7.2, directx 11 and sharpdx,
+     bass and managed bass, newtonsoft.json, commandline
 
 Comments
 -----------
@@ -37,59 +37,8 @@ to make commercial use of the work
 Under the following conditions:
 Attribution: You must attribute the work with the credits listed above.
 
-
 Requirements
 ------------
-- nvidia/ati graphics card that supports directx 11
-- .net 4.0
-- install directX 9 and directX 11
-- latest driver you can get for your graphics card
-- win7 or win8
+- actual win 10 (developed on 1903)
+- directx 11 compatible gfx-card
 
-
-We need to update the following list
---------
-  >> Adapt
-  >> Alcatraz
-  >> Andromeda
-  >> ASD
-  >> Archee
-  >> Bauknecht
-  >> Black Maiden
-  >> Brain Control
-  >> Brainstorm
-  >> CNCD/Fairlight
-  >> CTRL+ALT+Test
-  >> CLRSRC
-  >> Cocoon
-  >> Conspiracy
-  >> Deranged
-  >> Einklang
-  >> Elude
-  >> Elyssis
-  >> Ephidrena
-  >> Excess
-  >> Farbrausch
-  >> Haujobb
-  >> Holon
-  >> Loonies
-  >> Kakiarts
-  >> Mercury
-  >> MFX
-  >> Neuro
-  >> NoSYS Productions
-  >> Nuance
-  >> Plastic
-  >> Portal Process
-  >> Outracks
-  >> Quite
-  >> Rabenauge
-  >> Rebels
-  >> RGBA
-  >> Scarab
-  >> Stravaganza
-  >> Synesthetics
-  >> TBC
-  >> The Black Lotus
-  >> Tpolm
-  >> Traction
