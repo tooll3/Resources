@@ -46,9 +46,7 @@ vsOutput vsMain(uint vertexId: SV_VertexID)
     vsOutput output;
     float4 quadPos = float4(Quad[vertexId], 1) ;
     float4 size = float4(Width,Height,1,1);
-    float4 worldPquad = mul(worldTobject, float4(Quad[vertexId]*1,1) * size );
-    float4 camPquad = mul(cameraTworld, worldPquad);
-    output.position = mul(clipSpaceTcamera, camPquad); //todo: check why using clipSpaceTobject directly doesn't work
+    output.position = mul(clipSpaceTobject, float4(Quad[vertexId]*1,1) * size);
     output.texCoord = quadPos.xy*float2(0.5, -0.5) + 0.5;
 
     return output;
