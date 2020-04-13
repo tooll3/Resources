@@ -37,7 +37,7 @@ void main(uint3 i : SV_DispatchThreadID)
     Particle particle = Particles[index];
     Point p = PointCloud[i.x];
 
-    particle.position = p.position*10.0;
+    particle.position = p.position;
     particle.lifetime = 10000.0;
     particle.velocity = float3(0,0,0);
     particle.color = p.color;

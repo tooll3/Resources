@@ -32,8 +32,7 @@ cbuffer Params : register(b1)
 struct Output
 {
     float4 position : SV_POSITION;
-    float2 texCoord : TEXCOORD;
-    float4 color : COLOR;
+    float4 mask : MASK;
 };
 
 StructuredBuffer<Particle> Particles : t0;
@@ -50,10 +49,8 @@ Output vsMain(uint id: SV_VertexID)
     float4 cameraPparticleQuadPos = mul(cameraTobject, float4(particle.position,1));
     cameraPparticleQuadPos.xy += quadPos.xy*0.0250;//*6.0;// * size;
     output.position = mul(clipSpaceTcamera, cameraPparticleQuadPos);
-    output.color = particle.color;
-    float lifetime = 1.0 - saturate(particle.lifetime/4.0);
-    float particleType = 7.0/8.0;//float(AliveParticles[particleId] % 8)/8.0;
-    output.texCoord = (quadPos.xy * 0.5 + 0.5)/float2(16.0, 8.0) + float2(floor(lifetime*16.0)/16.0, particleType); 
+    float z = output.position.z;
+    output.mask = clamp(floor(fmod(float4(z, z, z, z) + float4(1.0, 0.75, 0.50, 0.25), float4(1.25, 1.25, 1.25, 1.25))), float4(0, 0, 0, 0), float4(1, 1, 1, 1));
 
     return output;
 }
