@@ -50,9 +50,9 @@ void main(uint3 i : SV_DispatchThreadID)
         uint index = AliveParticles.IncrementCounter();
         AliveParticles[index] = i.x;
 
-        float v2 = curlNoise(Particles[i.x].position*0.105);
+        float v2 = curlNoise(Particles[i.x].position*1.105);
         Particles[i.x].velocity = v2;
-        Particles[i.x].position += (500.0/60.)*v2;
+        Particles[i.x].position += (1.0/60.)*v2;
 
         uint originalValue;
         InterlockedAdd(IndirectArgs[0], 6, originalValue);

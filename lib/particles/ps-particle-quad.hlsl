@@ -1,9 +1,5 @@
-cbuffer ParamConstants : register(b1)
-{
-    float4 Color;
-}
 
-struct Output
+struct Input
 {
     float4 position : SV_POSITION;
     float2 texCoord : TEXCOORD;
@@ -13,7 +9,7 @@ struct Output
 Texture2D<float4> inputTexture : register(t0);
 sampler texSampler : register(s0);
 
-float4 psMain(Output input) : SV_TARGET
+float4 psMain(Input input) : SV_TARGET
 {
     return input.color;
     // float4 texColor = inputTexture.Sample(texSampler, input.texCoord);
