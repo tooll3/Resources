@@ -33,8 +33,10 @@ void main(uint3 i : SV_DispatchThreadID)
     if (i.x >= bufferCount.x)
         return; // no particles available
 
-    float3 emitPosition = float3(fmod(runTime*40.0, 300.0) - 150.0, 0, 0);
-    float3 direction = float3(1, 0, 0);
+    float radius = 15.0;
+    float speed = 1.1;
+    float3 emitPosition = float3(sin(runTime*speed)*radius, fmod(runTime*0.5, 30.0) - 15.0, cos(runTime*speed)*radius);
+    float3 direction = normalize(float3(cos(runTime*speed)*radius, 0, -sin(runTime*speed)*radius));
     int index = DeadParticles.Consume();
         
     Particle particle = Particles[index];
@@ -46,12 +48,12 @@ void main(uint3 i : SV_DispatchThreadID)
     particle.position = emitPosition;//float3(f0*200.0,f1*200.0,f2*200.0);
 
     float f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    particle.lifetime = f0 * 5.0 + 2.0;
+    particle.lifetime = f0 * 5.0 + 15.0;
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     float f1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
     float f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
-    particle.velocity = -direction + float3(f0*10.0, f1*3.0, f2*3.0);
+    particle.velocity = -direction + direction*float3(f0, f1, f2);
     // particle.velocity = float3(0,0,0);
 
     f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
