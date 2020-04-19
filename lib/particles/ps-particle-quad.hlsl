@@ -28,6 +28,7 @@ cbuffer ShadowTransforms : register(b1)
 
 
 Texture2D<float4> ShadowMap : register(t0); // opacity shadow map
+Texture2D<float4> inputTexture : register(t1);
 sampler texSampler : register(s0);
 
 struct Input
@@ -38,28 +39,32 @@ struct Input
     float4 world_P : POSITION;
 };
 
-// Texture2D<float4> inputTexture : register(t0);
-// sampler texSampler : register(s0);
-
 float4 psMain(Input input) : SV_TARGET
 {
-    float4 color = input.color;
+    // float4 color = input.color;
 
     float4 scsPparticlePos = mul(shadow_clipSpaceTworld, input.world_P);
     scsPparticlePos.xyz /= scsPparticlePos.w;
     scsPparticlePos.xy = scsPparticlePos.xy*0.5 + 0.5;
     scsPparticlePos.y = 1.0-scsPparticlePos.y;
-    float sz = scsPparticlePos.z;
-    // float4 color = float4(0.75,0.6,0.4,1);
+    float sz = scsPparticlePos.z - 0.25;
+    float4 color = float4(1,1,1,1);
+    // color = inputTexture.Sample(texSampler, input.texCoord);
     float4 om = ShadowMap.SampleLevel(texSampler, scsPparticlePos.xy, 0);
     float4 mask0 = saturate((float4(sz,sz,sz,sz) - float4(0.00, 0.25, 0.50, 0.75)) * 4.0);
     om *= mask0;
     // om *= 0.25;
-    float occlusion = 1.0 - saturate(om.x + om.y + om.z + om.w);
-    // occlusion = 1.0 - om.w;
-    color.rgb = occlusion;
+    float occlusion = saturate((om.x + om.y + om.z + om.w)/1.0);
+    // color.rgba = lerp(float4(0.8,0,0.8,1), float4(0.1,0.1,0.1,1), occlusion);
+    occlusion = 1.0 - occlusion;
+    color.rgb *= occlusion;
     // color.a = 0.5;
     // color.rgb = om;
+    float2 xy = 2.0 * input.texCoord - float2(1,1);
+    float r2 = dot(xy, xy);
+    float opacity = exp2(-r2 * 5.0)*5;
+    color.a = opacity;
+    // color.a = 0.5;
 
     return color;
 }

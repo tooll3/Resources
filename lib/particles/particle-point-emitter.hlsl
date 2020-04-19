@@ -33,7 +33,7 @@ void main(uint3 i : SV_DispatchThreadID)
     if (i.x >= bufferCount.x)
         return; // no particles available
 
-    float radius = 15.0;
+    float radius = 5.0;
     float speed = 1.1;
     float3 emitPosition = float3(sin(runTime*speed)*radius, fmod(runTime*0.5, 30.0) - 15.0, cos(runTime*speed)*radius);
     float3 direction = normalize(float3(cos(runTime*speed)*radius, 0, -sin(runTime*speed)*radius));

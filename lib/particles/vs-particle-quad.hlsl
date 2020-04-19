@@ -82,8 +82,8 @@ Output vsMain(uint id: SV_VertexID)
     // // output.color.a = 0.5;
     float lifetime = 0.0;//1.0 - occlusion;//1.0 - saturate(particle.lifetime/14.0);
     float particleType = 7.0/8.0;//float(AliveParticles[particleId] % 8)/8.0;
-    output.texCoord = (quadPos.xy * 0.5 + 0.5)/float2(16.0, 8.0) + float2(floor(lifetime*16.0)/16.0, particleType); 
-    // output.texCoord = (quadPos.xy * 0.5 + 0.5);
+    // output.texCoord = (quadPos.xy * 0.5 + 0.5)/float2(16.0, 8.0) + float2(floor(lifetime*16.0)/16.0, particleType); 
+    output.texCoord = (quadPos.xy * 0.5 + 0.5);
 
     return output;
 }
