@@ -1,15 +1,7 @@
 
 #include "particle.hlsl"
 
-cbuffer TimeConstants : register(b0)
-{
-    float globalTime;
-    float time;
-    float runTime;
-    float dummy;
-}
-
-cbuffer CountConstants : register(b1)
+cbuffer CountConstants : register(b0)
 {
     int4 bufferCount;
 }
