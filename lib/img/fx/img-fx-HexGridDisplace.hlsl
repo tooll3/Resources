@@ -2,14 +2,13 @@ cbuffer ParamConstants : register(b0)
 {
     float4 Fill;
     float4 Background;
-    float4 LineColor;
-    float2 Center;
-    float Scale;
-    float ImageScale;
-    float PingPong;
-    float LineThickness;
-    float Smooth;
-    float Bias;
+    float2 Offset;
+    float Divisions;
+    float LineThickness;    
+    // float ImageDivisions;
+    // float PingPong;
+    // float Smooth;
+    // float Bias;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -82,18 +81,27 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 {    
     float aspectRatio = TargetWidth/TargetHeight;
     float2 p = psInput.texCoord;
-    p.x *= 1.777;
-    p *=2;
-    float2 uv = p;
-    float3 col = float3(0,0,0);
-    uv *= Scale;    
-    float4 hc = HexCoords(uv);    
+    float2 cellOffset = Offset/ Divisions;
 
-    float value = sin(hc.z*hc.w+beatTime );
+    p.x /= aspectRatio;
+    p += cellOffset;
+    p-= float2(0.5, 0.5);
+    p *= Divisions;
+
+    float3 col = float3(0,0,0);
+    float4 hc = HexCoords(p);    
+    float2 uv = (hc.zw /Divisions  + 0.5 - cellOffset)* float2(aspectRatio,1);
+
+    float4 orgColor = ImageA.Sample(texSampler, uv);
+    //return orgColor;
+
+    //float value = sin(hc.z*hc.w+beatTime );
     
-    float4 orgColor = ImageA.Sample(texSampler, hc.zw * ImageScale);
-    value = orgColor.g /4;
-    float c = smoothstep(.001, .015, hc.y * value) * (1-value*4);    
+    //return float4(hc.zw/10,0,1);
+
+    //float4 orgColor = ImageA.Sample(texSampler, hc.zw * ImageDivisions);
+    float value = 0.3-orgColor.rgb /3;
+    float c = smoothstep(.001, LineThickness / 100, hc.y * value) * (1-value*4);    
     col = lerp(Background, Fill,c);
     return float4(col,1.0);
 }
