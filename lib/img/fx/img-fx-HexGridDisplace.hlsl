@@ -5,6 +5,7 @@ cbuffer ParamConstants : register(b0)
     float2 Offset;
     float Divisions;
     float LineThickness;    
+    float MixOriginal;
     // float ImageDivisions;
     // float PingPong;
     // float Smooth;
@@ -32,6 +33,7 @@ struct vsOutput
 };
 
 Texture2D<float4> ImageA : register(t0);
+Texture2D<float> Effects : register(t1);
 sampler texSampler : register(s0);
 
 //#define mod(x, y) (x - y * floor(x / y))
@@ -79,6 +81,10 @@ float4 HexCoords(float2 uv) {
 
 float4 psMain(vsOutput psInput) : SV_TARGET
 {    
+    //float4 orgColor2 = ImageA.Sample(texSampler, psInput.texCoord);
+    //return float4(orgColor2.r,0,0,1);
+
+
     float aspectRatio = TargetWidth/TargetHeight;
     float2 p = psInput.texCoord;
     float2 cellOffset = Offset/ Divisions;
@@ -88,20 +94,30 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     p-= float2(0.5, 0.5);
     p *= Divisions;
 
-    float3 col = float3(0,0,0);
+    float4 col = float4(0,0,0,0);
     float4 hc = HexCoords(p);    
     float2 uv = (hc.zw /Divisions  + 0.5 - cellOffset)* float2(aspectRatio,1);
 
     float4 orgColor = ImageA.Sample(texSampler, uv);
+    //return float4(orgColor.r,0,0,1);
     //return orgColor;
 
-    //float value = sin(hc.z*hc.w+beatTime );
+    //float value = sin(hc.z*hc.w+globalTime );
     
     //return float4(hc.zw/10,0,1);
 
     //float4 orgColor = ImageA.Sample(texSampler, hc.zw * ImageDivisions);
-    float value = 0.3-orgColor.rgb /3;
+    float value = (orgColor.r +orgColor.g + orgColor.b)  /3;
+
+    //float xxx = Effects.Sample(texSampler, float2(hc.y,0));
+
+    //value = Effects.Sample(texSampler, value) / 100;
+    //float yyy = Effects.Sample(texSampler, float2(value,0));
+
+    float4 orgColorWithDisplacement = ImageA.Sample(texSampler, uv - 0.1 );
     float c = smoothstep(.001, LineThickness / 100, hc.y * value) * (1-value*4);    
     col = lerp(Background, Fill,c);
-    return float4(col,1.0);
+    //col = lerp(col, orgColorWithDisplacement, MixOriginal);
+    return float4(col);
+
 }
