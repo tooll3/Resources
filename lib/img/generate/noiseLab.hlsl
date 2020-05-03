@@ -201,7 +201,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     uv-= 0.5;
     uv*= Scale; 
     uv+= Offset;
-    float3 pos = float3(uv, Evolution);
+    float3 pos = float3(uv, Evolution/10);
     float f = noise_sum_abs(pos);
     float f2 = noise_sum_abs(pos /2 + float3(2,3,0));
     f *= sin(f2)/2 + 0.5;

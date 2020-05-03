@@ -6,10 +6,7 @@ cbuffer ParamConstants : register(b0)
     float Divisions;
     float LineThickness;    
     float MixOriginal;
-    // float ImageDivisions;
-    // float PingPong;
-    // float Smooth;
-    // float Bias;
+    float Rotation;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -47,7 +44,7 @@ float2 mod(float2 x, float2 y) {
     return (x - y * floor(x / y));
 } 
 
-// "ShaderToy Tutorial - Hexagonal Tiling" 
+// Based on "ShaderToy Tutorial - Hexagonal Tiling" 
 // by Martijn Steinrucken aka BigWings/CountFrolic - 2019
 // License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 //
@@ -78,12 +75,9 @@ float4 HexCoords(float2 uv) {
     return float4(x, y, id.x,id.y);
 }
 
-
 float4 psMain(vsOutput psInput) : SV_TARGET
 {    
-    //float4 orgColor2 = ImageA.Sample(texSampler, psInput.texCoord);
-    //return float4(orgColor2.r,0,0,1);
-
+    float angle = Rotation * 3.141578 / 180;
 
     float aspectRatio = TargetWidth/TargetHeight;
     float2 p = psInput.texCoord;
@@ -91,33 +85,46 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 
     p.x /= aspectRatio;
     p += cellOffset;
+
     p-= float2(0.5, 0.5);
+
+    float sina = sin(angle);
+    float cosa = cos(angle);
+
+    p = float2(
+        cosa * p.x - sina * p.y,
+        cosa * p.y + sina * p.x 
+    );
+    
+
     p *= Divisions;
 
     float4 col = float4(0,0,0,0);
     float4 hc = HexCoords(p);    
-    float2 uv = (hc.zw /Divisions  + 0.5 - cellOffset)* float2(aspectRatio,1);
+
+    float sinBackA = sin(-angle);
+    float cosBackA = cos(-angle);
+
+    float2 uv = (hc.zw /Divisions  + 0.5 - cellOffset); 
+    uv -= (0.5 - Offset / Divisions);
+    uv = float2(
+        cosBackA * uv.x - sinBackA * uv.y,
+        cosBackA * uv.y + sinBackA * uv.x 
+    );
+    uv += (0.5- Offset / Divisions);
+    uv *=  float2(aspectRatio,1);
 
     float4 orgColor = ImageA.Sample(texSampler, uv);
-    //return float4(orgColor.r,0,0,1);
-    //return orgColor;
+    float value = length(orgColor.rgb);
 
-    //float value = sin(hc.z*hc.w+globalTime );
-    
-    //return float4(hc.zw/10,0,1);
+    float edgeEffect = Effects.Sample(texSampler, float2(value,0.75)) ;
+    value = Effects.Sample(texSampler, float2(value,0)) ;
 
-    //float4 orgColor = ImageA.Sample(texSampler, hc.zw * ImageDivisions);
-    float value = (orgColor.r +orgColor.g + orgColor.b)  /3;
-
-    //float xxx = Effects.Sample(texSampler, float2(hc.y,0));
-
-    //value = Effects.Sample(texSampler, value) / 100;
-    //float yyy = Effects.Sample(texSampler, float2(value,0));
-
-    float4 orgColorWithDisplacement = ImageA.Sample(texSampler, uv - 0.1 );
-    float c = smoothstep(.001, LineThickness / 100, hc.y * value) * (1-value*4);    
+    float c = smoothstep(.001, LineThickness / 100 + edgeEffect, hc.y * value ) * (value);   
+    c = clamp(c,0,1); 
     col = lerp(Background, Fill,c);
-    //col = lerp(col, orgColorWithDisplacement, MixOriginal);
-    return float4(col);
 
+    float4 orgColorWithDisplacement = ImageA.Sample(texSampler, uv );
+    col = lerp(col, orgColorWithDisplacement, MixOriginal);
+    return float4(col);
 }
