@@ -1,29 +1,29 @@
 cbuffer Transforms : register(b0)
 {
-    float4x4 clipSpaceTcamera;
-    float4x4 cameraTclipSpace;
-    float4x4 cameraTworld;
-    float4x4 worldTcamera;
-    float4x4 clipSpaceTworld;
-    float4x4 worldTclipSpace;
-    float4x4 worldTobject;
-    float4x4 objectTworld;
-    float4x4 cameraTobject;
-    float4x4 clipSpaceTobject;
+    float4x4 CameraToClipSpace;
+    float4x4 ClipSpaceToCamera;
+    float4x4 WorldToCamera;
+    float4x4 CameraToWorld;
+    float4x4 WorldToClipSpace;
+    float4x4 ClipSpaceToWorld;
+    float4x4 ObjectToWorld;
+    float4x4 WorldToObject;
+    float4x4 ObjectToCamera;
+    float4x4 ObjectToClipSpace;
 };
 
 cbuffer ShadowTransforms : register(b1)
 {
-    float4x4 shadow_clipSpaceTcamera;
-    float4x4 shadow_cameraTclipSpace;
-    float4x4 shadow_cameraTworld;
-    float4x4 shadow_worldTcamera;
-    float4x4 shadow_clipSpaceTworld;
-    float4x4 shadow_worldTclipSpace;
-    float4x4 shadow_worldTobject;
-    float4x4 shadow_objectTworld;
-    float4x4 shadow_ameraTobject;
-    float4x4 shadow_clipSpaceTobject;
+    float4x4 Shadow_CameraToClipSpace;
+    float4x4 Shadow_ClipSpaceToCamera;
+    float4x4 Shadow_WorldToCamera;
+    float4x4 Shadow_CameraToWorld;
+    float4x4 Shadow_WorldToClipSpace;
+    float4x4 Shadow_ClipSpaceToWorld;
+    float4x4 Shadow_ObjectToWorld;
+    float4x4 Shadow_WorldToObject;
+    float4x4 Shadow_ObjectToCamera;
+    float4x4 Shadow_ObjectToClipSpace;
 };
 
 
@@ -38,7 +38,7 @@ struct Input
     float4 position : SV_POSITION;
     float2 texCoord : TEXCOORD;
     float4 color : COLOR;
-    float4 world_P : POSITION;
+    float4 posInWorld : POSITION;
 };
 
 float getOcclusion(Texture2D<float4> shadowMap, float2 uv, float z)
@@ -55,17 +55,17 @@ float getOcclusion(Texture2D<float4> shadowMap, float2 uv, float z)
 
 float4 psMain(Input input) : SV_TARGET
 {
-    float4 scsPparticlePos = mul(shadow_clipSpaceTworld, input.world_P);
-    scsPparticlePos.xyz /= scsPparticlePos.w;
-    scsPparticlePos.xy = scsPparticlePos.xy*0.5 + 0.5;
-    scsPparticlePos.y = 1.0 - scsPparticlePos.y;
-    float sz = scsPparticlePos.z - 0.25*0.25; // 4 textures with 4 channels, so 1/16 slice offset
+    float4 particleInClipSpace = mul(input.posInWorld, Shadow_WorldToClipSpace);
+    particleInClipSpace.xyz /= particleInClipSpace.w;
+    particleInClipSpace.xy = particleInClipSpace.xy*0.5 + 0.5;
+    particleInClipSpace.y = 1.0 - particleInClipSpace.y;
+    float sz = particleInClipSpace.z - 0.25*0.25; // 4 textures with 4 channels, so 1/16 slice offset
 
     float occlusion = 0.0;
-    occlusion += getOcclusion(ShadowMap0, scsPparticlePos.xy, clamp(scsPparticlePos.z, 0, 0.25)*4.0);
-    occlusion += getOcclusion(ShadowMap1, scsPparticlePos.xy, 4.0*(clamp(scsPparticlePos.z, 0.25, 0.5) - 0.25));
-    occlusion += getOcclusion(ShadowMap2, scsPparticlePos.xy, 4.0*(clamp(scsPparticlePos.z, 0.5, 0.75) - 0.5));
-    occlusion += getOcclusion(ShadowMap3, scsPparticlePos.xy, 4.0*(clamp(scsPparticlePos.z, 0.75, 1.0) - 0.75));
+    occlusion += getOcclusion(ShadowMap0, particleInClipSpace.xy, clamp(particleInClipSpace.z, 0, 0.25)*4.0);
+    occlusion += getOcclusion(ShadowMap1, particleInClipSpace.xy, 4.0*(clamp(particleInClipSpace.z, 0.25, 0.5) - 0.25));
+    occlusion += getOcclusion(ShadowMap2, particleInClipSpace.xy, 4.0*(clamp(particleInClipSpace.z, 0.5, 0.75) - 0.5));
+    occlusion += getOcclusion(ShadowMap3, particleInClipSpace.xy, 4.0*(clamp(particleInClipSpace.z, 0.75, 1.0) - 0.75));
     occlusion *= 0.25;
     occlusion = 1.0 - saturate(occlusion);
 

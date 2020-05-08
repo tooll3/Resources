@@ -12,16 +12,16 @@ static const float3 Quad[] =
 
 cbuffer Transforms : register(b0)
 {
-    float4x4 clipSpaceTcamera;
-    float4x4 cameraTclipSpace;
-    float4x4 cameraTworld;
-    float4x4 worldTcamera;
-    float4x4 clipSpaceTworld;
-    float4x4 worldTclipSpace;
-    float4x4 worldTobject;
-    float4x4 objectTworld;
-    float4x4 cameraTobject;
-    float4x4 clipSpaceTobject;
+    float4x4 CameraToClipSpace;
+    float4x4 ClipSpaceToCamera;
+    float4x4 WorldToCamera;
+    float4x4 CameraToWorld;
+    float4x4 WorldToClipSpace;
+    float4x4 ClipSpaceToWorld;
+    float4x4 ObjectToWorld;
+    float4x4 WorldToObject;
+    float4x4 ObjectToCamera;
+    float4x4 ObjectToClipSpace;
 };
 
 cbuffer Params : register(b1)
@@ -51,8 +51,8 @@ vsOutput vsMain(uint vertexId: SV_VertexID)
 {
     vsOutput output;
     float2 quadVertex = Quad[vertexId].xy;
-    float2 object_P_quadVertex = quadVertex * float2(Width, Height);
-    output.position = mul(clipSpaceTobject, float4(object_P_quadVertex, 0, 1));
+    float2 quadVertexInObject = quadVertex * float2(Width, Height);
+    output.position = mul(float4(quadVertexInObject, 0, 1), ObjectToClipSpace);
     output.texCoord = quadVertex*float2(0.5, -0.5) + 0.5;
 
     return output;

@@ -8,16 +8,16 @@ cbuffer CountConstants : register(b0)
 
 cbuffer Transforms : register(b1)
 {
-    float4x4 clipSpace_T_camera;
-    float4x4 camera_T_clipSpace;
-    float4x4 camera_T_world;
-    float4x4 world_T_camera;
-    float4x4 clipSpace_T_world;
-    float4x4 world_T_clipSpace;
-    float4x4 world_T_object;
-    float4x4 object_T_world;
-    float4x4 camera_T_object;
-    float4x4 clipSpace_T_object;
+    float4x4 CameraToClipSpace;
+    float4x4 ClipSpaceToCamera;
+    float4x4 WorldToCamera;
+    float4x4 CameraToWorld;
+    float4x4 WorldToClipSpace;
+    float4x4 ClipSpaceToWorld;
+    float4x4 ObjectToWorld;
+    float4x4 WorldToObject;
+    float4x4 ObjectToCamera;
+    float4x4 ObjectToClipSpace;
 };
 
 struct Point

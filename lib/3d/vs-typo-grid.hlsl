@@ -11,16 +11,16 @@ static const float3 Quad[] =
 
 cbuffer Transforms : register(b0)
 {
-    float4x4 clipSpaceTcamera;
-    float4x4 cameraTclipSpace;
-    float4x4 cameraTworld;
-    float4x4 worldTcamera;
-    float4x4 clipSpaceTworld;
-    float4x4 worldTclipSpace;
-    float4x4 worldTobject;
-    float4x4 objectTworld;
-    float4x4 cameraTobject;
-    float4x4 clipSpaceTobject;
+    float4x4 CameraToClipSpace;
+    float4x4 ClipSpaceToCamera;
+    float4x4 WorldToCamera;
+    float4x4 CameraToWorld;
+    float4x4 WorldToClipSpace;
+    float4x4 ClipSpaceToWorld;
+    float4x4 ObjectToWorld;
+    float4x4 WorldToObject;
+    float4x4 ObjectToCamera;
+    float4x4 ObjectToClipSpace;
 };
 
 cbuffer Params : register(b1)
@@ -84,17 +84,17 @@ Output vsMain(uint id: SV_VertexID)
                                 );
     centeredGridPos.xy +=  TextOffset.xy * float2(-1,1) % 1;
 
-    float3 objectPos =  float3( centeredGridPos * CellSize,0 );
+    float3 posInObject =  float3( centeredGridPos * CellSize,0 );
 
     //objectPos += float3(GridSize.x *-0.5, +GridSize.y * 0.5 ,0);
-    objectPos+= float3( overrideDisplace * OverridePosition);
+    posInObject+= float3( overrideDisplace * OverridePosition);
 
-    float4 worldPquadPos = mul(worldTobject, float4(objectPos.xyz,1));
+    float4 quadPosInWorld = mul(float4(posInObject.xyz,1), ObjectToWorld);
     
-    worldPquadPos.xy += quadPos.xy * CellSize *  (1- CellPadding) * (1+overrideScale* OverrideScale) /2;
+    quadPosInWorld.xy += quadPos.xy * CellSize *  (1- CellPadding) * (1+overrideScale* OverrideScale) /2;
     
-    float4 cameraPquadPos = mul(cameraTworld, worldPquadPos);
-    output.position = mul(clipSpaceTcamera, cameraPquadPos);
+    float4 quadPosInCamera = mul(quadPosInWorld, WorldToCamera);
+    output.position = mul(quadPosInCamera, CameraToClipSpac3);
     //output.position.z = 0;
     output.color = lerp(Color, HighlightColor, entry.highlight) * overrideBrightness;
     output.texCoord = (entry.charUv + quadPos * float2(0.5, -0.5) + 0.5)/16;

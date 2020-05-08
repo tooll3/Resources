@@ -12,16 +12,16 @@ static const float3 Quad[] =
 
 cbuffer Transforms : register(b0)
 {
-    float4x4 clipSpaceTcamera;
-    float4x4 cameraTclipSpace;
-    float4x4 cameraTworld;
-    float4x4 worldTcamera;
-    float4x4 clipSpaceTworld;
-    float4x4 worldTclipSpace;
-    float4x4 worldTobject;
-    float4x4 objectTworld;
-    float4x4 cameraTobject;
-    float4x4 clipSpaceTobject;
+    float4x4 CameraToClipSpace;
+    float4x4 ClipSpaceToCamera;
+    float4x4 WorldToCamera;
+    float4x4 CameraToWorld;
+    float4x4 WorldToClipSpace;
+    float4x4 ClipSpaceToWorld;
+    float4x4 ObjectToWorld;
+    float4x4 WorldToObject;
+    float4x4 ObjectToCamera;
+    float4x4 ObjectToClipSpace;
 };
 
 cbuffer Params : register(b1)
@@ -50,9 +50,9 @@ Output vsMain(uint id: SV_VertexID)
     int particleId = id / 6;
     float3 quadPos = Quad[quadIndex];
     Particle particle = Particles[AliveParticles[particleId]];
-    float4 cameraPparticleQuadPos = mul(cameraTobject, float4(particle.position,1));
-    cameraPparticleQuadPos.xy += quadPos.xy*0.250;//*6.0;// * size;
-    output.position = mul(clipSpaceTcamera, cameraPparticleQuadPos);
+    float4 particleQuadPosInCamera = mul(float4(particle.position,1), ObjectToCamera);
+    particleQuadPosInCamera.xy += quadPos.xy*0.250;//*6.0;// * size;
+    output.position = mul(particleQuadPosInCamera, CameraToClipSpace);
     float z = output.position.z;
     if (z < 0.25)
     {
