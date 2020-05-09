@@ -94,7 +94,7 @@ Output vsMain(uint id: SV_VertexID)
     quadPosInWorld.xy += quadPos.xy * CellSize *  (1- CellPadding) * (1+overrideScale* OverrideScale) /2;
     
     float4 quadPosInCamera = mul(quadPosInWorld, WorldToCamera);
-    output.position = mul(quadPosInCamera, CameraToClipSpac3);
+    output.position = mul(quadPosInCamera, CameraToClipSpace);
     //output.position.z = 0;
     output.color = lerp(Color, HighlightColor, entry.highlight) * overrideBrightness;
     output.texCoord = (entry.charUv + quadPos * float2(0.5, -0.5) + 0.5)/16;
