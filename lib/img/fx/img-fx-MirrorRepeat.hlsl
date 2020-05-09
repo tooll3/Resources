@@ -46,9 +46,9 @@ float4 psMain(vsOutput psInput) : SV_TARGET
      
     float aspectRatio = TargetWidth/TargetHeight;
     float2 p = psInput.texCoord;
-    p.x /= aspectRatio;
+    p.x *= aspectRatio;
 
-    p-= float2(0.5 / aspectRatio, 0.5);
+    p-= float2(0.5 * aspectRatio, 0.5);
 
 
 
