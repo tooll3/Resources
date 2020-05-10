@@ -65,7 +65,7 @@ Output vsMain(uint id: SV_VertexID)
     output.position = mul(quadPosInCamera, CameraToClipSpace);
     output.world_P = mul(float4(particle.position, 1), ObjectToWorld);
 
-    output.color = float4(1,1,1,1);//particle.color;
+    output.color = particle.color;
     output.texCoord = (quadPos.xy * 0.5 + 0.5);
 
     return output;
