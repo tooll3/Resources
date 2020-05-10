@@ -68,7 +68,7 @@ void main(uint3 i : SV_DispatchThreadID)
     float v = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     float4 color = inputTexture.SampleLevel(linearSampler, float2(u, v), 0);
 
-    float2 size = float2(20.0, 15.0);
+    float2 size = float2(1.0, 1.0);
     float4 posInObject = float4((u - 0.5)*size.x, (v - 0.5)*size.y, 0, 1);
     particle.position = mul(posInObject, ObjectToWorld);
     particle.lifetime = 5.0;//LifeTime;
