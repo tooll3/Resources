@@ -53,7 +53,7 @@ uint wang_hash(in out uint seed)
     return seed;
 }
 
-[numthreads(1,1,1)]
+[numthreads(9,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
     if (i.x >= BufferCount.x)

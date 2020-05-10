@@ -71,7 +71,7 @@ float4 psMain(Input input) : SV_TARGET
 
     float4 color = input.color;
     color.rgb *= occlusion;
-    color.a = 0.2;
+    // color.a = 0.2;
 
     return color;
 }
