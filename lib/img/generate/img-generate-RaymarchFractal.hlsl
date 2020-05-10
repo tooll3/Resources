@@ -1,37 +1,33 @@
 cbuffer ParamConstants : register (b0)
 {
-    float4 Fill;
-    // float4 Background;
-    float2 Size;
-    float2 Position;
-    float Round;
-    float Feather;
-    float GradientBias;
-
-    float Minrad;
-    float Scale;
-    float3 Clamping;
-    float2 Fold;
-    float3 Increment;
     float MaxSteps;
     float StepSize;
     float MinDistance;
     float MaxDistance;
-    float DistToColor;
+
+    float Minrad;
+    float Scale;
+    float2 Fold;
+
+    float3 Clamping;
+    float1 __align1__;
+    float3 Increment;
+    float1 __align2__;    
+
     float4 Surface1;
     float4 Surface2;
     float4 Surface3;
-    float4 Diffuse;
     float4 Specular;
-    float2 Spec;
     float4 Glow;
     float4 AmbientOcclusion;
-    float AODistance;
     float4 Background;
+
+    float2 Spec;
+    float AODistance;
     float Fog;
+
     float3 LightPos;
-    float3 SpherePos;
-    float SphereRadius;
+    float DistToColor;
 }
 
 cbuffer TimeConstants : register (b1)
@@ -42,18 +38,18 @@ cbuffer TimeConstants : register (b1)
     float beatTime;
 }
 
-cbuffer Transforms : register (b0)
+cbuffer Transforms : register(b0)
 {
-    float4x4 clipSpaceTcamera;
-    float4x4 cameraTclipSpace;
-    float4x4 cameraTworld;
-    float4x4 worldTcamera;
-    float4x4 clipSpaceTworld;
-    float4x4 worldTclipSpace;
-    float4x4 worldTobject;
-    float4x4 objectTworld;
-    float4x4 cameraTobject;
-    float4x4 clipSpaceTobject;
+    float4x4 CameraToClipSpace;
+    float4x4 ClipSpaceToCamera;
+    float4x4 WorldToCamera;
+    float4x4 CameraToWorld;
+    float4x4 WorldToClipSpace;
+    float4x4 ClipSpaceToWorld;
+    float4x4 ObjectToWorld;
+    float4x4 WorldToObject;
+    float4x4 ObjectToCamera;
+    float4x4 ObjectToClipSpace;
 };
 
 //>>> _common parameters
@@ -64,16 +60,59 @@ Texture2D txDiffuse;
 float2 RenderTargetSize;
 //<<< _common parameters
 
-float4x4 ViewToWorld;
 
 struct vsOutput
 {
     float4 position : SV_POSITION;
     float2 texCoord : TEXCOORD;
+    float3 worldTViewDir : TEXCOORD1;
+    float3 worldTViewPos : TEXCOORD2;
 };
+
+static const float3 Quad[] = 
+{
+  float3(-1, -1, 0),
+  float3( 1, -1, 0), 
+  float3( 1,  1, 0), 
+  float3( 1,  1, 0), 
+  float3(-1,  1, 0), 
+  float3(-1, -1, 0), 
+};
+
 
 Texture2D<float4> ImageA : register (t0);
 sampler texSampler : register (s0);
+
+
+vsOutput vsMain4(uint vertexId: SV_VertexID)
+{
+    vsOutput output;
+    float4 quadPos = float4(Quad[vertexId], 1) ;
+    float2 texCoord = quadPos.xy*float2(0.5, -0.5) + 0.5;
+    output.texCoord = texCoord;
+    output.position = quadPos;
+    float4x4 ViewToWorld = ClipSpaceToWorld;// CameraToWorld ;
+
+    float4 viewTNearFragPos = float4 (texCoord.x * 2.0 - 1.0, -texCoord.y * 2.0 + 1.0, 0.0, 1.0);
+    float4 worldTNearFragPos = mul (viewTNearFragPos, ViewToWorld);
+    worldTNearFragPos /= worldTNearFragPos.w;
+
+    float4 viewTFarFragPos = float4 (texCoord.x * 2.0 - 1.0, -texCoord.y * 2.0 + 1.0, 1.0, 1.0);
+    float4 worldTFarFragPos = mul (viewTFarFragPos, ViewToWorld);
+    worldTFarFragPos /= worldTFarFragPos.w;
+
+    output.worldTViewDir = normalize (worldTFarFragPos.xyz - worldTNearFragPos.xyz);
+
+    output.worldTViewPos = worldTNearFragPos.xyz;
+    return output;
+
+
+    return output; 
+}
+
+
+
+
 
 #define mod (x, y) (x - y * floor (x / y))
 
@@ -85,10 +124,7 @@ float sdBox (in float2 p, in float2 b)
         0.0);
 }
 
-float4 psMain (vsOutput psInput) : SV_TARGET
-{
-    return float4 (1, 1, 0, 1);
-}
+
 
 //>>> setup
 SamplerState samLinear
@@ -115,44 +151,16 @@ struct PS_IN
 };
 //<<< declarations
 
-
-PS_IN VS (VS_IN input)
-{
-    PS_IN output = (PS_IN) 0;
-    input.pos = mul (input.pos, objectToWorldMatrix);
-    output.pos = mul (input.pos, worldToCameraMatrix);
-    output.pos = mul (output.pos, projMatrix);
-    output.texCoord = input.texCoord;
-
-    float4 viewTNearFragPos = float4 (input.texCoord.x * 2.0 - 1.0, -input.texCoord.y * 2.0 + 1.0, 0.0, 1.0);
-    float4 worldTNearFragPos = mul (viewTNearFragPos, ViewToWorld);
-    worldTNearFragPos /= worldTNearFragPos.w;
-
-    float4 viewTFarFragPos = float4 (input.texCoord.x * 2.0 - 1.0, -input.texCoord.y * 2.0 + 1.0, 1.0, 1.0);
-    float4 worldTFarFragPos = mul (viewTFarFragPos, ViewToWorld);
-    worldTFarFragPos /= worldTFarFragPos.w;
-
-    output.worldTViewDir = normalize (worldTFarFragPos.xyz - worldTNearFragPos.xyz);
-
-    output.worldTViewPos = worldTNearFragPos;
-    return output;
-}
-
-
-float sphereD (float3 p0)
-{
-    return length (p0 + float4 (SpherePos.xyz, 1)) - SphereRadius;
-}
-
-
-float BOX_RADIUS = 0.005;
+static float BOX_RADIUS = 0.005;
 float dBox (float3 p, float3 b)
 {
     return length (max (abs (p) - b + float3 (BOX_RADIUS, BOX_RADIUS, BOX_RADIUS), 0.0)) - BOX_RADIUS;
 }
 
 
-int mandelBoxIterations = 4;
+static int mandelBoxIterations = 7;
+
+
 
 float dMandelbox (float3 pos)
 {
@@ -186,11 +194,18 @@ float dMandelbox (float3 pos)
     return d;
 }
 
+
+
+//---------------------------------------
 float getDistance (float3 p)
 {
-    float d = dMandelbox (p);
+    float d= dMandelbox(p);
     return d;
+    
+    //d= max(dBox( p + float3(SpherePos.x - SpherePos.y , 0,0), float3(SpherePos.y,3,3)), dLogo );
+    return max(d, dBox( p + float3(0,0,0), float3(2,0.5,2)) );
 }
+//---------------------------------------------------
 
 // Blinn-Phong shading model with rim lighting (diffuse light bleeding to the other side).
 // |normal|, |view| and |light| should be normalized.
@@ -199,7 +214,7 @@ float3 blinn_phong (float3 normal, float3 view, float3 light, float3 diffuseColo
     float3 halfLV = normalize (light + view);
     float spe = pow (max (dot (normal, halfLV), Spec.x), Spec.y);
     float dif = dot (normal, light) * 0.1 + 0.15;
-    return dif * diffuseColor + spe * Specular;
+    return dif * diffuseColor + spe * Specular.rgb;
 }
 
 float3 getNormal (float3 p, float offset)
@@ -223,12 +238,12 @@ float getAO (float3 aoposition, float3 aonormal, float aodistance, float aoitera
     return 1.0 - k * ao;
 }
 
-float MAX_DIST = 300;
+static float MAX_DIST = 300;
 
 
 // Compute the color at |pos|.
 float3 computeColor(float3 pos)
-{
+{   
     float3 p = pos, p0 = p;
     float trap = 1.0;
 
@@ -244,18 +259,16 @@ float3 computeColor(float3 pos)
     // |c.y|: spherical orbit trap at (0,0,0)
     float2 c = clamp (float2 (0.33 * log (dot (p, p)) - 1.0, sqrt (trap)), 0.0, 1.0);
 
-    return lerp (lerp (Surface1, Surface2, c.y), Surface3, c.x);
+    return lerp (lerp (Surface1.xyz, Surface2.xyz, c.y), Surface3.xyz, c.x);
 }
 
 
-
-float4 PS (PS_IN input) : SV_Target
+float4 psMain (vsOutput input) : SV_TARGET
 {
-
-    //float4 filter= Image2.Sample(samLinear, input.texCoord);
     float3 p = input.worldTViewPos;
+    float3 tmpP= p;
     float3 dp = normalize (input.worldTViewDir);
-
+ 
     float totalD = 0.0;
     float D = 3.4e38;
     D = StepSize;
@@ -264,7 +277,7 @@ float4 PS (PS_IN input) : SV_Target
     int steps;
 
     // Simple iterator
-    for (steps = 0; steps < MaxSteps && abs (D) > MinDistance / 1000; steps++)
+    for (steps = 0; steps < MaxSteps && abs (D) > MinDistance; steps++)
     {
         D = getDistance (p);
         p += dp * D;
@@ -272,8 +285,9 @@ float4 PS (PS_IN input) : SV_Target
 
     p += totalD * dp;
 
+
     // Color the surface with Blinn-Phong shading, ambient occlusion and glow.
-    float3 col = Background;
+    float3 col = Background.rgb;
     float a = 1;
 
     // We've got a hit or we're not sure.
@@ -285,26 +299,25 @@ float4 PS (PS_IN input) : SV_Target
         col = computeColor(p);
         col = blinn_phong (n, -dp, LightPos, col);
 
-        col = lerp (AmbientOcclusion, col, getAO (p, n, AODistance, 3, AmbientOcclusion.a));
+        col = lerp (AmbientOcclusion.rgb, col, getAO (p, n, AODistance, 3, AmbientOcclusion.a));
 
         // We've gone through all steps, but we haven't hit anything.
         // Mix in the background color.
         if (D > MinDistance)
         {
             a = 1 - clamp (log (D / MinDistance) * DistToColor, 0.0, 1.0);
-            col = lerp (col, Background, a);
+            col = lerp (col, Background.rgb, a);
         }
     }
     else
     {
-        a = 0;
+        a = 0.5;
     }
 
     // Glow is based on the number of steps.
-    col = lerp (col, Glow, float (steps) / float (MaxSteps) * Glow.a);
+    col = lerp (col, Glow.rgb, float (steps) / float (MaxSteps) * Glow.a);
     float f = clamp (log (length (p - input.worldTViewPos) / Fog), 0, 1);
-    col = lerp (col, Background, f);
+    col = lerp (col, Background.rgb, f);
     a *= (1 - f * Background.a);
     return float4 (col, a);
-
 }
