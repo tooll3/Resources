@@ -53,7 +53,7 @@ uint wang_hash(in out uint seed)
     return seed;
 }
 
-[numthreads(9,1,1)]
+[numthreads(6,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
     if (i.x >= BufferCount.x)
@@ -66,13 +66,16 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float u = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     float v = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    float4 color = inputTexture.SampleLevel(linearSampler, float2(u, v), 0);
 
     float2 size = float2(1.0, 1.0);
     float4 posInObject = float4((u - 0.5)*size.x, (v - 0.5)*size.y, 0, 1);
     particle.position = mul(posInObject, ObjectToWorld);
     particle.lifetime = 5.0;//LifeTime;
     particle.velocity = float3(0,0,0);
+    float s = 25.0;
+    u = fmod(abs(particle.position.x), s)/s;
+    v = fmod(abs(particle.position.z), s)/s;
+    float4 color = inputTexture.SampleLevel(linearSampler, float2(u, v), 0);
     particle.color = color;//float4(1,0,0,1);
 
     Particles[index] = particle;    

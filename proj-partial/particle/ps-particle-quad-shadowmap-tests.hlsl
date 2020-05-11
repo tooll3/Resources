@@ -78,16 +78,16 @@ float4 psMain(Input input) : SV_TARGET
     occlusion = 1.0 - saturate(occlusion);
 
     // simple diffuse light
-    float3 lightPosInWorld = float3(cos(RunTime)*15.0, 15.0, sin(RunTime)*15.0);
-    float3 dir = (lightPosInWorld - input.posInWorld.xyz);
-    float dist = length(dir);
-    dir /= dist;
-    float diffuse = saturate(dot(dir, float3(0,1,0)));
-    occlusion *= diffuse;
+    // float3 lightPosInWorld = float3(cos(RunTime)*15.0, 15.0, sin(RunTime)*15.0);
+    // float3 dir = (lightPosInWorld - input.posInWorld.xyz);
+    // float dist = length(dir);
+    // dir /= dist;
+    // float diffuse = saturate(dot(dir, float3(0,1,0)));
+    // occlusion *= diffuse;
 
-float3 lightColor = float3(1,1,1)*190.0;
+// float3 lightColor = float3(1,1,1)*190.0;
     float4 color = input.color;
-    color.rgb *= lightColor/(dist*dist);
+    // color.rgb *= lightColor/(dist*dist);
     // color = float4(dir, 1);
     // color = float4(diffuse, diffuse, diffuse, 1);
     color.rgb *= occlusion;
