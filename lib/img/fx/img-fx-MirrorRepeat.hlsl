@@ -62,9 +62,9 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     
 
     // Show Center
-    if( length(p - Center) < 0.01) {
-        return float4(1,1,0,1);
-    }
+    // if( length(p - Center) < 0.01) {
+    //     return float4(1,1,0,1);
+    // }
 
     float mirrorRotationRad =(+ RotateImage  - 90 ) / 180 *3.141578;
     float2 angle =  float2(sin(mirrorRotationRad),cos(mirrorRotationRad));
