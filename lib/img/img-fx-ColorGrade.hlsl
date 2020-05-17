@@ -62,7 +62,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     //c.rgb = clamp(c.rgb, 0.000001,1000);
         
 
-    c.a = a;
+    c.a = clamp(a,0,1);
     
 	//outputTexture[i.xy] = c;
     return c; 
