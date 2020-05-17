@@ -36,12 +36,14 @@ sampler texSampler : register(s0);
 sampler texSamplerPoint : register(s1);
 
 //static float2 Divisions = float2(100,100);
+#define mod(x,y) (x-y*floor(x/y))
 
 float4 psMain(vsOutput psInput) : SV_TARGET
 {    
     //return float4(1,1,0,1);
     float aspectRatio = TargetWidth/TargetHeight;
     float2 p = psInput.texCoord;
+    p-= 0.5;
     float2 fontCharWidth = FontCharSize; 
     p+= Offset / fontCharWidth;
     //return float4(TargetWidth/ 6 / 1000,0,0,1);
@@ -51,8 +53,9 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     //return float4(1,1,0,1);
 
     float2 p1 = p;//- float2(0.5/TargetWidth, 0.5/TargetHeight);
-    float2 pInCell = p1 % float2( 1/divisions.x, 1/divisions.y);
-    float2 cellTiles = (p1 - pInCell) - Offset / fontCharWidth;
+    float2 gridSize = float2( 1/divisions.x, 1/divisions.y);
+    float2 pInCell = mod(p1, gridSize);
+    float2 cellTiles = (p1 - pInCell + 0.5) - Offset / fontCharWidth;
 
     pInCell *= divisions;
 
