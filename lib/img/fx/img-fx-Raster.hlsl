@@ -75,7 +75,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 
     // Compute raster cells
     float2 divisions = float2(TargetWidth / Size.x, TargetHeight / Size.y) / ScaleFactor;
-    float2 p1 = p+Offset/divisions;
+    float2 p1 = p+Offset * float2(-1,1)/divisions;
     float2 pInCell = mod(p1, float2( 1/divisions.x, 1/divisions.y));
     
     float dotSize = DotSize;

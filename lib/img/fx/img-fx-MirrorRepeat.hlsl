@@ -42,7 +42,7 @@ float mod(float x, float y) {
 float4 psMain(vsOutput psInput) : SV_TARGET
 {   
 
-    float rotateScreenRad = ( + RotateMirror + RotateImage - 90) / 180 *3.141578;
+    float rotateScreenRad = ( - RotateMirror + RotateImage - 90) / 180 *3.141578;
      
     float aspectRatio = TargetWidth/TargetHeight;
     float2 p = psInput.texCoord;

@@ -84,7 +84,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 
     float4 colorFromRamp= RampImageA.Sample(texSampler, float2(rampColor,0.5/2));
 
-
+    
     float4 colorFromEdge= RampImageA.Sample(texSampler, float2(sAndC.y -0 / 255 , 1.5/2));
     //return float4( sAndC, 0,1);
 

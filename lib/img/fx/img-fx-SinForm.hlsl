@@ -77,7 +77,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     for(int i=0; i < copiesCount; i++) {
         pp.y = p.y+ sin(
                 pp.x / Size.x * PI2/2 
-                + Offset.x * PI2 
+                + Offset.x/2 * PI2 
                 +  OffsetCopies.x * PI2 * i
                 ) * Size.y/2 + Offset.y + OffsetCopies.y *i;
 
