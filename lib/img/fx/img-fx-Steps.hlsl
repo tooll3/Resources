@@ -4,12 +4,14 @@ cbuffer ParamConstants : register(b0)
     float Bias;
     float Offset;
     float SmoothRadius;
+    float4 Highlight;
+    float HighlightIndex;
     
-    float2 OffsetImage;
-    float __dummy__;
-    float ShadeAmount;
-    float4 ShadeColor;
-    float2 Center;
+    // float2 OffsetImage;
+    // float __dummy__;
+    // float ShadeAmount;
+    // float4 ShadeColor;
+    // float2 Center;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -40,32 +42,31 @@ float mod(float x, float y) {
     return (x - y * floor(x / y));
 } 
 
+;
 
-float2 calcStepAndOffset(float4 orgColor) {
-    float cOrg = (orgColor.r + orgColor.g + orgColor.b)/3;
+float3 calcStepAndOffset(float4 orgColor) {
+    float cOrg = clamp((orgColor.r + orgColor.g + orgColor.b)/3, 0.001,1);
+    
     float cBiased = Bias>= 0 
         ? pow( cOrg, Bias+1)
         : 1-pow( clamp(1-cOrg,0,10), -Bias+1);  
 
-    float rest = mod( cBiased + Offset/Steps, 1/Steps);
+    //cBiased = cOrg;// abs(Bias) < 0.01 ? cOrg :cBiased;
+    float tmp = cBiased + Offset/Steps;
+    float rest = mod( tmp, 1./Steps);
     float step = cBiased-rest;
-   // step-= pow(rest*Steps,6)*0.1;
-
-    // if(cOrg > 1 - 1/Steps)
-    //     step = 1;
-        
-    return float2(step, rest*Steps);
+    return float3(step, rest*Steps, cBiased);
 } 
 
 float4 psMain(vsOutput psInput) : SV_TARGET
 {   
+    //return Highlight;
+
     float2 p = psInput.texCoord;
-    
-    //float4 orgColor= ImageA.Sample(texSampler, p);
-
     float2 res= float2(0.5/TargetWidth, 0.5/TargetHeight) * SmoothRadius;
+    static float smoothExtremes = 0.5/ Steps;
 
-    float2 sAndC=(
+    float3 sAndC=(
         calcStepAndOffset(ImageA.Sample(texSampler, p+res * float2(0,0)))*1
         +calcStepAndOffset(ImageA.Sample(texSampler, p+res * float2(1,1)))
         +calcStepAndOffset(ImageA.Sample(texSampler, p +res * float2(1,-1)))
@@ -73,28 +74,27 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         +calcStepAndOffset(ImageA.Sample(texSampler, p +res * float2(-1,-1)))
     )/5;
 
-
-    //
-    //float c = sAndC.y *(1- sAndC.x);  
     
-    //return float4(sAndC,0,1);
 
-    float rampColor = mod( 1  - sAndC.x - Offset/Steps,1);
-
-
-    float4 colorFromRamp= RampImageA.Sample(texSampler, float2(rampColor,0.5/2));
-
+    float rampColor = mod( (1.0001  - sAndC.x - Offset/Steps),1);
     
-    float4 colorFromEdge= RampImageA.Sample(texSampler, float2(sAndC.y -0 / 255 , 1.5/2));
-    //return float4( sAndC, 0,1);
+    float extremeDarks = saturate( (sAndC.z ) * Steps + 1/Steps );
+    float extremeBright = saturate( (1-sAndC.z+ 0.5/Steps ) * Steps);
+    float extremes = extremeDarks * extremeBright;
+
+    float4 colorFromRamp= RampImageA.Sample(texSampler, float2(rampColor,0.5/2));    
+    if((int)(rampColor * Steps) == (int)(HighlightIndex % Steps) ) {
+        colorFromRamp.rgb = lerp(colorFromRamp.rgb, Highlight.rgb, Highlight.a);
+    }
+
+    //float edgePos = 
+    float4 colorFromEdge= RampImageA.Sample(texSampler, float2(sAndC.y* extremes , 1.5/2));
+
+    // float4 colorFromRampB= RampImageA.Sample(texSampler, float2(rampColor ,0.5/2));    
+    // float4 colorFromEdgeB= RampImageA.Sample(texSampler, float2(sAndC.y -0 / 255 , 1.5/2));
+
 
     float a = clamp(colorFromRamp.a + colorFromEdge.a - colorFromRamp.a*colorFromEdge.a, 0,1);
     float3 rgb = (1.0 - colorFromEdge.a)*colorFromRamp.rgb + colorFromEdge.a*colorFromEdge.rgb;   
     return float4(rgb,a);
-
-    // return colorFromRamp + colorFromEdge;
-
-    // return float4(c,c,c,1);
-
-
 }

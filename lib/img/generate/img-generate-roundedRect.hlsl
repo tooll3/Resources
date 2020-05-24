@@ -51,20 +51,22 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     p.x *= aspectRatio;
     p.x += 0.5;
 
-    float4 orgColor = ImageA.Sample(texSampler, psInput.texCoord);
 
     p  = p -0.5;
     p-=Position * float2(1,-1);
     
     float d = sdBox(p, Size/2);
     
+
+    d = smoothstep(Round/2 - Feather/4, Round/2 + Feather/4, d);
+
     float dBiased = GradientBias>= 0 
         ? pow( d, GradientBias+1)
         : 1-pow( clamp(1-d,0,10), -GradientBias+1);
 
-    d = smoothstep(Round/2 - Feather/4, Round/2 + Feather/4, dBiased);
-    float4 c= lerp(Fill, Background,  d);
+    float4 c= lerp(Fill, Background,  dBiased);
 
+    float4 orgColor = ImageA.Sample(texSampler, psInput.texCoord);
     float a = clamp(orgColor.a + c.a - orgColor.a*c.a, 0,1);
     float3 rgb = (1.0 - c.a)*orgColor.rgb + c.a*c.rgb;   
     return float4(rgb,a);
