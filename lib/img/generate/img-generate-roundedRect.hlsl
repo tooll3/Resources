@@ -56,7 +56,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     p  = p -0.5;
     p-=Position * float2(1,-1);
     
-    float d = sdBox(p, Size);
+    float d = sdBox(p, Size/2);
     
     float dBiased = GradientBias>= 0 
         ? pow( d, GradientBias+1)

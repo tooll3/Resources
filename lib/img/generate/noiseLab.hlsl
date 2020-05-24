@@ -20,6 +20,12 @@ cbuffer TimeConstants : register(b1)
     float beatTime;
 }
 
+cbuffer Resolution : register(b2)
+{
+    float TargetWidth;
+    float TargetHeight;
+}
+
 struct vsOutput
 {
     float4 position : SV_POSITION;
@@ -196,11 +202,13 @@ float noise_sum_abs_sin(float3 p)
 
 
 float4 psMain(vsOutput psInput) : SV_TARGET
-{    
-	float2 uv = psInput.texCoord; 
+{   
+    float aspectRatio = TargetWidth/TargetHeight; 
+	float2 uv = psInput.texCoord;     
     uv-= 0.5;
-    uv*= Scale; 
-    uv+= Offset;
+    uv/= Scale; 
+    uv+= Offset * float2(-1 / aspectRatio,1);
+    uv.x*= aspectRatio;
     float3 pos = float3(uv, Evolution/10);
     float f = noise_sum_abs(pos);
     float f2 = noise_sum_abs(pos /2 + float3(2,3,0));

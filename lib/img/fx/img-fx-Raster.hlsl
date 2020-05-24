@@ -51,7 +51,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     
     //return float4(MixOriginal, 0,0,1);
 
-    float aspectRation = TargetWidth/TargetHeight;
+    float aspectRatio = TargetWidth/TargetHeight;
     float2 p = uv;
     p-= 0.5;
     
@@ -59,19 +59,18 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 
     // Rotate
     float imageRotationRad = (-Rotate - 90) / 180 *3.141578;     
-    float aspectRatio = TargetWidth/TargetHeight;
 
     float sina = sin(-imageRotationRad - 3.141578/2);
     float cosa = cos(-imageRotationRad - 3.141578/2);
 
-    p.x *=aspectRation;
+    p.x *=aspectRatio;
 
     p = float2(
         cosa * p.x - sina * p.y,
         cosa * p.y + sina * p.x 
     );
 
-    p.x /=aspectRation;
+    p.x /=aspectRatio;
 
     // Compute raster cells
     float2 divisions = float2(TargetWidth / Size.x, TargetHeight / Size.y) / ScaleFactor;
@@ -94,12 +93,12 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         float sina2 = sin(-(-imageRotationRad  - 3.141578/2));
         float cosa2 = cos(-(-imageRotationRad - 3.141578/2));
 
-        pCel.x*= aspectRation;
+        pCel.x*= aspectRatio;
         pCel = float2(
             cosa2 * pCel.x - sina2 * pCel.y,
             cosa2 * pCel.y + sina2 * pCel.x 
         );
-        pCel.x /= aspectRation;
+        pCel.x /= aspectRatio;
         pCel += 0.5;
 
         float4 imgColorForCel = inputTexture.SampleLevel(texSampler, pCel , 0.0);
