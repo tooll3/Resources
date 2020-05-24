@@ -39,6 +39,7 @@ Texture2D<float4> ShadowMap0 : register(t0); // opacity shadow map
 Texture2D<float4> ShadowMap1 : register(t1); // opacity shadow map
 Texture2D<float4> ShadowMap2 : register(t2); // opacity shadow map
 Texture2D<float4> ShadowMap3 : register(t3); // opacity shadow map
+Texture2D<float4> ColorMap : register(t4); 
 sampler texSampler : register(s0);
 
 struct Input
@@ -86,7 +87,9 @@ float4 psMain(Input input) : SV_TARGET
     // occlusion *= diffuse;
 
 // float3 lightColor = float3(1,1,1)*190.0;
-    float4 color = input.color;
+    float4 color = input.color * ColorMap.Sample(texSampler, input.texCoord);
+    if (color.a < 0.85)
+        discard;
     // color.rgb *= lightColor/(dist*dist);
     // color = float4(dir, 1);
     // color = float4(diffuse, diffuse, diffuse, 1);
