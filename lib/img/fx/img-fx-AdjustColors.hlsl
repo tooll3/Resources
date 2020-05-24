@@ -80,7 +80,14 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     c.rgb = clamp( c.rgb, 0.000001,1000);
     
 
+
+
     float3 hsb = rgb2hsb(c.rgb);
+
+    // Vignette
+    float distanceFromCenter = length(float2(0.5,0.5) - uv) * Vignette;
+    hsb.z *= saturate(1-distanceFromCenter);
+
     hsb.z *= Exposure;
 
 
@@ -99,9 +106,13 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 
     // Adjust saturation
     hsb.y = saturate(hsb.y * Saturation);
-    
+
+
+
     // Prevent clamping (tone mapping)
     float power = 6;
+
+
 
     float clampingBlendRange = clamp( PreventClamping.x, 0.001,1);
     if(hsb.z*2 > 1-clampingBlendRange) {
@@ -122,21 +133,16 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         hsb.z = fixedHsb.z;
     }
 
+
     hsb.z = SCurve( saturate(hsb.z*2) , Contrast+1,1 )/2;
     hsb.z= Brightness > 0 
         ? lerp(hsb.z,1, Brightness  ) 
         :lerp(0,hsb.z, Brightness+1 ) ;
 
 
-    // Vignette
-    float distanceFromCenter = length(float2(0.5,0.5) - uv) * Vignette;
-    hsb.z *= 1-distanceFromCenter;
-
 
     hsb.z = clamp(hsb.z, 0,1);
     c.rgb= hsb2rgb(hsb);
-
-//return float4(hsb2rgb(hsb), a);
 
     if(Colorize.a > 0) {
         float t = (c.r + c.g + c.b) /3 + 0.0001;
@@ -155,6 +161,11 @@ float4 psMain(vsOutput psInput) : SV_TARGET
             c.rgb = lerp(c.rgb, mapped, Colorize.a);
         }
     }   
+
+
+//return float4(hsb2rgb(hsb), a);
+
+
 
     c.rgb = clamp(c.rgb, 0.000001,1000);
     c.a = clamp(a,0,1);

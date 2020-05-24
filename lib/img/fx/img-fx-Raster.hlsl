@@ -48,6 +48,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 {
     float2 uv = psInput.texCoord;
     float4 orgColor = inputTexture.SampleLevel(texSampler, uv, 0.0);
+    
     //return float4(MixOriginal, 0,0,1);
 
     float aspectRation = TargetWidth/TargetHeight;
@@ -129,14 +130,15 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     
     col+= line2;
 
+    col = saturate(col);
     float4 c = lerp(Background, Fill, col );
     //col = 1-col;
 
     //return float4(col,col,col,1);
 
-    float a = clamp(orgColor.a * saturate(MixOriginal) + c.a - orgColor.a * saturate(MixOriginal)*c.a, 0,1);
-    float3 rgb = (1.0 - c.a)*orgColor.rgb + c.a*c.rgb;   
-    return float4(rgb,a);
+    float a = orgColor.a * saturate(MixOriginal) + c.a - orgColor.a * saturate(MixOriginal)*c.a;
+    float3 rgb = (1.0 - c.a)* clamp(orgColor.rgb,0,1) + c.a* c.rgb;   
+    return float4(clamp(rgb,0,10), clamp(a,0,1));
 
     // c.rgb = clamp(c.rgb, 0.000001,1000);
     // c.a = clamp(c.a,0,1);
