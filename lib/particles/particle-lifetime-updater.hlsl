@@ -1,11 +1,28 @@
 #include "particle.hlsl"
+#include "noise-functions.hlsl"
 
 cbuffer TimeConstants : register(b0)
 {
-    float globalTime;
-    float time;
-    float2 dummy;
+    float GlobalTime;
+    float Time;
+    float RunTime;
+    float BeatTime;
 }
+
+cbuffer Transforms : register(b1)
+{
+    float4x4 CameraToClipSpace;
+    float4x4 ClipSpaceToCamera;
+    float4x4 WorldToCamera;
+    float4x4 CameraToWorld;
+    float4x4 WorldToClipSpace;
+    float4x4 ClipSpaceToWorld;
+    float4x4 ObjectToWorld;
+    float4x4 WorldToObject;
+    float4x4 ObjectToCamera;
+    float4x4 ObjectToClipSpace;
+};
+
 
 RWStructuredBuffer<Particle> Particles : u0;
 RWStructuredBuffer<int> AliveParticles : u1;
@@ -39,7 +56,25 @@ void main(uint3 i : SV_DispatchThreadID)
     {
         uint index = AliveParticles.IncrementCounter();
         AliveParticles[index] = i.x;
-        Particles[i.x].position += (1.0/60.)*Particles[i.x].velocity;
+        // float3 camPosInWorld = CameraToWorld[3].xyz;
+        // float3 attractorInWorld = camPosInWorld + float3(0, -1, 4);
+        float3 attractorInWorld = float3(cos(BeatTime)*20.0, 0, sin(BeatTime)*20.0);
+        float3 dir = attractorInWorld - Particles[i.x].position;
+        float distToAttractor = dot(dir, dir);
+        float3 Fa = (distToAttractor < 110.0) ? dir*1150.0 / distToAttractor : float3(0,0,0);
+        // Fa *= 0.0;
+
+        float3 Fg = float3(0, -10, 0);
+        float3 Fc = curlNoise(Particles[i.x].position*0.14)*10.0;
+        Fc *= 0.0;
+        float3 F = Fc + Fa + Fg;
+        float3 a = F / Particles[i.x].mass;
+        float delta = (1.0/60.0);
+        float3 v = a*delta;
+        float3 s = v*delta;
+        Particles[i.x].velocity = v;
+        // s += ;
+        Particles[i.x].position += s;
         uint originalValue;
         InterlockedAdd(IndirectArgs[0], 6, originalValue);
     }
