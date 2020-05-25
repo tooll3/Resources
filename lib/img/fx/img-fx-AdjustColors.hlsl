@@ -5,6 +5,7 @@ sampler texSampler : register(s0);
 cbuffer ParamConstants : register(b0)
 {
     float4 Colorize;
+    float4 Background;
     float Exposure;
     float Contrast;
     float Saturation;
@@ -163,11 +164,13 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     }   
 
 
-//return float4(hsb2rgb(hsb), a);
+    // c.rgb = clamp(c.rgb, 0.000001,1000);
+    // c.a = clamp(a,0,1);
+    // return c; 
 
+    //float4 orgColor = ImageA.Sample(texSampler, psInput.texCoord);
+    float a2 = clamp(Background.a + c.a - Background.a*c.a, 0,1);
+    float3 rgb2 = clamp((1.0 - c.a)*Background.rgb + c.a*c.rgb, 0.00001, 100);   
+    return float4(rgb2, a2);
 
-
-    c.rgb = clamp(c.rgb, 0.000001,1000);
-    c.a = clamp(a,0,1);
-    return c; 
 }

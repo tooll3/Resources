@@ -50,6 +50,9 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     DisplaceMap.GetDimensions(displaceMapWidth, displaceMapHeight);
 
     float2 uv = psInput.texCoord;
+
+    //return float4(smoothstep(DisplaceAmount, DisplaceAmount, uv.x*10), 0,0,1);
+
     //float4 ccc = Image.Sample(texSampler, uv);
 
 
@@ -94,9 +97,9 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float2 direction = float2( sin(a), cos(a));
 
     float len = length(d);
-    float4 cc= Image.Sample(texSampler, -direction * len*3 + 0.5);
-    cc.rgb *= (1-len*Shade*100);
-    return cc;
+    // float4 cc= Image.Sample(texSampler, -direction * len*3 + 0.5);
+    // cc.rgb *= (1-len*Shade*100);
+    //return cc;
 
 
     float2 p2 = direction * (-DisplaceAmount * len * 10 + DisplaceOffset);// * float2(height/ height, 1);
