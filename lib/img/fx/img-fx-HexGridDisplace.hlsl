@@ -76,46 +76,86 @@ float4 HexCoords(float2 uv) {
 }
 
 float4 psMain(vsOutput psInput) : SV_TARGET
-{    
-    float angle = Rotation * 3.141578 / 180;
-
+{   
+    float2 uv = psInput.texCoord;
     float aspectRatio = TargetWidth/TargetHeight;
+    float2 divisions = float2(Divisions * aspectRatio, Divisions);
     float2 p = psInput.texCoord;
     float2 cellOffset = Offset/ Divisions;
+    
+    
+    p-= 0.5;
 
-    p.x /= aspectRatio;
     p += cellOffset;
+    
 
-    p-= float2(0.5, 0.5);
+    // float sina = sin(angle);
+    // float cosa = cos(angle);
 
-    float sina = sin(angle);
-    float cosa = cos(angle);
+    // p = float2(
+    //     cosa * p.x - sina * p.y,
+    //     cosa * p.y + sina * p.x 
+    // );
+
+    // Rotate
+    float imageRotationRad = (-Rotation - 90) / 180 *3.141578;     
+
+    float sina = sin(-imageRotationRad - 3.141578/2);
+    float cosa = cos(-imageRotationRad - 3.141578/2);
+
+    p.x *=aspectRatio;
 
     p = float2(
         cosa * p.x - sina * p.y,
         cosa * p.y + sina * p.x 
     );
-    
 
-    p *= Divisions;
+    p.x /=aspectRatio;
+
+
+    p *= divisions;
 
     float4 col = float4(0,0,0,0);
     float4 hc = HexCoords(p);    
 
-    float sinBackA = sin(-angle);
-    float cosBackA = cos(-angle);
+    // float sinBackA = sin(-angle);
+    // float cosBackA = cos(-angle);
 
-    float2 uv = (hc.zw /Divisions  + 0.5 - cellOffset); 
-    uv -= (0.5 - Offset / Divisions);
-    uv = float2(
-        cosBackA * uv.x - sinBackA * uv.y,
-        cosBackA * uv.y + sinBackA * uv.x 
+    // float2 uv = (hc.zw /Divisions  + 0.5 - cellOffset); 
+    // uv -= (0.5 - Offset / Divisions);
+    // uv = float2(
+    //     cosBackA * uv.x - sinBackA * uv.y,
+    //     cosBackA * uv.y + sinBackA * uv.x 
+    // );
+    // uv += (0.5- Offset / Divisions);
+    // uv *=  float2(aspectRatio,1);
+
+
+    //return float4(hc.zw,0,1);
+    // float2 p1 = hc.xy+Offset * float2(-1,1)/divisions;
+    // float2 gridSize = float2( 1/divisions.x, 1/divisions.y);
+    // float2 pShifted  = p1 -  gridSize/2;
+    // float2 pInCell2 = mod(pShifted, gridSize);
+    //return float4(pInCell2,0,1);
+
+    //float2 pCel= p.xy-pInCell2 + gridSize/2;
+    float2 pCel = (hc.zw + Offset) / divisions;
+    float sina2 = sin(-(-imageRotationRad  - 3.141578/2));
+    float cosa2 = cos(-(-imageRotationRad - 3.141578/2));
+
+    pCel.x*= aspectRatio;
+    pCel = float2(
+        cosa2 * pCel.x - sina2 * pCel.y,
+        cosa2 * pCel.y + sina2 * pCel.x 
     );
-    uv += (0.5- Offset / Divisions);
-    uv *=  float2(aspectRatio,1);
+    pCel.x /= aspectRatio;
+    pCel += 0.5;
 
-    float4 orgColor = ImageA.Sample(texSampler, uv);
-    float value = length(orgColor.rgb);
+    //return float4(pCel,0,1);
+
+    float4 imgColorForCel = ImageA.Sample(texSampler, pCel);
+    float value = length(imgColorForCel.rgb);
+    //return imgColorForCel;
 
     float edgeEffect = Effects.Sample(texSampler, float2(value,0.75)) ;
     value = Effects.Sample(texSampler, float2(value,0)) ;

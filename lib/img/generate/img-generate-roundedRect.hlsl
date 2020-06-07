@@ -7,6 +7,7 @@ cbuffer ParamConstants : register(b0)
     float Round;
     float Feather;
     float GradientBias;
+    float Rotate;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -43,16 +44,34 @@ float sdBox( in float2 p, in float2 b )
 }
 
 float4 psMain(vsOutput psInput) : SV_TARGET
-{    
+{
     float aspectRatio = TargetWidth/TargetHeight;
 
     float2 p = psInput.texCoord;
-    p.x -= 0.5;
+    //p.x -= 0.5;
+    p -= 0.5;
     p.x *= aspectRatio;
-    p.x += 0.5;
+
+    // Rotate
+    float imageRotationRad = (-Rotate - 90) / 180 *3.141578;     
+
+    float sina = sin(-imageRotationRad - 3.141578/2);
+    float cosa = cos(-imageRotationRad - 3.141578/2);
+
+    //p.x *=aspectRatio;
+
+    p = float2(
+        cosa * p.x - sina * p.y,
+        cosa * p.y + sina * p.x 
+    );
+
+    //p.x /=aspectRatio;
+    //return float4(p, 0,1);
 
 
-    p  = p -0.5;
+    //p.x += 0.5;
+
+    //p  += 0.5;
     p-=Position * float2(1,-1);
     
     float d = sdBox(p, Size/2);

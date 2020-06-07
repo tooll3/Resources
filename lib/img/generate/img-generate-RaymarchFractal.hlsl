@@ -115,6 +115,7 @@ vsOutput vsMain4(uint vertexId: SV_VertexID)
 
 
 #define mod (x, y) (x - y * floor (x / y))
+#define mod ((x), (y)) ((x) - (y) * floor ((x) / (y)))
 
 float sdBox (in float2 p, in float2 b)
 {
@@ -199,7 +200,11 @@ float dMandelbox (float3 pos)
 //---------------------------------------
 float getDistance (float3 p)
 {
-    float d= dMandelbox(p);
+    float d=0;
+    //>>>>
+    d= dMandelbox(p);
+    //<<<<
+
     return d;
     
     //d= max(dBox( p + float3(SpherePos.x - SpherePos.y , 0,0), float3(SpherePos.y,3,3)), dLogo );
@@ -212,7 +217,8 @@ float getDistance (float3 p)
 float3 blinn_phong (float3 normal, float3 view, float3 light, float3 diffuseColor)
 {
     float3 halfLV = normalize (light + view);
-    float spe = pow (max (dot (normal, halfLV), Spec.x), Spec.y);
+    float clampedSpecPower = max(Spec.y, 0.001);
+    float spe = pow (max (dot (normal, halfLV), Spec.x), clampedSpecPower);    
     float dif = dot (normal, light) * 0.1 + 0.15;
     return dif * diffuseColor + spe * Specular.rgb;
 }
@@ -231,7 +237,7 @@ float getAO (float3 aoposition, float3 aonormal, float aodistance, float aoitera
     float ao = 0.0;
     float k = aofactor;
     aodistance /= aoiterations;
-    for (float i = 1; i < 4; i += 1)
+    for (int i = 1; i < 4; i += 1)
     {
         ao += (i * aodistance - getDistance (aoposition + aonormal * i * aodistance)) / pow (2, i);
     }
@@ -275,9 +281,9 @@ float4 psMain (vsOutput input) : SV_TARGET
     float extraD = 0.0;
     float lastD;
     int steps;
-
+    int maxSteps =  (int)(MaxSteps - 0.5);
     // Simple iterator
-    for (steps = 0; steps < MaxSteps && abs (D) > MinDistance; steps++)
+    for (steps = 0; steps < maxSteps && abs (D) > MinDistance; steps++)
     {
         D = getDistance (p);
         p += dp * D;
@@ -296,11 +302,14 @@ float4 psMain (vsOutput input) : SV_TARGET
         float3 n = normalize (getNormal (p, D));
         //n*=float3(1,1,10);
         n = normalize (n);
+        
         col = computeColor(p);
+        //col = blinn_phong (n, -dp, LightPos, col);
         col = blinn_phong (n, -dp, LightPos, col);
 
         col = lerp (AmbientOcclusion.rgb, col, getAO (p, n, AODistance, 3, AmbientOcclusion.a));
 
+        
         // We've gone through all steps, but we haven't hit anything.
         // Mix in the background color.
         if (D > MinDistance)
@@ -308,11 +317,13 @@ float4 psMain (vsOutput input) : SV_TARGET
             a = 1 - clamp (log (D / MinDistance) * DistToColor, 0.0, 1.0);
             col = lerp (col, Background.rgb, a);
         }
+        
     }
     else
     {
         a = 0.5;
     }
+    
 
     // Glow is based on the number of steps.
     col = lerp (col, Glow.rgb, float (steps) / float (MaxSteps) * Glow.a);

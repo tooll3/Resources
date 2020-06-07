@@ -17,6 +17,7 @@ cbuffer ParamConstants : register(b0)
     float GAffects_LineWidth;
     float BAffects_LineRatio;
     float MixOriginal;
+    float Feather;
 }
 
 
@@ -55,7 +56,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float2 p = uv;
     p-= 0.5;
     
-    float edgeSmooth = 0.1 / ScaleFactor;
+    float edgeSmooth = Feather / ScaleFactor;
 
     // Rotate
     float imageRotationRad = (-Rotate - 90) / 180 *3.141578;     
@@ -117,15 +118,15 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float distanceToCorner= length( pInCellCentered );
 
     // Draw Dots
-    col+= smoothstep( dotSize, dotSize - edgeSmooth, distanceToCorner );
+    col+= smoothstep( dotSize + edgeSmooth, dotSize - edgeSmooth, distanceToCorner );
 
     // Draw Lines
     float2 distanceToEdge = abs(pInCellCentered);
-    float line2 = smoothstep( lineWidth/2, lineWidth/2-edgeSmooth, min(distanceToEdge.x,  distanceToEdge.y) );
+    float line2 = smoothstep( lineWidth/2 + edgeSmooth, lineWidth/2-edgeSmooth, min(distanceToEdge.x,  distanceToEdge.y) );
 
     line2*= LineRatio < 0.5  
-        ? smoothstep( lineRatio, lineRatio- edgeSmooth, distanceToCorner)
-        : smoothstep( lineRatio, lineRatio+ edgeSmooth, distanceToCorner + 0.5);
+        ? smoothstep( lineRatio + edgeSmooth, lineRatio- edgeSmooth, distanceToCorner)
+        : smoothstep( lineRatio - edgeSmooth, lineRatio+ edgeSmooth, distanceToCorner + 0.5);
     
     col+= line2;
 
