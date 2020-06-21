@@ -1,7 +1,9 @@
 cbuffer ParamConstants : register(b0)
 {
+    float4 ImageAColor;
+    float4 ImageBColor;
     float ColorMode;
-     float AlphaMode;
+    float AlphaMode;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -30,8 +32,8 @@ float IsBetween( float value, float low, float high) {
 
 float4 psMain(vsOutput psInput) : SV_TARGET
 {    
-    float4 tA = ImageA.Sample(texSampler, psInput.texCoord); 
-    float4 tB = ImageB.Sample(texSampler, psInput.texCoord);    
+    float4 tA = ImageA.Sample(texSampler, psInput.texCoord) * ImageAColor; 
+    float4 tB = ImageB.Sample(texSampler, psInput.texCoord) * ImageBColor;    
     tA.a = clamp(tA.a, 0,1);
 
     tB.a = clamp(tB.a, 0,1);

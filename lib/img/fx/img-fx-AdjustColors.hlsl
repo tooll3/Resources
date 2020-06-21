@@ -79,6 +79,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 
     float a = saturate(c.a);
     c.rgb = clamp( c.rgb, 0.000001,1000);
+    c.a = saturate(c.a);
     
 
 
