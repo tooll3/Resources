@@ -84,28 +84,13 @@ Output vsMain(uint id: SV_VertexID)
 
 
     GridEntry entry = GridEntries[entryIndex];
-    // float2 samplePos = float2(0,1)+entry.Position * float2(1,-1);
 
-    // float4 overrideColor = fontTexture.SampleLevel(texSampler, samplePos - (TextOffset.xy * float2(1,-1) % 1) / GridSize, 0);
-    // overrideColor = clamp(overrideColor, 0, float4(1,100,100,1));    
-    // float overrideDisplace = overrideColor.b;
-    // float overrideScale = overrideColor.g;
-    // float overrideBrightness = clamp((overrideColor.r * 0.5 + overrideColor.b * 0.3 + overrideColor.g * 0.2) * overrideColor.a,0,1);
-
-    // float2 centeredGridPos = float2( (entry.Position.x - 0.5) * GridSize.x, 
-    //                                 (-0.5 + entry.Position.y ) * GridSize.y
-    //                             );
-    // centeredGridPos.xy +=  TextOffset.xy * float2(-1,1) % 1;
-
-    //float3 posInObject =  float3( centeredGridPos * CellSize,0 );
     float3 posInObject = entry.Position;
-
-    //objectPos += float3(GridSize.x *-0.5, +GridSize.y * 0.5 ,0);
-    //posInObject+= float3( overrideDisplace * OverridePosition);
+    posInObject.xy += quadPos.xy * float2(entry.Size * entry.AspectRatio, entry.Size) ; //CellSize *  (1- CellPadding) * (1+overrideScale* OverrideScale) /2;
 
     float4 quadPosInWorld = mul(float4(posInObject.xyz,1), ObjectToWorld);
     
-    quadPosInWorld.xy += quadPos.xy * float2(entry.Size * entry.AspectRatio, entry.Size) ; //CellSize *  (1- CellPadding) * (1+overrideScale* OverrideScale) /2;
+    //quadPosInWorld.xy += quadPos.xy * float2(entry.Size * entry.AspectRatio, entry.Size) ; //CellSize *  (1- CellPadding) * (1+overrideScale* OverrideScale) /2;
     
     float4 quadPosInCamera = mul(quadPosInWorld, WorldToCamera);
     output.position = mul(quadPosInCamera, CameraToClipSpace);
