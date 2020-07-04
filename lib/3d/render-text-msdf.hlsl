@@ -38,18 +38,8 @@ cbuffer Transforms : register(b0)
 
 cbuffer Params : register(b1)
 {
-    float2 GridSize;
-    float2 CellSize;
-
-    float2 CellPadding;
-    float2 TextOffset;
     float4 Color;
-
-    float3 OverridePosition;
-    float OverrideScale;
-
-    float4 HighlightColor;
-    float OverrideBrightness;
+    float3 Params;
 };
 
 struct GridEntry
@@ -145,11 +135,59 @@ float4 psMain(PsInput input) : SV_TARGET
 
     float2 msdfUnit = float2(1,1) * 1;// pxRange/float2(textureSize(msdf, 0));
 
-    float sigDist = median(texColor.r, texColor.g, texColor.b) - 0.5;
-    sigDist *= dot(msdfUnit, 0.5/fwidth(texColor).x);
-    float opacity = clamp(sigDist + 0.5, 0.0, 1.0);
-    float4 bgColor = float4(1,1,1,0);
-    float4 fgColor = float4(1,1,1,1);
-    float4 color = lerp(bgColor, fgColor, opacity);    
-    return color;// + float4(0.1,0.1,0.1,0.2);
+    // float sigDist = median(texColor.r, texColor.g, texColor.b) + Params.x; // -0.5
+    // sigDist *= dot(msdfUnit, Params.y/fwidth(texColor).x);   // 0.5
+    // float opacity = clamp(sigDist + Params.z, 0.0, 1.0); //0.5
+    // float4 bgColor = float4(1,1,1,0);
+    // float4 fgColor = float4(1,1,1,1);
+    // float4 color = lerp(bgColor, fgColor, opacity);    
+    // return color * Color;// + float4(0.1,0.1,0.1,0.2);
+
+        //float2 msdfUnit1 = texSize;
+        //float2 tcv=float2(input.texCoord.x-0.002,input.texCoord.y-0.002);
+        
+
+        //float3 smpl1 =  fontTexture.Sample(texSampler, tcv);
+        float3 smpl1 =  fontTexture.Sample(texSampler, input.texCoord);
+        
+        // if(int(texIndex)==0) smpl1 = texture(tex0, tcv).rgb;
+        // if(int(texIndex)==1) smpl1 = texture(tex1, tcv).rgb;
+        // if(int(texIndex)==2) smpl1 = texture(tex2, tcv).rgb;
+        // if(int(texIndex)==3) smpl1 = texture(tex3, tcv).rgb;
+
+        float sigDist1 = median(smpl1.r, smpl1.g, smpl1.b) - 0.0001;
+        float opacity1 = smoothstep(0.0,0.9,sigDist1*sigDist1);
+
+  //      return float4(opacity1.rrr,1);
+
+
+//float3 sample = texture( uTex0, TexCoord ).rgb;
+int height, width;
+fontTexture.GetDimensions(width,height);
+
+// from https://github.com/Chlumsky/msdfgen/issues/22#issuecomment-234958005
+float dx = ddx( input.texCoord.x ) * width;
+float dy = ddy( input.texCoord.y ) * height;
+float toPixels = 8.0 * rsqrt( dx * dx + dy * dy );
+float sigDist = median( smpl1.r, smpl1.g, smpl1.b ) - 0.5;
+
+float glow = pow(  smoothstep(0,1, sigDist + 0.4),0.5) *0;
+//return glow;
+
+float letterShape = clamp( sigDist * toPixels + 0.5, 0.0, 1.0 );
+
+
+
+return float4(1,1,1, max(letterShape,glow));
+
+
+
+  float4 color = float4 (0,0,0,1); 
+
+
+        // float sigDist = median(smpl.r, smpl.g, smpl.b) - 0.5;
+        // sigDist *= dot(msdfUnit, 0.5/fwidth(texCoord));
+        // opacity *= clamp(sigDist + 0.5, 0.0, 1.0);        
+
+        return float4(1,1,1, opacity1);
 }
