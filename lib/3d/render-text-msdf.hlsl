@@ -130,7 +130,7 @@ float median(float r, float g, float b) {
 }
 
 float4 psMain(PsInput input) : SV_TARGET
-{
+{    
     float4 texColor = fontTexture.Sample(texSampler, input.texCoord);
 
     float2 msdfUnit = float2(1,1) * 1;// pxRange/float2(textureSize(msdf, 0));
@@ -161,33 +161,33 @@ float4 psMain(PsInput input) : SV_TARGET
   //      return float4(opacity1.rrr,1);
 
 
-//float3 sample = texture( uTex0, TexCoord ).rgb;
-int height, width;
-fontTexture.GetDimensions(width,height);
+    //float3 sample = texture( uTex0, TexCoord ).rgb;
+    int height, width;
+    fontTexture.GetDimensions(width,height);
 
-// from https://github.com/Chlumsky/msdfgen/issues/22#issuecomment-234958005
-float dx = ddx( input.texCoord.x ) * width;
-float dy = ddy( input.texCoord.y ) * height;
-float toPixels = 8.0 * rsqrt( dx * dx + dy * dy );
-float sigDist = median( smpl1.r, smpl1.g, smpl1.b ) - 0.5;
+    // from https://github.com/Chlumsky/msdfgen/issues/22#issuecomment-234958005
+    float dx = ddx( input.texCoord.x ) * width;
+    float dy = ddy( input.texCoord.y ) * height;
+    float toPixels = 8.0 * rsqrt( dx * dx + dy * dy );
+    float sigDist = median( smpl1.r, smpl1.g, smpl1.b ) - 0.5;
 
-float glow = pow(  smoothstep(0,1, sigDist + 0.4),0.5) *0;
-//return glow;
+    float glow = pow(  smoothstep(0,1, sigDist + 0.4),0.5) *0;
+    //return glow;
 
-float letterShape = clamp( sigDist * toPixels + 0.5, 0.0, 1.0 );
+    float letterShape = clamp( sigDist * toPixels + 0.5, 0.0, 1.0 );
+
+    return float4(Color.rgb, letterShape * Color.a);
+
+    //return float4(1,1,1, max(letterShape,glow));
 
 
 
-return float4(1,1,1, max(letterShape,glow));
-
-
-
-  float4 color = float4 (0,0,0,1); 
+    //float4 color = float4 (0,0,0,1); 
 
 
         // float sigDist = median(smpl.r, smpl.g, smpl.b) - 0.5;
         // sigDist *= dot(msdfUnit, 0.5/fwidth(texCoord));
         // opacity *= clamp(sigDist + 0.5, 0.0, 1.0);        
 
-        return float4(1,1,1, opacity1);
+    return float4(1,1,1, opacity1);
 }
