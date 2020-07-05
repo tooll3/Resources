@@ -39,6 +39,7 @@ cbuffer Transforms : register(b0)
 cbuffer Params : register(b1)
 {
     float4 Color;
+    float4 Shadow;
     float3 Params;
 };
 
@@ -156,12 +157,19 @@ float4 psMain(PsInput input) : SV_TARGET
     float toPixels = 8.0 * rsqrt( dx * dx + dy * dy );
     float sigDist = median( smpl1.r, smpl1.g, smpl1.b ) - 0.5;
 
-    float glow = pow(  smoothstep(0,1, sigDist + 0.4),0.5) *0;
-    //return glow;
-
     float letterShape = clamp( sigDist * toPixels + 0.5, 0.0, 1.0 );
+    if(Shadow.a < 0.02) {
+        return float4(Color.rgb, letterShape * Color.a);
+    }
 
-    return float4(Color.rgb, letterShape * Color.a);
+    float glow = pow(  smoothstep(0,1, sigDist + 0.5), 0.3);
+
+
+    return float4(
+        lerp(Shadow.rgb, Color.rgb, letterShape ),
+        max( saturate(letterShape*2),glow) * Color.a
+    );
+
 
     //return float4(1,1,1, max(letterShape,glow));
 
