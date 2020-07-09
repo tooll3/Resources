@@ -88,8 +88,11 @@ float4 psMain(Input input) : SV_TARGET
 
 // float3 lightColor = float3(1,1,1)*190.0;
     float4 color = input.color * ColorMap.Sample(texSampler, input.texCoord);
-    if (color.a < 0.85)
-        discard;
+    // if (color.a < 0.35)
+        // discard;
+    float2 p = input.texCoord * float2(2.0, 2.0) - float2(1.0, 1.0);
+    if (dot(p, p) > 1.0)
+         discard;
     // color.rgb *= lightColor/(dist*dist);
     // color = float4(dir, 1);
     // color = float4(diffuse, diffuse, diffuse, 1);
