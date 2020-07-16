@@ -8,6 +8,8 @@ cbuffer SortParameterConstBuffer : register(b0)
     unsigned int height;
 };
 
+
+StructuredBuffer<unsigned int> Input : register(t0);
 RWStructuredBuffer<unsigned int> Data : register(u0);
 groupshared unsigned int SharedData[1024];
 
@@ -35,7 +37,7 @@ groupshared float2 TransposeSharedData[TRANSPOSE_BLOCK_SIZE * TRANSPOSE_BLOCK_SI
 [numthreads(TRANSPOSE_BLOCK_SIZE, TRANSPOSE_BLOCK_SIZE, 1)]
 void transpose(uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint GI : SV_GroupIndex)
 {
-    TransposeSharedData[GI] = Data[DTid.y * width + DTid.x];
+    TransposeSharedData[GI] = Input[DTid.y * width + DTid.x];
     GroupMemoryBarrierWithGroupSync();
     uint2 XY = DTid.yx - GTid.yx + GTid.xy;
     Data[XY.y * height + XY.x] = TransposeSharedData[GTid.x * TRANSPOSE_BLOCK_SIZE + GTid.y];
