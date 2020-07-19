@@ -1,18 +1,10 @@
-RWTexture2D<float> inputOutputTexture : register(u0);
-// Texture2D<float4> inputTexture : register(t0);
-// sampler texSampler : register(s0);
+Texture2D<float> inputTexture : register(t0);
+RWTexture2D<float> outputTexture : register(u0);
 
-// cbuffer TimeConstants : register(b0)
-// {
-//     float globalTime;
-//     float time;
-//     float2 dummy;
-// }
-
-cbuffer ParamConstants : register(b1)
+cbuffer ParamConstants : register(b0)
 {
-    float speed;
-    float strength;
+    float Near;
+    float Far;
     float param3;
     float param4;
 }
@@ -20,15 +12,10 @@ cbuffer ParamConstants : register(b1)
 [numthreads(16,16,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
-    uint width, height;
-    inputOutputTexture.GetDimensions(width, height);
+    float n = Near;
+    float f = Far;
+    float3 depth = inputTexture[i.xy];
+    float c = (2.0 * n) / (f + n - depth * (f - n));
 
-    // float2 uv = (float2)i.xy / float2(width - 1, height - 1);
-    // uv = uv*2.0 - 1.0;
-    // float l = length(uv);
-    // uv *= strength * sin(l*time*speed);
-    // uv = uv*0.5 + 0.5;
-    // outputTexture[i.xy] = inputTexture.SampleLevel(texSampler, uv, 0.0);
-
-    inputOutputTexture[i.xy] = inputOutputTexture[i.xy] / 200000.0;
+    outputTexture[i.xy] = c;
 }
