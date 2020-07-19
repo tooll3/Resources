@@ -134,7 +134,7 @@ float4 psMain(PsInput input) : SV_TARGET
         
 
         //float3 smpl1 =  fontTexture.Sample(texSampler, tcv);
-        float3 smpl1 =  fontTexture.Sample(texSampler, input.texCoord);
+        float3 smpl1 =  fontTexture.Sample(texSampler, input.texCoord).rgb;
         
         // if(int(texIndex)==0) smpl1 = texture(tex0, tcv).rgb;
         // if(int(texIndex)==1) smpl1 = texture(tex1, tcv).rgb;
@@ -157,10 +157,31 @@ float4 psMain(PsInput input) : SV_TARGET
     float toPixels = 8.0 * rsqrt( dx * dx + dy * dy );
     float sigDist = median( smpl1.r, smpl1.g, smpl1.b ) - 0.5;
 
-    float letterShape = clamp( sigDist * toPixels + 0.5, 0.0, 1.0 );
-    if(Shadow.a < 0.02) {
-        return float4(Color.rgb, letterShape * Color.a);
+    float letterShape = 0;
+    float d= -0.2;
+    float dd = 0.1;
+    float feather =0.01;
+    float strokeWidth = 0.02;
+    int steps= 10;
+    float padding = 0.8/steps;
+
+    // float rrr = saturate( sigDist * 4 + 0.5  );
+    // return float4(rrr,rrr,rrr,1);
+
+    for(int i=0; i< steps; i++) {
+
+        letterShape +=  smoothstep( d-feather, d, sigDist) * smoothstep( d+strokeWidth, d+strokeWidth-feather, sigDist);
+        d+= padding;
     }
+    //return float4(letterShape,0,0,1);
+    
+    //float letterShape2 =  smoothstep( 0.5, 0.51, sigDist  );
+    //float letterShape = letterShape1;// * letterShape2;
+
+    //float letterShape = clamp( sigDist * toPixels + 0.5, 0.0, 1.0 );
+    //if(Shadow.a < 0.02) {
+        return float4(Color.rgb, letterShape * Color.a);
+    //}
 
     float glow = pow(  smoothstep(0,1, sigDist + 0.5), 0.3);
 
