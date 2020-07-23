@@ -9,3 +9,9 @@ struct Particle
     int id;
     float3 dummy;
 };
+
+struct IndexEntry
+{
+    int index;
+    float squaredDistInCameraSpace; // for sorting
+};
