@@ -26,7 +26,7 @@ cbuffer Params : register(b2)
 
 Texture2D<float4> inputTexture : register(t0);
 RWStructuredBuffer<Particle> Particles : u0;
-ConsumeStructuredBuffer<int> DeadParticles : u1;
+ConsumeStructuredBuffer<ParticleIndex> DeadParticles : u1;
 
 uint wang_hash(in out uint seed)
 {
@@ -44,9 +44,9 @@ void main(uint3 i : SV_DispatchThreadID)
     //if (i.x >= bufferCount.x)
     //    return; // no particles available
 
-    int index = DeadParticles.Consume();
+    ParticleIndex pi = DeadParticles.Consume();
         
-    Particle particle = Particles[index];
+    Particle particle = Particles[pi.index];
     uint rng_state = uint(runTime*1000.0) + i.x;
 
     float f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
@@ -76,6 +76,6 @@ void main(uint3 i : SV_DispatchThreadID)
     //particle.color = float4(1,1,1,0.2);
     particle.color = Color;
     //particle.color.a = 1;
-    Particles[index] = particle;    
+    Particles[pi.index] = particle;
 }
 

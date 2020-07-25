@@ -25,8 +25,8 @@ cbuffer Transforms : register(b1)
 
 
 RWStructuredBuffer<Particle> Particles : u0;
-RWStructuredBuffer<int> AliveParticles : u1;
-AppendStructuredBuffer<int> DeadParticles : u2;
+RWStructuredBuffer<ParticleIndex> AliveParticles : u1;
+AppendStructuredBuffer<ParticleIndex> DeadParticles : u2;
 RWBuffer<uint> IndirectArgs : u3;
 
 [numthreads(64,1,1)]
@@ -50,12 +50,16 @@ void main(uint3 i : SV_DispatchThreadID)
     if (newLifetime < 0.0)
     {
         if (oldLifetime >= 0.0)
-            DeadParticles.Append(i.x);
+        {
+            ParticleIndex pi;
+            pi.index = i.x;
+            DeadParticles.Append(pi);
+        }
     }
     else
     {
         uint index = AliveParticles.IncrementCounter();
-        AliveParticles[index] = i.x;
+        AliveParticles[index].index = i.x;
         // float3 camPosInWorld = CameraToWorld[3].xyz;
         // float3 attractorInWorld = camPosInWorld + float3(0, -1, 4);
         float3 attractorInWorld = float3(cos(BeatTime)*20.0, 0, sin(BeatTime)*20.0);

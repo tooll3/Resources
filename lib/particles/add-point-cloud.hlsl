@@ -30,7 +30,7 @@ struct Point
 StructuredBuffer<Point> PointCloud : s0;
 
 RWStructuredBuffer<Particle> Particles : u0;
-ConsumeStructuredBuffer<int> DeadParticles : u1;
+ConsumeStructuredBuffer<ParticleIndex> DeadParticles : u1;
 
 [numthreads(160,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
@@ -39,9 +39,9 @@ void main(uint3 i : SV_DispatchThreadID)
         return; // no particles available
 
     float3 direction = float3(1, 0, 0);
-    int index = DeadParticles.Consume();
+    ParticleIndex pi = DeadParticles.Consume();
         
-    Particle particle = Particles[index];
+    Particle particle = Particles[pi.index];
     Point p = PointCloud[i.x];
 
     particle.position = p.position;
@@ -50,6 +50,6 @@ void main(uint3 i : SV_DispatchThreadID)
     particle.velocity = float3(0,0,0);
     particle.color = p.color;
 
-    Particles[index] = particle;
+    Particles[pi.index] = particle;
 }
 
