@@ -19,7 +19,7 @@ void bitonicSort(uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3
     
     for (unsigned int j = level >> 1 ; j > 0 ; j >>= 1)
     {
-        float2 result = ((SharedData[GI & ~j].y <= SharedData[GI | j].y) == (bool)(levelMask & DTid.x)) ? SharedData[GI ^ j] : SharedData[GI];
+        float2 result = ((SharedData[GI & ~j].y > SharedData[GI | j].y) == (bool)(levelMask & DTid.x)) ? SharedData[GI ^ j] : SharedData[GI];
         GroupMemoryBarrierWithGroupSync();
         SharedData[GI] = result;
         GroupMemoryBarrierWithGroupSync();
