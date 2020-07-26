@@ -13,5 +13,5 @@ struct Particle
 struct ParticleIndex
 {
     int index;
-//    float squaredDistToCamera;
+    float squaredDistToCamera;
 };

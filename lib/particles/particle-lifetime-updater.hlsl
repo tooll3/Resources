@@ -53,6 +53,7 @@ void main(uint3 i : SV_DispatchThreadID)
         {
             ParticleIndex pi;
             pi.index = i.x;
+            pi.squaredDistToCamera = 99999.0;
             DeadParticles.Append(pi);
         }
     }
