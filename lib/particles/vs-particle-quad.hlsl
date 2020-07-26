@@ -47,7 +47,7 @@ struct Output
 };
 
 StructuredBuffer<Particle> Particles : t0;
-StructuredBuffer<int> AliveParticles : t1;
+StructuredBuffer<ParticleIndex> AliveParticles : t1;
 
 Texture2D<float4> inputTexture : register(t2);
 sampler texSampler : register(s0);
@@ -59,7 +59,7 @@ Output vsMain(uint id: SV_VertexID)
     int quadIndex = id % 6;
     int particleId = id / 6;
     float3 quadPos = Quad[quadIndex];
-    Particle particle = Particles[AliveParticles[particleId]];
+    Particle particle = Particles[AliveParticles[particleId].index];
     float4 quadPosInCamera = mul(float4(particle.position,1), ObjectToCamera);
     quadPosInCamera.xy += quadPos.xy*0.250;//*6.0;// * size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);

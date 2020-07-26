@@ -1,4 +1,3 @@
-
 #include "particle.hlsl"
 
 cbuffer TimeConstants : register(b0)
@@ -15,7 +14,7 @@ cbuffer CountConstants : register(b1)
 }
 
 RWStructuredBuffer<Particle> Particles : u0;
-ConsumeStructuredBuffer<int> DeadParticles : u1;
+ConsumeStructuredBuffer<ParticleIndex> DeadParticles : u1;
 
 uint wang_hash(in out uint seed)
 {
@@ -37,9 +36,9 @@ void main(uint3 i : SV_DispatchThreadID)
     float speed = 1.1;
     float3 emitPosition = float3(sin(runTime*speed)*radius, fmod(runTime*0.5, 30.0) - 15.0, cos(runTime*speed)*radius);
     float3 direction = normalize(float3(cos(runTime*speed)*radius, 0, -sin(runTime*speed)*radius));
-    int index = DeadParticles.Consume();
+    ParticleIndex pi = DeadParticles.Consume();
         
-    Particle particle = Particles[index];
+    Particle particle = Particles[pi.index];
     uint rng_state = uint(runTime*1000.0) + i.x;
 
     // float f0 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0) - 0.5;
@@ -61,6 +60,6 @@ void main(uint3 i : SV_DispatchThreadID)
     f2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     particle.color = float4(0.1,0.1,0.1,0.1);//float4(f0,f1,f2,1.0);
 
-    Particles[index] = particle;
+    Particles[pi.index] = particle;
 }
 
