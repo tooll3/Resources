@@ -63,8 +63,8 @@ void main(uint3 i : SV_DispatchThreadID)
         AliveParticles[index].index = i.x;
         // float3 camPosInWorld = CameraToWorld[3].xyz;
         // float3 attractorInWorld = camPosInWorld + float3(0, -1, 4);
-        float3 posInCamera = mul(Particles[i.x].position, WorldToCamera).xyz; // todo: optimize
-        AliveParticles[index].squaredDistToCamera = dot(-WorldToCamera[2].xyz, posInCamera);
+        float3 posInCamera = mul(Particles[i.x].position, ObjectToCamera).xyz; // todo: optimize
+        AliveParticles[index].squaredDistToCamera = posInCamera.z;//dot(-WorldToCamera[2].xyz, posInCamera);
         /*
         float3 attractorInWorld = float3(cos(BeatTime)*20.0, 0, sin(BeatTime)*20.0);
         float3 dir = attractorInWorld - Particles[i.x].position;
