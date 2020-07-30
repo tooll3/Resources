@@ -67,8 +67,9 @@ void main(uint3 i : SV_DispatchThreadID)
     {
         uint index = AliveParticles.IncrementCounter();
         AliveParticles[index].index = i.x;
-        float3 posInCamera = mul(Particles[i.x].position, ObjectToCamera).xyz; // todo: optimize
-        AliveParticles[index].squaredDistToCamera = posInCamera.z;//dot(-WorldToCamera[2].xyz, posInCamera);
+        // 2 lines below only relevant for sorting
+        // float3 posInCamera = mul(Particles[i.x].position, ObjectToCamera).xyz; // todo: optimize
+        // AliveParticles[index].squaredDistToCamera = posInCamera.z;//dot(-WorldToCamera[2].xyz, posInCamera);
 
         float3 v = float3(0,0,0);
         v += curlNoise(Particles[i.x].position*0.105);
@@ -76,7 +77,6 @@ void main(uint3 i : SV_DispatchThreadID)
         // v += curlNoise(Particles[i.x].position*1.505);
         Particles[i.x].velocity = v.xxx;
         Particles[i.x].position += (1.0/60.)*(v.xxx);
-
 
         uint originalValue;
         InterlockedAdd(IndirectArgs[0], 6, originalValue);

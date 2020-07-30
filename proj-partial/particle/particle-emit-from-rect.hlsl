@@ -75,7 +75,7 @@ void main(uint3 i : SV_DispatchThreadID)
     particle.velocity = float3(0,0,0);
     float u_mass = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     particle.mass = 1.0 + step(0.05, u_mass)*999.0; // 5% with small mass
-    particle.lifetime = particle.mass > 5.0 ? 10.0 : 50.0;
+    particle.lifetime = particle.mass > 5.0 ? 5.0 : 50.0;
 
     float s = 25.0;
     u = fmod(abs(particle.position.x), s)/s;
