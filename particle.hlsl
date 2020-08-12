@@ -7,7 +7,7 @@ struct Particle
     float mass;
     float4 color;
     int id;
-    float3 dummy;
+    float3 normal;
 };
 
 struct ParticleIndex
