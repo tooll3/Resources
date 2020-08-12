@@ -53,7 +53,7 @@ uint wang_hash(in out uint seed)
     return seed;
 }
 
-[numthreads(6,1,1)]
+[numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
     if (i.x >= BufferCount.x)
@@ -66,8 +66,6 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float u = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     float v = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-
-
 
     float2 size = float2(1.0, 1.0);
     float4 posInObject = float4((u - 0.5)*size.x, (v - 0.5)*size.y, 0, 1);
