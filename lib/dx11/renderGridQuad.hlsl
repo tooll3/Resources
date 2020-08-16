@@ -27,8 +27,7 @@ cbuffer Transforms : register(b0)
 cbuffer Params : register(b1)
 {
     float4 Color;
-    float Width;
-    float Height;
+    float Scale;
 };
 
 Texture2D<float4> InputTexture : register(t0);
@@ -49,10 +48,10 @@ vsOutput vsMain(uint vertexId: SV_VertexID)
 {
     vsOutput output;
     float2 quadVertex = Quad[vertexId].xy;
-    float2 quadVertexInObject = quadVertex * float2(Width, Height);
+    float2 quadVertexInObject = quadVertex * Scale;
     output.position = mul(float4(quadVertexInObject, 0, 1), ObjectToClipSpace);
     output.texCoord = quadVertex*float2(0.5, -0.5) + 0.5;
-    output.scale = mul(float4(1, 1,1,1), WorldToObject).xy / float2(Width, Height);
+    output.scale = mul(float4(1, 1,1,1), WorldToObject).xy / Scale;
     return output;
 }
 
@@ -81,8 +80,8 @@ float4 psMain(vsOutput input) : SV_TARGET
     float combinedAngle = max(angleX, angleY);
     float fadeOutInDistance = 1-pow( saturate( combinedAngle), 0.5);
 
-    float smallGrid =  smoothstep( 0.4, 0.9, fadeOutInDistance) * 0.2;
-    float grid10 = smoothstep( -0.6, 1.1, fadeOutInDistance) * 0.2;
+    float smallGrid =  smoothstep( 0.4, 0.9, fadeOutInDistance);
+    float grid10 = smoothstep( -0.6, 1.1, fadeOutInDistance);
     float linesX = lines(p.x, angleX, 1) * smallGrid + lines(p.x, angleX, 10) *grid10;
     float linesY =  lines(p.y, angleY, 1) * smallGrid + lines(p.y, angleY, 10) * grid10;
 
@@ -95,7 +94,7 @@ float4 psMain(vsOutput input) : SV_TARGET
     float3 axisColor = lerp( float3(1,0,0), float3(0.4,0.4,1), redOrGreen);
     float isAxis = min(axisX, axisY) < 1 ? 1:0;
     float3 color = lerp( float3(1,1,1), axisColor, isAxis );
-    return float4(color, lines * (isAxis ? 2 : 1));
+    return float4(color, lines * (isAxis ? 2 : 1)) * Color;
 }
 
 
