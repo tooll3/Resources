@@ -59,7 +59,7 @@ void main(uint3 i : SV_DispatchThreadID)
     // AliveParticles[index].squaredDistToCamera = posInCamera.z;//dot(-WorldToCamera[2].xyz, posInCamera);
 
     float3 v = float3(0,0,0);
-    v += curlNoise(p.position*2.105)*0.1;
+    v += curlNoise(p.position*0.105)*0.1;
     // v += curlNoise(Particles[i.x].position*0.0505);
     // v += curlNoise(Particles[i.x].position*1.505);
     p.velocity = v;//.xxx;

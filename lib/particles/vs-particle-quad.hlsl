@@ -46,7 +46,7 @@ Output vsMain(uint id: SV_VertexID)
     float3 quadPos = Quad[quadIndex];
     Particle particle = Particles[AliveParticles[particleId].index];
     float4 quadPosInCamera = mul(float4(particle.position,1), ObjectToCamera);
-    quadPosInCamera.xy += quadPos.xy*0.250 * (sin(particle.lifetime) + 1)/20;//*6.0;// * size;
+    quadPosInCamera.xy += quadPos.xy*0.050  * saturate(particle.lifetime) ;  // * (sin(particle.lifetime) + 1)/20;//*6.0;// * size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
 
     output.color = particle.color;
