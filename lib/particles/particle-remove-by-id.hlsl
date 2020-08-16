@@ -22,10 +22,10 @@ void main(uint3 i : SV_DispatchThreadID)
 
     ParticleIndex pi = AliveParticles[i.x];
     Particle particle = Particles[pi.index];
-    if (particle.lifetime >= 0.0 && particle.id == (int)(idToRemove + 0.5))
+    if (particle.lifetime >= 0.0 && particle.emitterId == (int)(idToRemove + 0.5))
     {
         particle.lifetime = -1.0;
-        particle.id = -1;
+        particle.emitterId = -1;
         DeadParticles.Append(pi);
         Particles[pi.index] = particle;
     }

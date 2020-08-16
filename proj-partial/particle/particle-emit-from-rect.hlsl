@@ -59,7 +59,7 @@ void main(uint3 i : SV_DispatchThreadID)
     ParticleIndex pi = DeadParticles.Consume();
         
     Particle particle = Particles[pi.index];
-    particle.id = EmitterId;
+    particle.emitterId = EmitterId;
     uint rng_state = uint(RunTime*1000.0)*10 + i.x;
 
     float u = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
