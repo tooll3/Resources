@@ -12,7 +12,7 @@ float4 psMain(Input input) : SV_TARGET
     if (d > 1.0)
          discard;
 
-
-    float4 color = input.color * float4(1-d,1-d,1-d,1);
+    float4 color = input.color * float4(1-d,1-d,1-d, 1);
+    //float4 color = float4(1-d,1-d,1-d, 1);
     return color;
 }

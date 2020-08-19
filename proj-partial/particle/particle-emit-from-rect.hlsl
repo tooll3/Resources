@@ -73,6 +73,7 @@ void main(uint3 i : SV_DispatchThreadID)
     particle.mass = 1.0 + step(0.05, u_mass)*999.0; // 5% with small mass
     //particle.lifetime = particle.mass > 5.0 ? 5.0 : 50.0;
     particle.lifetime = LifeTime + u * LifeTimeScatter; 
+    particle.emitTime = BeatTime;
 
     float s = 25.0;
     u = fmod(abs(particle.position.x), s)/s;

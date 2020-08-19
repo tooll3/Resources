@@ -24,6 +24,20 @@ cbuffer Transforms : register(b0)
     float4x4 ObjectToClipSpace;
 };
 
+cbuffer Params : register(b1)
+{
+    float4 Color;
+    float Size;
+};
+
+
+cbuffer TimeConstants : register(b2)
+{
+    float GlobalTime;
+    float Time;
+    float RunTime;
+    float BeatTime;
+}
 struct Output
 {
     float4 position : SV_POSITION;
@@ -46,10 +60,17 @@ Output vsMain(uint id: SV_VertexID)
     float3 quadPos = Quad[quadIndex];
     Particle particle = Particles[AliveParticles[particleId].index];
     float4 quadPosInCamera = mul(float4(particle.position,1), ObjectToCamera);
-    quadPosInCamera.xy += quadPos.xy*0.050  * saturate(particle.lifetime) ;  // * (sin(particle.lifetime) + 1)/20;//*6.0;// * size;
+    float scale = saturate(particle.lifetime) * Size;// * particle.color.a;
+    scale = saturate(BeatTime-particle.emitTime) * saturate(particle.lifetime) ;// HACK
+    quadPosInCamera.xy += quadPos.xy*0.050  * scale;  // * (sin(particle.lifetime) + 1)/20;//*6.0;// * size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
 
-    output.color = particle.color;
+    output.color = particle.color * Color;
+
+    //output.color.r = sin(particle.lifetime);
+    //output.color.gb =0;
+
+    output.color.a = 1;
     output.texCoord = (quadPos.xy * 0.5 + 0.5);
 
     return output;
