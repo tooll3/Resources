@@ -47,6 +47,7 @@ struct Output
     float4 position : SV_POSITION;
     float4 color : COLOR;
     float2 texCoord : TEXCOORD;
+    float3 objectPos: POSITIONT;
 };
 
 StructuredBuffer<Particle> Particles : t0;
@@ -79,7 +80,7 @@ Output vsMain(uint id: SV_VertexID)
 
     output.color.a = 1;
     output.texCoord = (quadPos.xy * 0.5 + 0.5);
-
+    output.objectPos = particle.position;
     return output;
 }
 
