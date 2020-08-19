@@ -28,6 +28,10 @@ cbuffer Params : register(b1)
 {
     float4 Color;
     float Size;
+    float3 LightPosition;
+    float LightIntensity;
+    float LightDecay;
+    float RoundShading;
 };
 
 
@@ -60,8 +64,8 @@ Output vsMain(uint id: SV_VertexID)
     float3 quadPos = Quad[quadIndex];
     Particle particle = Particles[AliveParticles[particleId].index];
     float4 quadPosInCamera = mul(float4(particle.position,1), ObjectToCamera);
-    float scale = saturate(particle.lifetime) * Size;// * particle.color.a;
-    scale = saturate(BeatTime-particle.emitTime) * saturate(particle.lifetime) ;// HACK
+    //float scale = saturate(particle.lifetime) * Size * particle.size * 20;// * particle.color.a;
+    float scale = saturate(BeatTime-particle.emitTime) * saturate(particle.lifetime)  * particle.size  * particle.color.a;// HACK
     quadPosInCamera.xy += quadPos.xy*0.050  * scale;  // * (sin(particle.lifetime) + 1)/20;//*6.0;// * size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
 
@@ -69,6 +73,9 @@ Output vsMain(uint id: SV_VertexID)
 
     //output.color.r = sin(particle.lifetime);
     //output.color.gb =0;
+
+    float distanceToLight = length(LightPosition - particle.position);
+    output.color.rgb *= LightIntensity * pow( distanceToLight + 1, -LightDecay);
 
     output.color.a = 1;
     output.texCoord = (quadPos.xy * 0.5 + 0.5);

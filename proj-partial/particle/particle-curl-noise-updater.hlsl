@@ -1,5 +1,6 @@
 #include "particle.hlsl"
 #include "noise-functions.hlsl"
+#include "hash-functions.hlsl"
 
 cbuffer TimeConstants : register(b0)
 {
@@ -28,18 +29,16 @@ cbuffer CountConstants : register(b2)
     int4 bufferCount;
 }
 
-cbuffer CountConstants : register(b3)
+cbuffer Params : register(b3)
 {
-    float filterId;
+    float filterEmitterId;
+    float Frequency;
+    float Amount;
+    float Phase;
+    float ParticleFriction;
+    float Variation;
 }
 
-// cbuffer Params : register(b1)
-// {
-//     float Frequency;
-//     float Amount;
-//     float Phase;
-//     float ParticleFriction;
-// }
 
 RWStructuredBuffer<Particle> Particles : u0;
 RWStructuredBuffer<ParticleIndex> AliveParticles : u1;
@@ -51,19 +50,21 @@ void main(uint3 i : SV_DispatchThreadID)
         return; // only check alive particles
     int index = AliveParticles[i.x].index;
     Particle p = Particles[index];
-    if (filterId >= 0 && p.emitterId != filterId)
+    if (filterEmitterId >= 0 && p.emitterId != filterEmitterId)
         return; // not the relevant emitter id to process
+
+    float3 hash = hash31(index);
 
     // 2 lines below only relevant for sorting
     // float3 posInCamera = mul(Particles[i.x].position, ObjectToCamera).xyz; // todo: optimize
     // AliveParticles[index].squaredDistToCamera = posInCamera.z;//dot(-WorldToCamera[2].xyz, posInCamera);
 
     float3 v = float3(0,0,0);
-    v += curlNoise(p.position*0.105)*0.1;
+    v += curlNoise((p.position + (hash - 0.5)*2 * Variation  + Phase ) * Frequency)* Amount;
     // v += curlNoise(Particles[i.x].position*0.0505);
     // v += curlNoise(Particles[i.x].position*1.505);
     p.velocity = v;//.xxx;
-    p.position += (1.0/60.)*(v.xxx);
+    p.position += (1.0/60.)*(v.xyz);
 
     Particles[index] = p;
 }

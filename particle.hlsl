@@ -15,7 +15,8 @@ struct Particle
 
     // 4*4
     float emitTime;
-    float3 __dummy;
+    float size;
+    float2 __dummy;
 
     // 5*4 * 4 = 80bytes
 };
