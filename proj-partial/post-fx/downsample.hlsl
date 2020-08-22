@@ -1,5 +1,5 @@
-Texture2D<float> color : register(t0);
-Texture2D<float> coc : register(t1);
+Texture2D<float4> color : register(t0);
+Texture2D<float2> coc : register(t1);
 
 RWTexture2D<float4> color4 : register(u0);
 RWTexture2D<float4> colorCoCFar4 : register(u1);
