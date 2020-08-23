@@ -2,11 +2,26 @@ struct Input
 {
     float4 position : SV_POSITION;
     float4 color : COLOR;
-    float2 texCoord : TEXCOORD0;
+    float2 texCoord : TEXCOORD;
     float3 objectPos: POSITIONT;
+    float3 posInWorld: POSITION2;
 };
 
-cbuffer Params : register(b0)
+cbuffer Transforms : register(b0)
+{
+    float4x4 CameraToClipSpace;
+    float4x4 ClipSpaceToCamera;
+    float4x4 WorldToCamera;
+    float4x4 CameraToWorld;
+    float4x4 WorldToClipSpace;
+    float4x4 ClipSpaceToWorld;
+    float4x4 ObjectToWorld;
+    float4x4 WorldToObject;
+    float4x4 ObjectToCamera;
+    float4x4 ObjectToClipSpace;
+};
+
+cbuffer Params : register(b1)
 {
     float4 Color;
     float Size;
@@ -16,49 +31,38 @@ cbuffer Params : register(b0)
     float RoundShading;
 };
 
+#define mod(x,y) (x-y*floor(x/y))
+
 float4 psMain(Input input) : SV_TARGET
 {
     float2 p = input.texCoord * float2(2.0, 2.0) - float2(1.0, 1.0);
     float d= dot(p, p);
     if (d > 1.0)
          discard;
+   
+    float z = sqrt(1 - d*d);
+    float3 normal = float3(p, z);
+    float3 lightDir = normalize(LightPosition - input.posInWorld.xyz);
+    //lightDir = mul(float4(lightDir,1), ObjectToWorld);
+    normal = mul(float4(normal,0), CameraToWorld).xyz;
 
-    // float distanceFromCenter = d;
-    // float normalizedDepth = sqrt(1.0 - distanceFromCenter * distanceFromCenter);
-
-    // float sphereRadius = 1;
-    // // Current depth
-    // float depthOfFragment = sphereRadius * 0.5 * normalizedDepth;
-    // //        float currentDepthValue = normalizedViewCoordinate.z - depthOfFragment - 0.0025;
-    // //float currentDepthValue = (normalizedViewCoordinate.z - depthOfFragment - 0.0025);
-
-    // //return float4(RoundShading, LightIntensity,1,1);
-
-    // // Calculate the lighting normal for the sphere
-    // float3 normal = float3(impostorSpaceCoordinate, normalizedDepth);
-
-    // float3 finalSphereColor = sphereColor;
-
-    // // ambient
-    // float lightingIntensity = 0.3 + 0.7 * clamp(dot(lightPosition, normal), 0.0, 1.0);
-    // finalSphereColor *= lightingIntensity;
-
-    // // Per fragment specular lighting
-    // lightingIntensity  = clamp(dot(lightPosition, normal), 0.0, 1.0);
-    // lightingIntensity  = pow(lightingIntensity, 60.0);
-    // finalSphereColor += float3(0.4, 0.4, 0.4) * lightingIntensity;
-
-    float3 lightDirection = LightPosition - input.objectPos;
-
-    //return float4(input.objectPos+ 1, 1);
-    float2 xy = pow((asin(input.texCoord) * sin(input.texCoord) * 3.1415/4), 1.2);
-    float3 normal = normalize(float3(xy,1-length(xy)));
-    //return float4(lightDirection.xyz,1);
-    float ambient = dot(lightDirection, normal);
-    //return float4(xxx, 0,0,1);
-    return float4(input.color.rgb * ambient, 1);
-
-    float fallOff = pow(d, RoundShading);
-    float4 color = input.color * float4(fallOff,fallOff,fallOff, 1);
+    float diffuse = saturate(dot(normal, lightDir));
+    float4 color = float4(diffuse, diffuse, diffuse, 1);
     return color;
+
+    // float3 lightDirectionInWorld = normalize(LightPosition - input.objectPos);
+    // float dAtFragment = sqrt(1- d * d);
+    // float3 n = normalize(float3(p.xy * float2(1,1), dAtFragment ));
+      
+    // float4 nInWorld = normalize(mul(float4(n,1), CameraToWorld));
+    // float4 stripes = float4(1,1,1,0) * (mod( nInWorld*10,1) > 0.12 ? 0 :0.5);
+    // return float4(nInWorld.rgb,1) + stripes;
+
+    // // TEST
+    // float ambient = saturate(dot(lightDirectionInWorld.xyz, nInWorld.xyz));
+    // float3 specularColor =  input.color.rgb * pow(ambient, 30) *0; // HACK TO DISABLE
+
+    // return float4(input.color.rgb * ambient * 1 + specularColor, 1) +  stripes;
+
+    // JUNK
 }

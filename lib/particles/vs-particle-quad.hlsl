@@ -48,6 +48,7 @@ struct Output
     float4 color : COLOR;
     float2 texCoord : TEXCOORD;
     float3 objectPos: POSITIONT;
+    float3 posInWorld: POSITION2;
 };
 
 StructuredBuffer<Particle> Particles : t0;
@@ -66,9 +67,10 @@ Output vsMain(uint id: SV_VertexID)
     Particle particle = Particles[AliveParticles[particleId].index];
     float4 quadPosInCamera = mul(float4(particle.position,1), ObjectToCamera);
     //float scale = saturate(particle.lifetime) * Size * particle.size * 20;// * particle.color.a;
-    float scale = saturate(BeatTime-particle.emitTime) * saturate(particle.lifetime)  * particle.size  * particle.color.a;// HACK
+    float scale = saturate(BeatTime-particle.emitTime) * saturate(particle.lifetime)  * particle.size  * particle.color.a * Size;// HACK
     quadPosInCamera.xy += quadPos.xy*0.050  * scale;  // * (sin(particle.lifetime) + 1)/20;//*6.0;// * size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
+    output.posInWorld = mul(float4(quadPos, 1), ObjectToWorld).xyz;
 
     output.color = particle.color * Color;
 
