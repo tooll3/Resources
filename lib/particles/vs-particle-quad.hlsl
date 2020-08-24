@@ -70,7 +70,7 @@ Output vsMain(uint id: SV_VertexID)
     float scale = saturate(BeatTime-particle.emitTime) * saturate(particle.lifetime)  * particle.size  * particle.color.a * Size;// HACK
     quadPosInCamera.xy += quadPos.xy*0.050  * scale;  // * (sin(particle.lifetime) + 1)/20;//*6.0;// * size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
-    output.posInWorld = mul(float4(quadPos, 1), ObjectToWorld).xyz;
+    output.posInWorld = mul(quadPosInCamera, CameraToWorld).xyz;
 
     output.color = particle.color * Color;
 
