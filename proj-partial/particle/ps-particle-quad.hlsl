@@ -46,9 +46,9 @@ float4 psMain(Input input) : SV_TARGET
     //lightDir = mul(float4(lightDir,1), ObjectToWorld);
     normal = mul(float4(normal,0), CameraToWorld).xyz;
 
-    float diffuse = saturate(dot(normal, lightDir));
-    float4 color = float4(diffuse, diffuse, diffuse, 1);
-    return color;
+    float diffuse = lerp(1, saturate(dot(normal, lightDir)), RoundShading);
+    //float3 ambient = float3(diffuse, diffuse, diffuse);
+    //return color;
 
     // float3 lightDirectionInWorld = normalize(LightPosition - input.objectPos);
     // float dAtFragment = sqrt(1- d * d);
@@ -62,7 +62,7 @@ float4 psMain(Input input) : SV_TARGET
     // float ambient = saturate(dot(lightDirectionInWorld.xyz, nInWorld.xyz));
     // float3 specularColor =  input.color.rgb * pow(ambient, 30) *0; // HACK TO DISABLE
 
-    // return float4(input.color.rgb * ambient * 1 + specularColor, 1) +  stripes;
+    return float4(input.color.rgb * diffuse, 1);
 
     // JUNK
 }

@@ -48,7 +48,7 @@ vsOutput vsMain(uint vertexId: SV_VertexID)
 {
     vsOutput output;
     float2 quadVertex = Quad[vertexId].xy;
-    float2 quadVertexInObject = quadVertex * Scale;
+    float2 quadVertexInObject = quadVertex * Scale * 0.5;
     output.position = mul(float4(quadVertexInObject, 0, 1), ObjectToClipSpace);
     output.texCoord = quadVertex*float2(0.5, -0.5) + 0.5;
     output.scale = mul(float4(1, 1,1,1), WorldToObject).xy / Scale;

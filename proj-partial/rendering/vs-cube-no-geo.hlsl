@@ -80,7 +80,7 @@ vsOutput vsMain(uint vertexId: SV_VertexID)
 {
     vsOutput output;
     float3 quadVertex = Quad[vertexId].xyz;
-    float3 quadVertexInObject = quadVertex * Size;
+    float3 quadVertexInObject = quadVertex * Size * 0.5;
     output.position = mul(float4(quadVertexInObject, 1), ObjectToClipSpace);
     output.texCoord = (Quad[vertexId % 6]).xy*float2(0.5, -0.5) + 0.5;
 

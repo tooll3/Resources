@@ -1,5 +1,5 @@
 #include "particle.hlsl"
-
+#include "hash-functions.hlsl"
 cbuffer TimeConstants : register(b0)
 {
     float GlobalTime;
@@ -62,13 +62,15 @@ void main(uint3 i : SV_DispatchThreadID)
         
     Particle particle = Particles[pi.index];
     particle.emitterId = EmitterId;
-    uint rng_state = uint(RunTime*1000.0)*10 + i.x;
+    uint rng_state = uint((RunTime + 123)*1123023.4)*10 + i.x;
+    float4 hash = hash41(RunTime + (float)i.x);
+    float u = hash.x;// float(wang_hash(rng_state)) * (1.0 / 4294967296.0)+ hash.x;
+    float v = hash.y; //float(wang_hash(rng_state)) * (1.0 / 4294967296.0)+ hash.y;
 
-    float u = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    float v = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
+
 
     float2 emitterSize = float2(1.0, 1.0);
-    float4 posInObject = float4((u - 0.5)*emitterSize.x, (v - 0.5)*emitterSize.y, 0, 1);
+    float4 posInObject = float4((u - 0.5)*emitterSize.x, -(v - 0.5)*emitterSize.y, 0, 1);
     particle.position = mul(posInObject, ObjectToWorld);
     particle.velocity = float3(0,0,0);
     particle.size = Size;

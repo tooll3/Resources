@@ -32,6 +32,7 @@ cbuffer Params : register(b1)
     float LightIntensity;
     float LightDecay;
     float RoundShading;
+    float NearPlane;
 };
 
 
@@ -61,13 +62,25 @@ Output vsMain(uint id: SV_VertexID)
 {
     Output output;
 
+
+
     int quadIndex = id % 6;
     int particleId = id / 6;
     float3 quadPos = Quad[quadIndex];
+
     Particle particle = Particles[AliveParticles[particleId].index];
     float4 quadPosInCamera = mul(float4(particle.position,1), ObjectToCamera);
+
+
+
+    float4 particleInCamera = mul(float4(particle.position,1), ObjectToCamera);
+    float nearDistancePlane = -NearPlane;
+    float notTooCloseFactor = 1-smoothstep(nearDistancePlane, nearDistancePlane + NearPlane , particleInCamera.z);
+
+
+
     //float scale = saturate(particle.lifetime) * Size * particle.size * 20;// * particle.color.a;
-    float scale = saturate(BeatTime-particle.emitTime) * saturate(particle.lifetime)  * particle.size  * particle.color.a * Size;// HACK
+    float scale = notTooCloseFactor * saturate(BeatTime-particle.emitTime) * saturate(particle.lifetime)  * particle.size  * particle.color.a * Size;// HACK
     quadPosInCamera.xy += quadPos.xy*0.050  * scale;  // * (sin(particle.lifetime) + 1)/20;//*6.0;// * size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
     output.posInWorld = mul(quadPosInCamera, CameraToWorld).xyz;
@@ -80,7 +93,12 @@ Output vsMain(uint id: SV_VertexID)
     float distanceToLight = length(LightPosition - particle.position);
     output.color.rgb *= LightIntensity * pow( distanceToLight + 1, -LightDecay);
 
+
+
+
     output.color.a = 1;
+
+    //output.color.gb = 1;
     output.texCoord = (quadPos.xy * 0.5 + 0.5);
     output.objectPos = particle.position;
     return output;
