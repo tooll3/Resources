@@ -24,8 +24,10 @@ cbuffer Transforms : register(b0)
 cbuffer Params : register(b1)
 {
     float4 Color;
+
     float Size;
     float3 LightPosition;
+
     float LightIntensity;
     float LightDecay;
     float RoundShading;

@@ -59,11 +59,11 @@ void main(uint3 i : SV_DispatchThreadID)
     // float3 posInCamera = mul(Particles[i.x].position, ObjectToCamera).xyz; // todo: optimize
     // AliveParticles[index].squaredDistToCamera = posInCamera.z;//dot(-WorldToCamera[2].xyz, posInCamera);
 
-    float3 v = float3(0,0,0);
+    float3 v =  p.velocity; //float3(0,0,0)
     v += curlNoise((p.position + (hash - 0.5)*2 * Variation  + Phase ) * Frequency)* Amount;
     // v += curlNoise(Particles[i.x].position*0.0505);
     // v += curlNoise(Particles[i.x].position*1.505);
-    p.velocity = v;//.xxx;
+    p.velocity = v* (1- ParticleFriction);
     p.position += (1.0/60.)*(v.xyz);
 
     Particles[index] = p;

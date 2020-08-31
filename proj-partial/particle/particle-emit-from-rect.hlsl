@@ -34,6 +34,7 @@ cbuffer Params : register(b3)
     float Size;
     float SizeScatter;
     float EmitterId;
+    float3 Velocity;
 }
 
 
@@ -55,7 +56,7 @@ uint wang_hash(in out uint seed)
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
-    if (i.x >= BufferCount.x)
+    if ((uint)i.x >= (uint)BufferCount.x)
        return; // no particles available
 
     ParticleIndex pi = DeadParticles.Consume();
@@ -71,9 +72,10 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float2 emitterSize = float2(1.0, 1.0);
     float4 posInObject = float4((u - 0.5)*emitterSize.x, -(v - 0.5)*emitterSize.y, 0, 1);
-    particle.position = mul(posInObject, ObjectToWorld);
-    particle.velocity = float3(0,0,0);
+    particle.position = mul(posInObject, ObjectToWorld).xyz;
+    //particle.velocity = float3(0,0,0);
     particle.size = Size;
+    particle.velocity = Velocity;
     float u_mass = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
     particle.mass = 1.0 + step(0.05, u_mass)*999.0; // 5% with small mass
     //particle.lifetime = particle.mass > 5.0 ? 5.0 : 50.0;
