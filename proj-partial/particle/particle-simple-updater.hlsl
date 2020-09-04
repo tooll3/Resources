@@ -32,6 +32,9 @@ RWBuffer<uint> IndirectArgs : u3;
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
+    if (i.x >= bufferCount.x)
+        return; // only check alive particles
+
     // Initialize the draw args using the first thread in the Dispatch call
     if (i.x == 0)
     {
