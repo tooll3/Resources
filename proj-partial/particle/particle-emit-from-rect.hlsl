@@ -6,6 +6,7 @@ cbuffer TimeConstants : register(b0)
     float Time;
     float RunTime;
     float BeatTime;
+    float LastFrameDuration;
 }
 
 cbuffer Transforms : register(b1)
@@ -63,8 +64,8 @@ void main(uint3 i : SV_DispatchThreadID)
         
     Particle particle = Particles[pi.index];
     particle.emitterId = EmitterId;
-    uint rng_state = uint((RunTime + 123)*1123023.4)*10 + i.x;
-    float4 hash = hash41(RunTime + (float)i.x);
+    //uint rng_state = uint((RunTime + 123)*1123023.4)*10 + i.x;
+    float4 hash = hash41(BeatTime + (float)i.x);
     float u = hash.x;// float(wang_hash(rng_state)) * (1.0 / 4294967296.0)+ hash.x;
     float v = hash.y; //float(wang_hash(rng_state)) * (1.0 / 4294967296.0)+ hash.y;
 
@@ -76,7 +77,7 @@ void main(uint3 i : SV_DispatchThreadID)
     //particle.velocity = float3(0,0,0);
     particle.size = Size;
     particle.velocity = Velocity;
-    float u_mass = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
+    float u_mass = hash.x;
     particle.mass = 1.0 + step(0.05, u_mass)*999.0; // 5% with small mass
     //particle.lifetime = particle.mass > 5.0 ? 5.0 : 50.0;
     particle.lifetime = LifeTime + u * LifeTimeScatter; 
