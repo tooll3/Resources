@@ -57,11 +57,18 @@ void main(uint3 i : SV_DispatchThreadID)
     if (i.x >= (uint)bufferCount.x)// || i.x >= numStructs)
         return; // no particles available
 
-    uint rng_state = i.x;
-    float xi1 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    float xi2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
+    uint rng_state = i.x*3; // todo hash12 with time as 2nd param
+    float xi = (float(wang_hash(rng_state)) * (1.0 / 4294967296.0));
 
-    uint index = i.x * 3 % numStructs;
+    uint cdfIndex = 0;
+    while (cdfIndex < numStructs && xi > PointCloud[cdfIndex].cdf) // todo: make binary search
+        cdfIndex += 3;
+
+    uint index = cdfIndex;
+
+    float xi1 = (float(wang_hash(rng_state)) * (1.0 / 4294967296.0));
+    float xi2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
+    // index = i.x * 3 % numStructs;
     Vertex v0 = PointCloud[index];
     Vertex v1 = PointCloud[index + 1];
     Vertex v2 = PointCloud[index + 2];
@@ -76,9 +83,10 @@ void main(uint3 i : SV_DispatchThreadID)
 
     particle.position = pos * 50;
     particle.emitterId = 2;//p.id;
-    particle.lifetime = 1.0;
-    particle.size = float2(5, 5);
-    particle.velocity = v0.normal*10;
+    particle.lifetime = 10.0;
+    float size = 2;
+    particle.size = float2(size, size);
+    particle.velocity = 0;//v0.normal*10;
     particle.color = float4(v0.texCoord, 0, 1);
 
     Particles[pi.index] = particle;
