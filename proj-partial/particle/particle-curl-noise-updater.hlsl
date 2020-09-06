@@ -8,6 +8,7 @@ cbuffer TimeConstants : register(b0)
     float time;
     float runTime;
     float dummy;
+    float lastFrameDuration;
 }
 
 cbuffer Transforms : register(b1)
@@ -64,7 +65,7 @@ void main(uint3 i : SV_DispatchThreadID)
     // v += curlNoise(Particles[i.x].position*0.0505);
     // v += curlNoise(Particles[i.x].position*1.505);
     p.velocity = v* (1- ParticleFriction);
-    p.position += (1.0/60.)*(v.xyz);
+    p.position += lastFrameDuration*(v.xyz);
 
     Particles[index] = p;
 }

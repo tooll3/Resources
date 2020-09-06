@@ -7,6 +7,7 @@ cbuffer TimeConstants : register(b0)
     float time;
     float runTime;
     float dummy;
+    float LastFrameDuration;
 }
 
 cbuffer Transforms : register(b1)
@@ -51,7 +52,7 @@ void main(uint3 i : SV_DispatchThreadID)
     GroupMemoryBarrierWithGroupSync();
 
     float oldLifetime = Particles[i.x].lifetime;
-    float newLifetime = oldLifetime - (1.0/60.0);
+    float newLifetime = oldLifetime - LastFrameDuration;
 
     if (newLifetime < 0.0)
     {
