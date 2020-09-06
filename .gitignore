@@ -260,3 +260,5 @@ paket-files/
 __pycache__/
 *.pyc
 T3/imgui.ini
+proj-bigeater/images
+proj-bigeater
