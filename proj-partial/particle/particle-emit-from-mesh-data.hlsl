@@ -44,10 +44,13 @@ uint wang_hash(in out uint seed)
 }
 
 
-StructuredBuffer<Vertex> PointCloud : s0;
+StructuredBuffer<Vertex> PointCloud : t0;
+Texture2D<float4> inputTexture : register(t1);
 
 RWStructuredBuffer<Particle> Particles : u0;
 ConsumeStructuredBuffer<ParticleIndex> DeadParticles : u1;
+
+SamplerState linearSampler : register(s0);
 
 [numthreads(160,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
@@ -81,13 +84,17 @@ void main(uint3 i : SV_DispatchThreadID)
     ParticleIndex pi = DeadParticles.Consume();
     Particle particle = Particles[pi.index];
 
-    particle.position = pos * 50;
+    float scale = 2;
+    particle.position = pos * scale;
     particle.emitterId = 2;//p.id;
-    particle.lifetime = 10.0;
-    float size = 2;
+    particle.lifetime = 5.0;
+    float size = 1;
     particle.size = float2(size, size);
     particle.velocity = 0;//v0.normal*10;
-    particle.color = float4(v0.texCoord, 0, 1);
+    float2 texCoord = v0.texCoord * u + v1.texCoord * v + v2.texCoord * w;
+    texCoord.y = 1.0 - texCoord.y;
+    float4 color = inputTexture.SampleLevel(linearSampler, texCoord, 0);
+    particle.color = color;
 
     Particles[pi.index] = particle;
 }
