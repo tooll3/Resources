@@ -45,7 +45,7 @@ void main(uint3 i : SV_DispatchThreadID)
     GroupMemoryBarrierWithGroupSync();
 
     float oldLifetime = Particles[i.x].lifetime;
-    float newLifetime = oldLifetime - LastFrameDuration;
+    float newLifetime = oldLifetime - clamp(LastFrameDuration, -1/60., 1);
 
     if (newLifetime < 0.0)
     {
