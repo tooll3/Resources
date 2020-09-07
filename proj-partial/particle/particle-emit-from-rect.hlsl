@@ -32,10 +32,12 @@ cbuffer Params : register(b3)
 {
     float LifeTime;
     float LifeTimeScatter;
+
     float Size;
     float SizeScatter;
     float EmitterId;
     float3 Velocity;
+    float MaxEmitCount;
 }
 
 
@@ -58,6 +60,10 @@ uint wang_hash(in out uint seed)
 void main(uint3 i : SV_DispatchThreadID)
 {
     if ((uint)i.x >= (uint)BufferCount.x)
+       return; // no particles available
+
+
+    if (i.x >= (uint)MaxEmitCount)
        return; // no particles available
 
     ParticleIndex pi = DeadParticles.Consume();
@@ -87,7 +93,7 @@ void main(uint3 i : SV_DispatchThreadID)
     //u = fmod(abs(particle.position.x), s)/s;
     //v = fmod(abs(particle.position.z), s)/s;
     float4 color = inputTexture.SampleLevel(linearSampler, float2(u, v), 0);
-    particle.color = color;//float4(1,0,0,1);
+    particle.color = color * float4(1,1,1,1);//float4(1,0,0,1);
 
     Particles[pi.index] = particle;
 }
