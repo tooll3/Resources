@@ -6,21 +6,37 @@
 cbuffer CountConstants : register(b0)
 {
     int4 bufferCount;
+};
+
+cbuffer EmitParameter : register(b1)
+{
+    float EmitterId;
+    float MaxEmitCount;
+};
+
+cbuffer TimeConstants : register(b2)
+{
+    float GlobalTime;
+    float Time;
+    float RunTime;
+    float BeatTime;
+    float LastFrameDuration;
 }
 
-cbuffer Transforms : register(b1)
-{
-    float4x4 CameraToClipSpace;
-    float4x4 ClipSpaceToCamera;
-    float4x4 WorldToCamera;
-    float4x4 CameraToWorld;
-    float4x4 WorldToClipSpace;
-    float4x4 ClipSpaceToWorld;
-    float4x4 ObjectToWorld;
-    float4x4 WorldToObject;
-    float4x4 ObjectToCamera;
-    float4x4 ObjectToClipSpace;
-};
+
+// cbuffer Transforms : register(b1)
+// {
+//     float4x4 CameraToClipSpace;
+//     float4x4 ClipSpaceToCamera;
+//     float4x4 WorldToCamera;
+//     float4x4 CameraToWorld;
+//     float4x4 WorldToClipSpace;
+//     float4x4 ClipSpaceToWorld;
+//     float4x4 ObjectToWorld;
+//     float4x4 WorldToObject;
+//     float4x4 ObjectToCamera;
+//     float4x4 ObjectToClipSpace;
+// };
 
 struct Vertex
 {
@@ -60,8 +76,14 @@ void main(uint3 i : SV_DispatchThreadID)
     if (i.x >= (uint)bufferCount.x)// || i.x >= numStructs)
         return; // no particles available
 
-    uint rng_state = i.x*3; // todo hash12 with time as 2nd param
+    if (i.x >= MaxEmitCount)
+        return;
+
+    uint rng_state = i.x*3*(BeatTime + 10); // todo hash12 with time as 2nd param
     float xi = (float(wang_hash(rng_state)) * (1.0 / 4294967296.0));
+
+    // float3 hash = hash42(float2(BeatTime*1000, i.x*3*1000));
+    // float xi = hash.x;
 
     uint cdfIndex = 0;
     while (cdfIndex < numStructs && xi > PointCloud[cdfIndex].cdf) // todo: make binary search
@@ -71,10 +93,11 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float xi1 = (float(wang_hash(rng_state)) * (1.0 / 4294967296.0));
     float xi2 = float(wang_hash(rng_state)) * (1.0 / 4294967296.0);
-    // index = i.x * 3 % numStructs;
     Vertex v0 = PointCloud[index];
     Vertex v1 = PointCloud[index + 1];
     Vertex v2 = PointCloud[index + 2];
+    // float xi1 = hash.y;
+    // float xi2 = hash.z;
     float xi1Sqrt = sqrt(xi1);
     float u = 1.0 - xi1Sqrt;
     float v = xi2 * xi1Sqrt; 
