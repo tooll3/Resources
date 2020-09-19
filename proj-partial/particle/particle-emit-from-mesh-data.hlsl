@@ -12,6 +12,9 @@ cbuffer EmitParameter : register(b1)
 {
     float EmitterId;
     float MaxEmitCount;
+    float LifeTime;
+    float EmitSize;
+    float4 Color;
 };
 
 cbuffer TimeConstants : register(b2)
@@ -24,19 +27,19 @@ cbuffer TimeConstants : register(b2)
 }
 
 
-// cbuffer Transforms : register(b1)
-// {
-//     float4x4 CameraToClipSpace;
-//     float4x4 ClipSpaceToCamera;
-//     float4x4 WorldToCamera;
-//     float4x4 CameraToWorld;
-//     float4x4 WorldToClipSpace;
-//     float4x4 ClipSpaceToWorld;
-//     float4x4 ObjectToWorld;
-//     float4x4 WorldToObject;
-//     float4x4 ObjectToCamera;
-//     float4x4 ObjectToClipSpace;
-// };
+cbuffer Transforms : register(b3)
+{
+    float4x4 CameraToClipSpace;
+    float4x4 ClipSpaceToCamera;
+    float4x4 WorldToCamera;
+    float4x4 CameraToWorld;
+    float4x4 WorldToClipSpace;
+    float4x4 ClipSpaceToWorld;
+    float4x4 ObjectToWorld;
+    float4x4 WorldToObject;
+    float4x4 ObjectToCamera;
+    float4x4 ObjectToClipSpace;
+};
 
 struct Vertex
 {
@@ -107,16 +110,17 @@ void main(uint3 i : SV_DispatchThreadID)
     ParticleIndex pi = DeadParticles.Consume();
     Particle particle = Particles[pi.index];
 
-    float scale = 2;
-    particle.position = pos * scale;
+    //float scale = 2;
+    particle.position = mul(float4(pos.xyz,1), ObjectToWorld);
     particle.emitterId = 2;//p.id;
-    particle.lifetime = 5.0;
-    float size = 1;
+    particle.lifetime = LifeTime;
+    particle.emitTime = BeatTime;
+    float size = EmitSize;
     particle.size = float2(size, size);
     particle.velocity = 0;//v0.normal*10;
     float2 texCoord = v0.texCoord * u + v1.texCoord * v + v2.texCoord * w;
     texCoord.y = 1.0 - texCoord.y;
-    float4 color = inputTexture.SampleLevel(linearSampler, texCoord, 0);
+    float4 color = inputTexture.SampleLevel(linearSampler, texCoord, 0) * Color;
     particle.color = color;
 
     Particles[pi.index] = particle;

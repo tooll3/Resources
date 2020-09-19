@@ -52,11 +52,12 @@ struct Output
     float3 posInWorld: POSITION2;
 };
 
+sampler texSampler : register(s0);
 StructuredBuffer<Particle> Particles : t0;
 StructuredBuffer<ParticleIndex> AliveParticles : t1;
 
-Texture2D<float4> inputTexture : register(t2);
-sampler texSampler : register(s0);
+Texture2D<float4> colorOverLifeTime : register(t2);
+Texture2D<float4> colorForDirection : register(t3);
 
 Output vsMain(uint id: SV_VertexID)
 {
@@ -77,26 +78,31 @@ Output vsMain(uint id: SV_VertexID)
     float nearDistancePlane = -NearPlane;
     float notTooCloseFactor = 1-smoothstep(nearDistancePlane, nearDistancePlane + NearPlane , particleInCamera.z);
 
+    float distanceToLight = length(LightPosition - particle.position);
+    output.color = particle.color * Color;
+    output.color.rgb *= LightIntensity * pow( distanceToLight + 1, -LightDecay);
 
+    float normalizedAge = saturate( (BeatTime - particle.emitTime) / particle.lifetime);
+    float4 colorForLifeTime = colorOverLifeTime.SampleLevel(texSampler, float2(normalizedAge,0), 0);
+    output.color.rgba *= colorForLifeTime;
 
-    //float scale = saturate(particle.lifetime) * Size * particle.size * 20;// * particle.color.a;
-    float scale = notTooCloseFactor * saturate(BeatTime-particle.emitTime) * saturate(particle.lifetime)  * particle.size  * particle.color.a * Size;// HACK
+    
+
+    
+    float scale = notTooCloseFactor * saturate(BeatTime - particle.emitTime) * saturate(particle.lifetime)  * particle.size  * output.color.a * Size;// HACK
     quadPosInCamera.xy += quadPos.xy*0.050  * scale;  // * (sin(particle.lifetime) + 1)/20;//*6.0;// * size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
     output.posInWorld = mul(quadPosInCamera, CameraToWorld).xyz;
-
-    output.color = particle.color * Color;
+    output.color.a = 1;
+    
+    float3 normalizedVelocity = normalize(particle.velocity);
+    float u = 1-((atan2(normalizedVelocity.y, normalizedVelocity.z) + 3.1415) / (3.1415 *2));
+    float v = normalizedVelocity.z/2 + 0.5;
+    output.color.rgb *=  colorForDirection.SampleLevel(texSampler, float2(v,u), 0);;
 
     //output.color.r = sin(particle.lifetime);
-    //output.color.gb =0;
+    //output.color.gb =0; 
 
-    float distanceToLight = length(LightPosition - particle.position);
-    output.color.rgb *= LightIntensity * pow( distanceToLight + 1, -LightDecay);
-
-
-
-
-    output.color.a = 1;
 
     //output.color.gb = 1;
     output.texCoord = (quadPos.xy * 0.5 + 0.5);
