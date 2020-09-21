@@ -15,6 +15,7 @@ cbuffer EmitParameter : register(b1)
     float LifeTime;
     float EmitSize;
     float4 Color;
+    float Seed;
 };
 
 cbuffer TimeConstants : register(b2)
@@ -82,7 +83,8 @@ void main(uint3 i : SV_DispatchThreadID)
     if (i.x >= MaxEmitCount)
         return;
 
-    uint rng_state = i.x*3*(BeatTime + 10); // todo hash12 with time as 2nd param
+    uint rng_state = Seed < 0 ? (i.x*3*(BeatTime + 10)) 
+                              : (i.x*3*(Seed)); // todo hash12 with time as 2nd param
     float xi = (float(wang_hash(rng_state)) * (1.0 / 4294967296.0));
 
     // float3 hash = hash42(float2(BeatTime*1000, i.x*3*1000));
@@ -115,7 +117,7 @@ void main(uint3 i : SV_DispatchThreadID)
     particle.emitterId = EmitterId;
     particle.lifetime = LifeTime;
     particle.emitTime = BeatTime;
-    float size = EmitSize;
+    float size = EmitSize * Seed;
     particle.size = float2(size, size);
     particle.velocity = 0;//v0.normal*10;
     float2 texCoord = v0.texCoord * u + v1.texCoord * v + v2.texCoord * w;
