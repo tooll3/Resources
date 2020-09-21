@@ -112,7 +112,7 @@ void main(uint3 i : SV_DispatchThreadID)
 
     //float scale = 2;
     particle.position = mul(float4(pos.xyz,1), ObjectToWorld);
-    particle.emitterId = 2;//p.id;
+    particle.emitterId = EmitterId;
     particle.lifetime = LifeTime;
     particle.emitTime = BeatTime;
     float size = EmitSize;
