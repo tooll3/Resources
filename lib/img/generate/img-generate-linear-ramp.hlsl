@@ -6,7 +6,7 @@ cbuffer ParamConstants : register(b0)
     float Width;
     float Rotation;
     float PingPong;
-    float Smooth;
+    float Repeat;
     float Bias;
 }
 
@@ -32,7 +32,12 @@ struct vsOutput
 };
 
 Texture2D<float4> ImageA : register(t0);
+Texture2D<float4> Gradient : register(t1);
 sampler texSampler : register(s0);
+
+float fmod(float x, float y) {
+    return (x - y * floor(x / y));
+} 
 
 float4 psMain(vsOutput psInput) : SV_TARGET
 {    
@@ -52,27 +57,29 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float4 orgColor = ImageA.Sample(texSampler, psInput.texCoord);
 
     float c=  dot(p-Center, angle);
+    c = PingPong > 0.5 
+        ? (Repeat < 0.5 ? (abs(c) / Width)
+                        : 1-abs( fmod(c,Width *2) -Width)  / Width)
+        : c / Width + 0.5;
 
-    if(PingPong > 0.5) {
-        c = abs(c) / Width;
-    }
-    else {
-        c = saturate(c /Width + 0.5);
-    }
-    
+    c = Repeat > 0.5 
+        ? fmod(c,1)
+        : saturate(c);
 
-    if(Smooth > 0.5) {
-        c= smoothstep(0,1,c);
-    }
+    // if(Smooth > 0.5) {
+    //     c= smoothstep(0,1,c);
+    // }
 
     float dBiased = Bias>= 0 
         ? pow( c, Bias+1)
         : 1-pow( clamp(1-c,0,10), -Bias+1);
 
-    float4 cOut= lerp(Fill, Background, dBiased);
+    //float4 cOut= lerp(Fill, Background, dBiased);
 
-    float a = orgColor.a + cOut.a - orgColor.a*cOut.a;
-    float3 rgb = (1.0 - cOut.a)*orgColor.rgb + cOut.a*cOut.rgb;   
 
-    return float4(rgb,a);
+    return Gradient.Sample(texSampler, float2(dBiased, 0));
+    //float a = orgColor.a + cOut.a - orgColor.a*cOut.a;
+    //float3 rgb = (1.0 - cOut.a)*orgColor.rgb + cOut.a*cOut.rgb;   
+
+    //return float4(rgb,a);
 }
