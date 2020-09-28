@@ -1,3 +1,12 @@
+struct Input
+{
+    float4 position : SV_POSITION;
+    float2 texCoord : TEXCOORD;
+    float4 color : COLOR;
+    float4 posInWorld : POSITION;
+    //float3 posInWorld: POSITION2;
+};
+
 cbuffer Transforms : register(b0)
 {
     float4x4 CameraToClipSpace;
@@ -26,6 +35,18 @@ cbuffer ShadowTransforms : register(b1)
     float4x4 Shadow_ObjectToClipSpace;
 };
 
+cbuffer Params : register(b2)
+{
+    float4 Color;
+
+    float Size;
+    float3 LightPosition;
+
+    float LightIntensity;
+    float LightDecay;
+    float RoundShading;
+};
+
 
 Texture2D<float4> ShadowMap0 : register(t0); // opacity shadow map
 Texture2D<float4> ShadowMap1 : register(t1); // opacity shadow map
@@ -33,13 +54,15 @@ Texture2D<float4> ShadowMap2 : register(t2); // opacity shadow map
 Texture2D<float4> ShadowMap3 : register(t3); // opacity shadow map
 sampler texSampler : register(s0);
 
-struct Input
-{
-    float4 position : SV_POSITION;
-    float2 texCoord : TEXCOORD;
-    float4 color : COLOR;
-    float4 posInWorld : POSITION;
-};
+// struct Input
+// {
+//     float4 position : SV_POSITION;
+//     float2 texCoord : TEXCOORD;
+//     float4 color : COLOR;
+//     float4 posInWorld : POSITION;
+// };
+
+#define mod(x,y) ((x)-(y)*floor((x)/(y)))
 
 float getOcclusion(Texture2D<float4> shadowMap, float2 uv, float z)
 {
@@ -55,6 +78,11 @@ float getOcclusion(Texture2D<float4> shadowMap, float2 uv, float z)
 
 float4 psMain(Input input) : SV_TARGET
 {
+    
+
+
+
+
     float4 particleInClipSpace = mul(input.posInWorld, Shadow_WorldToClipSpace);
     particleInClipSpace.xyz /= particleInClipSpace.w;
     particleInClipSpace.xy = particleInClipSpace.xy*0.5 + 0.5;
@@ -71,7 +99,22 @@ float4 psMain(Input input) : SV_TARGET
 
     float4 color = input.color;
     color.rgb *= occlusion;
-    // color.a = 0.2;
 
-    return color;
+
+    float2 p = input.texCoord * float2(2.0, 2.0) - float2(1.0, 1.0);
+    float d= dot(p, p);
+    if (d > 1.0)
+         discard;
+   
+    float z = sqrt(1 - d*d);
+    float3 normal = float3(p, z);
+    float3 lightDir = normalize(LightPosition - input.posInWorld.xyz);
+    normal = mul(float4(normal,0), CameraToWorld).xyz;
+    float diffuse = lerp(1, saturate(dot(normal, lightDir)), RoundShading);
+    float4 color2 = float4(input.color.rgb * diffuse, 1);
+    color2.rgb *= occlusion;
+
+
+
+    return color2;
 }
