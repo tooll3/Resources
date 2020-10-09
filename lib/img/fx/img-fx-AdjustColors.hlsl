@@ -104,7 +104,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 
 
     // Shift Hue
-    hsb.x = mod(hsb.x + Hue,1);
+    hsb.x = mod((hsb.x + Hue/360),1);
 
     // Adjust saturation
     hsb.y = saturate(hsb.y * Saturation);
