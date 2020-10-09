@@ -48,6 +48,7 @@ struct Point {
 //Texture2D<float4> inputTexture : register(t0);
 //SamplerState linearSampler : register(s0);
 StructuredBuffer<Point> Points : t0;         // input
+StructuredBuffer<Point> Points2 : t0;         // input
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
 //ConsumeStructuredBuffer<ParticleIndex> DeadParticles : u1;
 
@@ -64,6 +65,9 @@ RWStructuredBuffer<Point> ResultPoints : u0;    // output
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
+    ResultPoints[i.x].Position = (Points[i.x].Position + Points2[i.x].Position)*0.5;
+    ResultPoints[i.x].W = (Points[i.x].W + Points2[i.x].W)*0.5;
+
     // if ((uint)i.x >= (uint)BufferCount.x)
     //    return; // no particles available
 
