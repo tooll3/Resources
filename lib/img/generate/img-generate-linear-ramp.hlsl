@@ -77,9 +77,9 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     //float4 cOut= lerp(Fill, Background, dBiased);
 
 
-    return Gradient.Sample(texSampler, float2(dBiased, 0));
-    //float a = orgColor.a + cOut.a - orgColor.a*cOut.a;
-    //float3 rgb = (1.0 - cOut.a)*orgColor.rgb + cOut.a*cOut.rgb;   
+    float4 gradient = Gradient.Sample(texSampler, float2(dBiased, 0));
+    float a = orgColor.a + gradient.a - orgColor.a*gradient.a;
+    float3 rgb = (1.0 - gradient.a)*orgColor.rgb + gradient.a*gradient.rgb;   
 
-    //return float4(rgb,a);
+    return float4(rgb,a);
 }
