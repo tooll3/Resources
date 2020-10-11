@@ -71,7 +71,7 @@ void main(uint3 i : SV_DispatchThreadID)
     uint index = i.x; 
     float f = (float)(index)/Count;
     float l = Radius + RadiusOffset * f;
-    float angle = (StartAngle + Cycles * 2 *3.141578 * f);
+    float angle = (StartAngle * 3.141578/180 + Cycles * 2 *3.141578 * f);
     float3 v = float3(sin(angle), cos(angle),0) * l + Center + CenterOffset * f;
 
     ResultPoints[index].Position = v;

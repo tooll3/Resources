@@ -33,7 +33,7 @@ cbuffer TimeConstants : register(b1)
     float GlobalTime;
     float Time;
     float RunTime;
-    float BeatTime;
+    float BeatTime;    
 }
 
 cbuffer Params : register(b2)
@@ -41,6 +41,12 @@ cbuffer Params : register(b2)
     float4 Color;
     float Size;
     float SegmentCount;
+
+    float FogRate;
+    float FogBias;
+    float4 FogColor;
+
+    float ShrinkWithDistance;
 };
 
 struct psInput
@@ -58,8 +64,8 @@ Texture2D<float4> texture2 : register(t1);
 psInput vsMain(uint id: SV_VertexID)
 {
     psInput output;
+    float discardFactor = 1;
 
-    // Lines
     float4 aspect = float4(CameraToClipSpace[1][1] / CameraToClipSpace[0][0],1,1,1);
     int quadIndex = id % 6;
     int particleId = id / 6;
@@ -70,12 +76,24 @@ psInput vsMain(uint id: SV_VertexID)
     Point pointB = Points[particleId+1];
     Point pointBB = Points[particleId > SegmentCount-2 ? SegmentCount-2: particleId+2];
 
+    float3 posInWorld = cornerFactors.x < 0.5
+        ? pointA.position
+        : pointB.position;
+
+    float3 posInClipSpace = mul(posInWorld, WorldToClipSpace);
+
     float4 aaInScreen  = mul(float4(pointAA.position,1), ObjectToClipSpace);
     aaInScreen /= aaInScreen.w;
     float4 aInScreen  = mul(float4(pointA.position,1), ObjectToClipSpace);
+    if(aInScreen.z < -0)
+        discardFactor = 0;
     aInScreen /= aInScreen.w;
+
     
     float4 bInScreen  = mul(float4(pointB.position,1), ObjectToClipSpace);
+    if(bInScreen.z < -0)
+        discardFactor = 0;
+
     bInScreen /= bInScreen.w;
     float4 bbInScreen  = mul(float4(pointBB.position,1), ObjectToClipSpace);
     bbInScreen /= bbInScreen.w;
@@ -96,20 +114,42 @@ psInput vsMain(uint id: SV_VertexID)
     float3 meterNormal = (normal + neighboarNormal) / 2;
     float4 pos = lerp(aInScreen, bInScreen, cornerFactors.x);
     
-    float thickness = lerp( pointA.size , pointB.size, cornerFactors.x) * Size;
+    float thickness = lerp( pointA.size , pointB.size, cornerFactors.x) * Size * discardFactor;
+
+    float3 posInCamSpace = mul(float4(posInWorld,1), WorldToCamera);
+
+    thickness *= lerp(1, 1/(posInCamSpace.z), ShrinkWithDistance);
     pos+= cornerFactors.y * 0.1f * thickness * float4(meterNormal,0);   
 
     output.position = pos;
+    
 
     float strokeFactor = (particleId+ cornerFactors.x) / SegmentCount;
-    output.texCoord = float2(strokeFactor, cornerFactors.y /2 +0.5);
-    //output.texCoord = float2(cornerFactors.x, cornerFactors.y /2 +0.5);
-    output.color = Color;
+    //output.texCoord = float2(strokeFactor, cornerFactors.y /2 +0.5);
+    output.texCoord = float2(cornerFactors.x , cornerFactors.y /2 +0.5);
+
+    float3 n = cornerFactors.x < 0.5 
+        ? cross(pointA.position - pointAA.position, pointA.position - pointB.position)
+        : cross(pointB.position - pointA.position, pointB.position - pointBB.position);
+    n =normalize(n);
+
+
+
+    float fog = pow(saturate(-(posInClipSpace.z + FogBias) *FogRate), 1.2);
+    output.color.rgb = lerp(FogColor,Color, fog);
+    output.color.a = Color.a;
+
     return output;    
 }
 
 float4 psMain(psInput input) : SV_TARGET
 {
     float4 imgColor = texture2.Sample(texSampler, input.texCoord);
-    return clamp(input.color * imgColor, float4(0,0,0,0), float4(1,1000,1000,1000));// * float4(input.texCoord,1,1);    
+    //return clamp(input.color * imgColor, float4(0,0,0,0), float4(1,1000,1000,1000));// * float4(input.texCoord,1,1);    
+
+    float dFromLineCenter= abs(input.texCoord.y -0.5)*2;
+    float a= smoothstep(0.99,0.91,dFromLineCenter) ;
+    float4 color = imgColor * input.color;
+
+    return clamp(float4(color.rgb, color.a * a), 0, float4(1,100,100,100));
 }
