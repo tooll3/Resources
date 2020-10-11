@@ -66,6 +66,7 @@ psInput vsMain(uint id: SV_VertexID)
     // Points
     int quadIndex = id % 6;
     int particleId = id / 6;
+    float4 aspect = float4(CameraToClipSpace[1][1] / CameraToClipSpace[0][0],1,1,1);
     float3 quadPos = Corners[quadIndex];
 
     Point pointDef = Points[particleId];
