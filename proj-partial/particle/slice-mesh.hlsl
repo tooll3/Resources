@@ -1,18 +1,10 @@
 
 #include "hash-functions.hlsl"
-#include "noise-functions.hlsl"
-#include "particle.hlsl"
-
-// cbuffer CountConstants : register(b0)
-// {
-//     int4 bufferCount;
-// };
 
 cbuffer EmitParameter : register(b0)
 {
-    float3 Plane;
-    float dummy;
-    float3 PlanePos;
+    float Scale;
+    float3 dummy;
 };
 
 cbuffer TimeConstants : register(b1)
@@ -63,11 +55,13 @@ void main(uint3 i : SV_DispatchThreadID)
 
     uint index = i.x;
     Face f = PointCloud[index];
+    float3 planeNormal = ObjectToWorld[2].xyz;
+    float3 planePos = ObjectToWorld[3].xyz * Scale;
 
     float np[3];
-    np[0] = dot(Plane, f.positions[0] - PlanePos);
-    np[1] = dot(Plane, f.positions[1] - PlanePos);
-    np[2] = dot(Plane, f.positions[2] - PlanePos);
+    np[0] = dot(planeNormal, f.positions[0] - planePos);
+    np[1] = dot(planeNormal, f.positions[1] - planePos);
+    np[2] = dot(planeNormal, f.positions[2] - planePos);
     if (np[0] < 0 && np[1] < 0 && np[2] < 0)
         return; // all points skipped
 
@@ -82,12 +76,12 @@ void main(uint3 i : SV_DispatchThreadID)
     {
         // one point 'in' two 'out', -> one tri
         float3 lDir = (f.positions[1] - f.positions[0]);
-        float d = np[1] / dot(lDir, Plane);
-        d = dot(PlanePos - f.positions[0], Plane) / dot(lDir, Plane);
+        float d = np[1] / dot(lDir, planeNormal);
+        d = dot(planePos - f.positions[0], planeNormal) / dot(lDir, planeNormal);
         f.positions[1] = f.positions[0] + lDir*d;
 
         lDir = f.positions[2] - f.positions[0];
-        d = dot(PlanePos - f.positions[0], Plane) / dot(lDir, Plane);
+        d = dot(planePos - f.positions[0], planeNormal) / dot(lDir, planeNormal);
         f.positions[2] = f.positions[0] + lDir*d;;
 
         uint targetIndex = SlicedData.IncrementCounter();
@@ -99,12 +93,12 @@ void main(uint3 i : SV_DispatchThreadID)
     {
         // one point 'in' two 'out', -> one tri
         float3 lDir = (f.positions[0] - f.positions[1]);
-        float d = np[0] / dot(lDir, Plane);
-        d = dot(PlanePos - f.positions[1], Plane) / dot(lDir, Plane);
+        float d = np[0] / dot(lDir, planeNormal);
+        d = dot(planePos - f.positions[1], planeNormal) / dot(lDir, planeNormal);
         f.positions[0] = f.positions[1] + lDir*d;
 
         lDir = f.positions[2] - f.positions[1];
-        d = dot(PlanePos - f.positions[1], Plane) / dot(lDir, Plane);
+        d = dot(planePos - f.positions[1], planeNormal) / dot(lDir, planeNormal);
         f.positions[2] = f.positions[1] + lDir*d;;
 
         uint targetIndex = SlicedData.IncrementCounter();
@@ -116,11 +110,11 @@ void main(uint3 i : SV_DispatchThreadID)
     {
         // one point 'in' two 'out', -> one tri
         float3 lDir = (f.positions[0] - f.positions[2]);
-        float d = dot(PlanePos - f.positions[2], Plane) / dot(lDir, Plane);
+        float d = dot(planePos - f.positions[2], planeNormal) / dot(lDir, planeNormal);
         f.positions[0] = f.positions[2] + lDir*d;
 
         lDir = f.positions[1] - f.positions[2];
-        d = dot(PlanePos - f.positions[2], Plane) / dot(lDir, Plane);
+        d = dot(planePos - f.positions[2], planeNormal) / dot(lDir, planeNormal);
         f.positions[1] = f.positions[2] + lDir*d;;
 
         uint targetIndex = SlicedData.IncrementCounter();
@@ -138,14 +132,14 @@ void main(uint3 i : SV_DispatchThreadID)
             Face f1 = f;
             float3 lDir = (f.positions[i2] - f.positions[i0]);
             // float d = np[i2] / dot(lDir, Plane);
-            float d = dot(PlanePos - f.positions[i0], Plane) / dot(lDir, Plane);
+            float d = dot(planePos - f.positions[i0], planeNormal) / dot(lDir, planeNormal);
             float3 newP0To2 = f.positions[i0] + lDir*d;
             f1.positions[i0] = newP0To2;
 
             Face f2 = f;
             lDir = f.positions[i1] - f.positions[i0];
             // d = np[i1] / dot(lDir, Plane);
-            d = dot(PlanePos - f.positions[i0], Plane) / dot(lDir, Plane);
+            d = dot(planePos - f.positions[i0], planeNormal) / dot(lDir, planeNormal);
             float3 newP0To1 = f.positions[i0] + lDir*d;
             f2.positions[i0] = newP0To1;
             f2.positions[i2] = newP0To2;
@@ -157,8 +151,5 @@ void main(uint3 i : SV_DispatchThreadID)
             return;
         }
     }
-
-    // uint targetIndex = SlicedData.IncrementCounter();
-    // SlicedData[targetIndex] = f;
 }
 

@@ -123,16 +123,16 @@ void main(uint3 i : SV_DispatchThreadID)
 
 
     //float scale = 2;
-    particle.position = mul(float4(pos.xyz,1), ObjectToWorld) * 5.0;
+    particle.position = mul(float4(pos.xyz,1), ObjectToWorld);
     particle.emitterId = EmitterId;
     particle.lifetime = LifeTime;
     particle.emitTime = BeatTime;
-    float size = 0.5;//EmitSize * Seed;
+    float size = 1.5;//EmitSize * Seed;
     particle.size = float2(size, size);
     particle.velocity = 0;//v0.normal*10;
     float2 texCoord = f.texCoords[0] * u + f.texCoords[1] * v + f.texCoords[2] * w;
     texCoord.y = 1.0 - texCoord.y;
-    float4 color = inputTexture.SampleLevel(linearSampler, texCoord, 0) * Color;
+    float4 color = float4(0.5, 0.5, 0.5, 1);//inputTexture.SampleLevel(linearSampler, texCoord, 0) * Color;
     particle.color = color;
 
     Particles[pi.index] = particle;
