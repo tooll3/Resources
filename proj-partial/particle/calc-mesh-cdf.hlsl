@@ -8,30 +8,6 @@ cbuffer CountConstants : register(b0)
     int4 bufferCount;
 };
 
-// cbuffer TimeConstants : register(b1)
-// {
-//     float GlobalTime;
-//     float Time;
-//     float RunTime;
-//     float BeatTime;
-//     float LastFrameDuration;
-// }
-
-
-// cbuffer Transforms : register(b2)
-// {
-//     float4x4 CameraToClipSpace;
-//     float4x4 ClipSpaceToCamera;
-//     float4x4 WorldToCamera;
-//     float4x4 CameraToWorld;
-//     float4x4 WorldToClipSpace;
-//     float4x4 ClipSpaceToWorld;
-//     float4x4 ObjectToWorld;
-//     float4x4 WorldToObject;
-//     float4x4 ObjectToCamera;
-//     float4x4 ObjectToClipSpace;
-// };
-
 struct Face
 {
     float3 positions[3];
@@ -52,7 +28,7 @@ void main(uint3 i : SV_DispatchThreadID)
     SlicedData.GetDimensions(numStructs, stride);
     if (i.x >= (uint)numStructs)
         return; 
-
+    
     uint index = i.x;
 
     int size = bufferCount;
@@ -68,7 +44,7 @@ void main(uint3 i : SV_DispatchThreadID)
         float3 heightStart = f.positions[0] + dot(f.positions[2] - f.positions[0], baseDir) * baseDir;
         float b = length(f.positions[2] - heightStart);
         float faceArea = a * b * 0.5;
-        f.normalizedFaceArea = faceArea;
+        SlicedData[j].normalizedFaceArea = faceArea;
         sum += faceArea;
     }
 
@@ -78,7 +54,7 @@ void main(uint3 i : SV_DispatchThreadID)
         sum += SlicedData[j].normalizedFaceArea;
     }
 
-    sum = 1/sum;
+    sum = 1.0/sum;
 
     float cdf = 0;
     for (int j = 0; j < size; j++)
