@@ -7,6 +7,7 @@ static const float4 Factors[] =
   float4(0, 1, 0, 0),
   float4(0, 0, 1, 0),
   float4(0, 0, 0, 1),
+  float4(0, 0, 0, 1),
 };
 
 cbuffer Transforms : register(b0)
@@ -72,13 +73,14 @@ void main(uint3 i : SV_DispatchThreadID)
     
     float3 posInObject = mul(float4(pos.xyz,0), WorldToObject).xyz;
     float4 c = inputTexture.SampleLevel(texSampler, posInObject.xy + 0.5 , 0.0);
+    float gray = (c.r+c.g+c.b)/3;
 
-    uint RMode = (uint)clamp(R, 0, 4);
-    float4 rF = Factors[(uint)clamp(R, 0, 4.1)] * c * RFactor + ROffset; 
-    float4 gF = Factors[(uint)clamp(G, 0, 4.1)] * c * GFactor + GOffset; 
-    float4 bF = Factors[(uint)clamp(B, 0, 4.1)] * c * BFactor + BOffset; 
-    float4 f = rF+gF+bF;
+    float4 ff =
+              Factors[(uint)clamp(L, 0, 5.1)] * (gray * LFactor + LOffset) 
+            + Factors[(uint)clamp(R, 0, 5.1)] * (c * RFactor + ROffset)
+            + Factors[(uint)clamp(G, 0, 5.1)] * (c * GFactor + GOffset)
+            + Factors[(uint)clamp(B, 0, 5.1)] * (c * BFactor + BOffset);
 
-    ResultPoints[index].Position = P.Position + float3(f.xyz);
-    ResultPoints[index].W = P.W + f.w;
+    ResultPoints[index].Position = P.Position + float3(ff.xyz);
+    ResultPoints[index].W = P.W + ff.w;// + ff.w;
 }
