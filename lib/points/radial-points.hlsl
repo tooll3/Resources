@@ -62,7 +62,20 @@ struct Point {
 //StructuredBuffer<Point> Points2 : t1;         // input
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
 
-//const float ToRad = 3.141578 / 180;
+float3 RotatePointAroundAxis(float3 In, float3 Axis, float Rotation)
+{
+    float s = sin(Rotation);
+    float c = cos(Rotation);
+    float one_minus_c = 1.0 - c;
+
+    Axis = normalize(Axis);
+    float3x3 rot_mat = 
+    {   one_minus_c * Axis.x * Axis.x + c, one_minus_c * Axis.x * Axis.y - Axis.z * s, one_minus_c * Axis.z * Axis.x + Axis.y * s,
+        one_minus_c * Axis.x * Axis.y + Axis.z * s, one_minus_c * Axis.y * Axis.y + c, one_minus_c * Axis.y * Axis.z - Axis.x * s,
+        one_minus_c * Axis.z * Axis.x - Axis.y * s, one_minus_c * Axis.y * Axis.z + Axis.x * s, one_minus_c * Axis.z * Axis.z + c
+    };
+    return mul(rot_mat,  In);
+}
 
 [numthreads(256,4,1)]
 void main(uint3 i : SV_DispatchThreadID)
@@ -72,7 +85,9 @@ void main(uint3 i : SV_DispatchThreadID)
     float f = (float)(index)/Count;
     float l = Radius + RadiusOffset * f;
     float angle = (StartAngle * 3.141578/180 + Cycles * 2 *3.141578 * f);
-    float3 v = float3(sin(angle), cos(angle),0) * l + Center + CenterOffset * f;
+    float3 direction = normalize(cross(Axis, Axis.y > 0.7 ? float3(0,0,1) :  float3(0,1,0)));
+
+    float3 v = RotatePointAroundAxis(direction * l , Axis, angle) + Center + CenterOffset * f;
 
     ResultPoints[index].Position = v;
     ResultPoints[index].W = W + WOffset * f;

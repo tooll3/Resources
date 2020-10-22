@@ -3,11 +3,16 @@
 
 cbuffer Params : register(b0)
 {
-    float Amount;
-    float Frequency;
-    float Phase;
+    float3 Center;
+    float Radius;
+
+    float RadiusFallOff;
+    float RadialForce;
+    float UseWForMass;
     float Variation;
-    float3 AmountDistribution;
+
+    float3 Gravity;
+    float ForceDecayRate;
 }
 
 struct Point {
@@ -25,11 +30,15 @@ void main(uint3 i : SV_DispatchThreadID)
     float3 pos = ResultPoints[i.x].Position;
     //float3 noise = snoiseVec3((pos + variationOffset + Phase ) * Frequency)* (Amount/100) * AmountDistribution;
 
+    float3 localPos = pos - Center;
+    float distance = max(length(localPos), 0.02);
+    float3 direction = localPos / distance;
 
-    float3 d =float3(0,1,1) - pos;
-    float3 f = normalize(d) * 0.005 * length(d);
+    float effect = saturate(1-(distance - Radius) / RadiusFallOff)/100;
 
-    ResultPoints[i.x].Position += float3(0,0.0,  -0.02) +f;
+    float3 radialForce = direction / clamp( pow(distance, ForceDecayRate) , 0.02,1000) * RadialForce;
+
+    ResultPoints[i.x].Position += (Gravity + radialForce) * effect;
     ResultPoints[i.x].W += 0 ;
 }
 

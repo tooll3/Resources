@@ -125,8 +125,8 @@ psInput vsMain(uint id: SV_VertexID)
     
 
     float strokeFactor = (particleId+ cornerFactors.x) / SegmentCount;
-    //output.texCoord = float2(strokeFactor, cornerFactors.y /2 +0.5);
-    output.texCoord = float2(cornerFactors.x , cornerFactors.y /2 +0.5);
+    output.texCoord = float2(strokeFactor, cornerFactors.y /2 +0.5);
+    //output.texCoord = float2(cornerFactors.x , cornerFactors.y /2 +0.5);
 
     float3 n = cornerFactors.x < 0.5 
         ? cross(pointA.position - pointAA.position, pointA.position - pointB.position)
