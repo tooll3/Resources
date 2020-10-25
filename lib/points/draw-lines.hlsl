@@ -80,7 +80,6 @@ psInput vsMain(uint id: SV_VertexID)
         ? pointA.position
         : pointB.position;
 
-    float3 posInClipSpace = mul(posInWorld, WorldToClipSpace);
 
     float4 aaInScreen  = mul(float4(pointAA.position,1), ObjectToClipSpace);
     aaInScreen /= aaInScreen.w;
@@ -133,10 +132,16 @@ psInput vsMain(uint id: SV_VertexID)
         : cross(pointB.position - pointA.position, pointB.position - pointBB.position);
     n =normalize(n);
 
+    //float3 posInClipSpace = mul(posInWorld, WorldToClipSpace);
 
+    float4 posInClipSpace4 = mul(float4(posInWorld,1), WorldToClipSpace);
 
-    float fog = pow(saturate(-(posInClipSpace.z + FogBias) *FogRate), 1.2);
+    //float fog =  posInClipSpace4.w;// pow(saturate(-(posInClipSpace.z + FogBias) *FogRate), 1.2);
+    //output.color.rgb = posInClipSpace4.xyz/posInClipSpace4.w /2 + 0.5;// (posInClipSpace4.x+3)/10;// / posInClipSpace4.w;
+    float fog =  saturate(pow( 1 / posInClipSpace4.w, FogBias));
+    //float fog = abs(1 / posInClipSpace4.w)/1;
     output.color.rgb = lerp(FogColor,Color, fog);
+    //output.color.rgb = float3(0,1,0);
     output.color.a = Color.a;
 
     return output;    
@@ -148,8 +153,8 @@ float4 psMain(psInput input) : SV_TARGET
     //return clamp(input.color * imgColor, float4(0,0,0,0), float4(1,1000,1000,1000));// * float4(input.texCoord,1,1);    
 
     float dFromLineCenter= abs(input.texCoord.y -0.5)*2;
-    float a= smoothstep(0.99,0.91,dFromLineCenter) ;
-    float4 color = imgColor * input.color;
+    float a= smoothstep(1,0.95,dFromLineCenter) ;
+    float4 color = input.color * imgColor;// * input.color;
 
     return clamp(float4(color.rgb, color.a * a), 0, float4(1,100,100,100));
 }
