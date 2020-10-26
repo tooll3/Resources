@@ -4,7 +4,8 @@
 cbuffer EmitParameter : register(b0)
 {
     float Scale;
-    float3 dummy;
+    float Range;
+    float2 dummy;
 };
 
 cbuffer TimeConstants : register(b1)
@@ -45,30 +46,27 @@ struct Face
 StructuredBuffer<Face> PointCloud : t0;
 RWStructuredBuffer<Face> SlicedData : u0;
 
-[numthreads(160,1,1)]
-void main(uint3 i : SV_DispatchThreadID)
-{
-    uint numStructs, stride;
-    PointCloud.GetDimensions(numStructs, stride);
-    if (i.x >= (uint)numStructs)
-        return; 
 
-    uint index = i.x;
-    Face f = PointCloud[index];
-    float3 planeNormal = ObjectToWorld[2].xyz;
-    float3 planePos = ObjectToWorld[3].xyz * Scale;
+void clipFace(Face f, float3 planeNormal, float3 planePos, out Face faces[2], out int clippedCount)
+{
+    clippedCount = 0;
 
     float np[3];
     np[0] = dot(planeNormal, f.positions[0] - planePos);
     np[1] = dot(planeNormal, f.positions[1] - planePos);
     np[2] = dot(planeNormal, f.positions[2] - planePos);
+
     if (np[0] < 0 && np[1] < 0 && np[2] < 0)
+    {
         return; // all points skipped
+    }
 
     if (np[0] > 0 && np[1] > 0 && np[2] > 0)
     {
-        uint targetIndex = SlicedData.IncrementCounter();
-        SlicedData[targetIndex] = f;
+        // uint targetIndex = SlicedData.IncrementCounter();
+        // SlicedData[targetIndex] = f;
+        faces[0] = f;
+        clippedCount = 1;
         return; // all points on 'right' side of the plane, just keep input triangle
     }
 
@@ -84,8 +82,8 @@ void main(uint3 i : SV_DispatchThreadID)
         d = dot(planePos - f.positions[0], planeNormal) / dot(lDir, planeNormal);
         f.positions[2] = f.positions[0] + lDir*d;;
 
-        uint targetIndex = SlicedData.IncrementCounter();
-        SlicedData[targetIndex] = f;
+        faces[0] = f;
+        clippedCount = 1;
         return;
     }
 
@@ -101,8 +99,8 @@ void main(uint3 i : SV_DispatchThreadID)
         d = dot(planePos - f.positions[1], planeNormal) / dot(lDir, planeNormal);
         f.positions[2] = f.positions[1] + lDir*d;;
 
-        uint targetIndex = SlicedData.IncrementCounter();
-        SlicedData[targetIndex] = f;
+        faces[0] = f;
+        clippedCount = 1;
         return;
     }
 
@@ -117,8 +115,8 @@ void main(uint3 i : SV_DispatchThreadID)
         d = dot(planePos - f.positions[2], planeNormal) / dot(lDir, planeNormal);
         f.positions[1] = f.positions[2] + lDir*d;;
 
-        uint targetIndex = SlicedData.IncrementCounter();
-        SlicedData[targetIndex] = f;
+        faces[0] = f;
+        clippedCount = 1;
         return;
     }
 
@@ -144,12 +142,45 @@ void main(uint3 i : SV_DispatchThreadID)
             f2.positions[i0] = newP0To1;
             f2.positions[i2] = newP0To2;
 
-            uint targetIndex = SlicedData.IncrementCounter();
-            SlicedData[targetIndex] = f1;
-            targetIndex = SlicedData.IncrementCounter();
-            SlicedData[targetIndex] = f2;
+            faces[0] = f1;
+            faces[1] = f2;
+            clippedCount = 2;
             return;
         }
     }
+}
+
+[numthreads(160,1,1)]
+void main(uint3 i : SV_DispatchThreadID)
+{
+    uint numStructs, stride;
+    PointCloud.GetDimensions(numStructs, stride);
+    if (i.x >= (uint)numStructs)
+        return; 
+
+    uint index = i.x;
+    Face f = PointCloud[index];
+    float3 planeNormal = normalize(ObjectToWorld[2].xyz);
+    float3 planePos = ObjectToWorld[3].xyz * Scale;
+
+    int clippedCount = 0;
+    Face clippedFaces[2];
+    clipFace(f, planeNormal, planePos, clippedFaces, clippedCount);
+
+    planePos += planeNormal*Range;
+    planeNormal *= -1.0;
+
+    for (int j = 0; j < clippedCount; j++)
+    {
+        Face clippedFaces2[2];
+        int clippedCount2 = 0;
+        clipFace(clippedFaces[j], planeNormal, planePos, clippedFaces2, clippedCount2);
+        for (int k = 0; k < clippedCount2; k++)
+        {
+            uint targetIndex = SlicedData.IncrementCounter();
+            SlicedData[targetIndex] = clippedFaces2[k];
+        }
+    }
+
 }
 
