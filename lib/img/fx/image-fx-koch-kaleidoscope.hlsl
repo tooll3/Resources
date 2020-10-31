@@ -77,7 +77,7 @@ float4 KochKaleidoscope(float2 uv)
     
     float scale = 1.;
     float foldCount = 0;
-    n = GetDirection(Angle*(2./3.)*3.1415);
+    n = GetDirection(Angle*(2./3.)*3.1415/90);
     uv.x += .5;
 
     for(int i=0; i<Steps; i++) {
