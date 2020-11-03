@@ -21,7 +21,9 @@ cbuffer Params : register(b1)
 };
 
 Texture2D<float4> InputTexture : register(t0);
-Texture2D<float4> RefTexture : register(t1);
+Texture2D<float4> AlphaTexture : register(t1);
+Texture2D<float4> BackgroundTexture : register(t2);
+Texture2D<float4> RefTexture : register(t3);
 sampler texSampler : register(s0);
 sampler pointSampler : register(s1);
 
@@ -35,8 +37,12 @@ struct vsOutput
 float4 psMain(vsOutput input) : SV_TARGET
 {
     float2 texCoord = input.texCoord;
-    texCoord = float2(0.25,-0.35) + texCoord*0.15;
-    // return RefTexture.Sample(texSampler, texCoord);
+    // texCoord = float2(0.85,-0.35) + texCoord*0.15;
+    float4 color = BackgroundTexture.Sample(texSampler, texCoord);
+    // color = float4(0,0,0,0);
+    float4 ref = RefTexture.Sample(texSampler, texCoord);
+    // return ref;
+    // return float4(color.rgb + ref.rgb, 1);
     float dist = InputTexture.Sample(texSampler, texCoord).r;
     float t = 0.5;
     float aastep;
@@ -46,11 +52,11 @@ float4 psMain(vsOutput input) : SV_TARGET
     p = smoothstep(t - aastep, t + aastep, dist);
     // aastep = fwidth(dist);
     // p = smoothstep(t, t + aastep, dist);
-    float alpha = InputTexture.Sample(pointSampler, texCoord).a;
-    alpha = dist > t - aastep ? alpha : 0;
+    float alpha = AlphaTexture.Sample(pointSampler, texCoord).r;
+    alpha = dist > t - aastep ? p*alpha : 0;
     // p = alpha;
     // p = InputTexture.Sample(pointSampler, texCoord).r;
     // alpha = 1;
-    float3 color = float3(1,1,1);
-    return float4(color*p,alpha);
+    color = float4(color.rgb*(1-alpha) + alpha, 1);
+    return color;
 }
