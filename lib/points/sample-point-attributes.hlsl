@@ -1,3 +1,4 @@
+#include "point.hlsl"
 
 static const float4 Factors[] = 
 {
@@ -50,10 +51,7 @@ cbuffer Params : register(b1)
     float3 Center;
 }
 
-struct Point {
-    float3 Position;
-    float W;
-};
+
 
 StructuredBuffer<Point> Points : t0;
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
@@ -68,7 +66,7 @@ void main(uint3 i : SV_DispatchThreadID)
     uint index = i.x; 
 
     Point P = Points[index];
-    float3 pos = P.Position;
+    float3 pos = P.position;
     pos -= Center;
     
     float3 posInObject = mul(float4(pos.xyz,0), WorldToObject).xyz;
@@ -81,6 +79,6 @@ void main(uint3 i : SV_DispatchThreadID)
             + Factors[(uint)clamp(G, 0, 5.1)] * (c * GFactor + GOffset)
             + Factors[(uint)clamp(B, 0, 5.1)] * (c * BFactor + BOffset);
 
-    ResultPoints[index].Position = P.Position + float3(ff.xyz);
-    ResultPoints[index].W = P.W + ff.w;// + ff.w;
+    ResultPoints[index].position = P.position + float3(ff.xyz);
+    ResultPoints[index].w = P.w + ff.w;// + ff.w;
 }

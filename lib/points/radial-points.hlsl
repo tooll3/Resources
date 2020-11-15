@@ -1,4 +1,5 @@
 #include "hash-functions.hlsl"
+#include "point.hlsl"
 //#include "cbuffer-structs.hlsl"
 
 cbuffer TimeConstants : register(b0)
@@ -53,10 +54,10 @@ cbuffer Params : register(b2)
     float WOffset;
 }
 
-struct Point {
-    float3 Position;
-    float W;
-};
+// struct Point {
+//     float3 Position;
+//     float W;
+// };
 
 //StructuredBuffer<Point> Points1 : t0;         // input
 //StructuredBuffer<Point> Points2 : t1;         // input
@@ -89,7 +90,10 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float3 v = RotatePointAroundAxis(direction * l , Axis, angle) + Center + CenterOffset * f;
 
-    ResultPoints[index].Position = v;
-    ResultPoints[index].W = W + WOffset * f;
+    ResultPoints[index].position = v;
+    ResultPoints[index].w = W + WOffset * f;
+    float4 quat = rotate_angle_axis(angle, normalize(Axis));
+    ResultPoints[index].rotation = quat;
+    //ResultPoints[index].w = quat.w+ 0.5;
 }
 

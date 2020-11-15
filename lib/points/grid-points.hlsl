@@ -1,3 +1,4 @@
+#include "point.hlsl"
 
 cbuffer Params : register(b0)
 {
@@ -11,11 +12,6 @@ cbuffer Params : register(b0)
 
     float W;    
 }
-
-struct Point {
-    float3 Position;
-    float W;
-};
 
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
 
@@ -45,7 +41,8 @@ void main(uint3 i : SV_DispatchThreadID)
     );
 
     float3 pos = Center +  zeroAdjustedSize * (cell / clampedCount) - zeroAdjustedSize * 0.5f;
-    ResultPoints[index].Position = pos;
-    ResultPoints[index].W = W;
+    ResultPoints[index].position = pos;
+    ResultPoints[index].w = W;
+    ResultPoints[index].rotation = float4(0,0,0,1);
 }
 

@@ -1,8 +1,9 @@
-struct Point
-{
-    float3 position;
-    float size;
-};
+#include "point.hlsl"
+// struct Point
+// {
+//     float3 position;
+//     float size;
+// };
 
 static const float3 Corners[] = 
 {
@@ -105,15 +106,15 @@ psInput vsMain(uint id: SV_VertexID)
                             ? (bInScreen - bbInScreen).xyz
                             : direction;
 
-    float3 normal =  normalize( cross(direction * aspect, float3(0,0,1)))/aspect; 
-    float3 normalA =  normalize( cross(directionA * aspect, float3(0,0,1)))/aspect; 
-    float3 normalB =  normalize( cross(directionB * aspect, float3(0,0,1)))/aspect; 
+    float3 normal =  normalize( cross(direction * aspect.xyz, float3(0,0,1)))/aspect.xyz; 
+    float3 normalA =  normalize( cross(directionA * aspect.xyz, float3(0,0,1)))/aspect.xyz; 
+    float3 normalB =  normalize( cross(directionB * aspect.xyz, float3(0,0,1)))/aspect.xyz; 
 
     float3 neighboarNormal = lerp(normalA, normalB, cornerFactors.x);
     float3 meterNormal = (normal + neighboarNormal) / 2;
     float4 pos = lerp(aInScreen, bInScreen, cornerFactors.x);
     
-    float thickness = lerp( pointA.size , pointB.size, cornerFactors.x) * Size * discardFactor;
+    float thickness = lerp( pointA.w , pointB.w, cornerFactors.x) * Size * discardFactor;
 
     float3 posInCamSpace = mul(float4(posInWorld,1), WorldToCamera);
 

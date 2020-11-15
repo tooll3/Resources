@@ -1,13 +1,14 @@
+#include "point.hlsl"
 cbuffer Params : register(b0)
 {
     float CountA;
     float CountB;
 }
 
-struct Point {
-    float3 Position;
-    float W;
-};
+// struct Point {
+//     float3 Position;
+//     float W;
+// };
 
 StructuredBuffer<Point> Points1 : t0;         // input
 StructuredBuffer<Point> Points2 : t1;         // input
@@ -22,17 +23,13 @@ void main(uint3 i : SV_DispatchThreadID)
     if(useFirst) {
         ResultPoints[i.x] = Points1[i.x];
         if(i.x == countA) {
-            ResultPoints[i.x].W = 1.0/0;
+            ResultPoints[i.x].w = 1.0/0;
         }
     }
     else {
         ResultPoints[i.x] = Points2[i.x - countA];
         if(i.x == countA + uint(CountB + 0.5)) {
-            ResultPoints[i.x].W = 1.0/0;
+            ResultPoints[i.x].w = 1.0/0;
         }
-
     }
-
-    
-
 }

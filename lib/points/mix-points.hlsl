@@ -1,4 +1,5 @@
 #include "hash-functions.hlsl"
+#include "point.hlsl"
 
 cbuffer TimeConstants : register(b0)
 {
@@ -32,10 +33,6 @@ cbuffer Params : register(b2)
     float CombineMode;
 }
 
-struct Point {
-    float3 Position;
-    float W;
-};
 
 StructuredBuffer<Point> Points1 : t0;         // input
 StructuredBuffer<Point> Points2 : t1;         // input
@@ -46,7 +43,7 @@ void main(uint3 i : SV_DispatchThreadID)
 {
     Point A = Points1[i.x];
     Point B = Points2[i.x];
-    ResultPoints[i.x].Position =  lerp(A.Position, B.Position, BlendFactor);  // Points2[i.x].Position;//  (Points[i.x].Position + Points2[i.x].Position)*0.5;
-    ResultPoints[i.x].W = lerp(A.W, B.W, BlendFactor);
+    ResultPoints[i.x].position =  lerp(A.position, B.position, BlendFactor);  // Points2[i.x].Position;//  (Points[i.x].Position + Points2[i.x].Position)*0.5;
+    ResultPoints[i.x].w = lerp(A.w, B.w, BlendFactor);
 }
 

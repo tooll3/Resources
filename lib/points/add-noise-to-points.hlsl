@@ -1,5 +1,6 @@
 #include "hash-functions.hlsl"
 #include "noise-functions.hlsl"
+#include "point.hlsl"
 
 cbuffer TimeConstants : register(b0)
 {
@@ -21,10 +22,10 @@ cbuffer Params : register(b1)
 
 }
 
-struct Point {
-    float3 Position;
-    float W;
-};
+// struct Point {
+//     float3 Position;
+//     float W;
+// };
 
 StructuredBuffer<Point> Points1 : t0;         // input
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
@@ -51,9 +52,9 @@ void main(uint3 i : SV_DispatchThreadID)
     float3 variationOffset = float3(0,0,0);
 
     //float3 noise = curlNoise((A.Position + variationOffset + Phase ) * Frequency)* Amount * AmountDistribution;
-    float3 noise = snoiseVec3((A.Position + variationOffset + Phase ) * Frequency)* Amount * AmountDistribution;
+    float3 noise = snoiseVec3((A.position + variationOffset + Phase ) * Frequency)* Amount * AmountDistribution;
 
-    ResultPoints[i.x].Position =  A.Position + noise;
-    ResultPoints[i.x].W = A.W ;
+    ResultPoints[i.x].position =  A.position + noise;
+    ResultPoints[i.x].w = A.w;
 }
 
