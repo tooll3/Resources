@@ -9,6 +9,7 @@ cbuffer Params : register(b0)
     float Phase;
     float Variation;
     float3 AmountDistribution;
+    float RotationLookupDistance;
 }
 
 // struct Point {
@@ -35,9 +36,9 @@ void main(uint3 i : SV_DispatchThreadID)
     //float3 noise = curlNoise(noiseLookup) * Amount/100 * AmountDistribution;
     float3 noise = snoiseVec3(noiseLookup) * Amount/100 * AmountDistribution;
 
-    float3 n = float3(0.0, 0.01, 0.11);
+    float3 n = float3(1, 0.0, 0) * RotationLookupDistance;
     float3 posNormal = ResultPoints[i.x].position*0.9; // avoid simplex noice glitch at -1,0,0 
-    float3 noiseLookupNormal = (posNormal + variationOffset + Phase  + n) * Frequency;
+    float3 noiseLookupNormal = (posNormal + variationOffset + Phase  ) * Frequency + n/Frequency;
     //float3 noiseNormal = curlNoise(noiseLookupNormal) * Amount/100 * AmountDistribution;
     float3 noiseNormal = snoiseVec3(noiseLookup) * Amount/100 * AmountDistribution;
 

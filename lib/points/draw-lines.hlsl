@@ -116,7 +116,9 @@ psInput vsMain(uint id: SV_VertexID)
     
     float thickness = lerp( pointA.w , pointB.w, cornerFactors.x) * Size * discardFactor;
 
-    float3 posInCamSpace = mul(float4(posInWorld,1), WorldToCamera);
+    float4 posInCamSpace = mul(float4(posInWorld,1), WorldToCamera);
+    posInCamSpace.xyz /= posInCamSpace.w;
+    posInCamSpace.w = 1;
 
     thickness *= lerp(1, 1/(posInCamSpace.z), ShrinkWithDistance);
     pos+= cornerFactors.y * 0.1f * thickness * float4(meterNormal,0);   

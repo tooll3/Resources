@@ -10,11 +10,12 @@
 
 cbuffer EmitParameter : register(b0)
 {
-    float EmitterId;
-    float MaxEmitCount;
-    float LifeTime;
-    float EmitSize;
-    float4 Color;
+    // float EmitterId;
+    // float MaxEmitCount;
+    // float LifeTime;
+    // float EmitSize;
+    // float4 Color;
+    float Count;
     float Seed;
 };
 
@@ -86,7 +87,7 @@ void main(uint3 i : SV_DispatchThreadID)
     // if (i.x >= (uint)bufferCount.x)
     //     return; 
 
-    if (i.x >= (uint)MaxEmitCount)
+    if (i.x >= (uint)Count)
         return;
 
     //uint bla = asint(BeatTime*1000) ^ i.x;
@@ -120,8 +121,9 @@ void main(uint3 i : SV_DispatchThreadID)
     // ParticleIndex pi = DeadParticles.Consume();
     Point newPoint = points[i.x];
     newPoint.position = mul(float4(pos.xyz,1), ObjectToWorld);
-    newPoint.w;
+    newPoint.w =1;
     newPoint.rotation = float4(0,0,0,1);
+    newPoint.rotation =  q_look_at(f.normals[0], float3(0,1,0));
     //newPoint.rotation = rot
 /*
     //float scale = 2;

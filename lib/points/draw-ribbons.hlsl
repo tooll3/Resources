@@ -74,7 +74,7 @@ psInput vsMain(uint id: SV_VertexID)
     float3 pInObject = p.position + widthV;
 
     float3 normal = normalize(rotate_vector(float3(0,1,0), p.rotation));
-    float4 normalInScreen = mul(float4(normal,1), ObjectToClipSpace);
+    float4 normalInScreen = mul(float4(normal,0), ObjectToClipSpace);
     //normalInScreen /= normalInScreen.w;
 
     float4 pInScreen  = mul(float4(pInObject,1), ObjectToClipSpace);
@@ -83,16 +83,16 @@ psInput vsMain(uint id: SV_VertexID)
         discardFactor = 0;
 
     float3 lightDirection = float3(1.2, 1, -0.1);
-    float phong = pow(  dot(normal,lightDirection ),1);
+    float phong = pow(  abs(dot(normal,lightDirection )),1);
 
-    pInScreen /= pInScreen.w;
+    //pInScreen /= pInScreen.w;
     
     output.position = pInScreen;
 
     output.texCoord = float2(cornerFactors.x , cornerFactors.y /2 +0.5);
     output.color = Color;
-    if(normalInScreen.z < 1) {
-        output.color.rgb = float3(1,1,0);
+    if(normalInScreen.z < 0) {
+        output.color.rgb = float3(0.4,0,0);
     }
     //if(phong >0) {
         output.color.rgb *= phong;
