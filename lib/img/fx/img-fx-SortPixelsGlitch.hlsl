@@ -202,11 +202,16 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         }
         sumColorRight += c;
     }
-    return float4(
-        leftMaxStep/Range * 1,     
-        rightMaxStep/Range * 1, 
-        ((leftMaxStep/Range - rightMaxStep/Range) + 0.25) *0,
-    1);
+
+    float blendFactor = ((leftMaxStep/Range - rightMaxStep/Range) + 0.25);
+    // return float4(
+    //     leftMaxStep/Range * 0,     
+    //     rightMaxStep/Range * 0, 
+    //     blendFactor *1,
+    // 1);
+
+
+    return lerp(leftColor, rightMaxColor, blendFactor );
 
 /*
     float4 sumColorRight = 0;
