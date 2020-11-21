@@ -7,6 +7,7 @@ cbuffer ParamConstants : register(b0)
     float Exponent;
     float Brightness;
     float Speed;
+    float Scale;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -15,6 +16,12 @@ cbuffer TimeConstants : register(b1)
     float time;
     float runTime;
     float beatTime;
+}
+
+cbuffer Resolution : register(b2)
+{
+    float TargetWidth;
+    float TargetHeight;
 }
 
 struct vsOutput
@@ -31,20 +38,49 @@ float IsBetween( float value, float low, float high) {
     return (value >= low && value <= high) ? 1:0;
 }
 
-float4 psMain(vsOutput psInput) : SV_TARGET
-{   
-    float pxHash = hash12( psInput.texCoord * 431 + 111);
+float4 GetNoiseFromRandom(float2 uv) 
+{
+    // Animation
+    float pxHash = hash12( uv * 431 + 111);
     float t = beatTime * Speed + pxHash;
-    float4 hash1 = hash42(( psInput.texCoord * 431 + (int)t));
-    float4 hash2 = hash42(( psInput.texCoord * 431 + (int)t+1));
+
+    // Color Noise
+    float4 hash1 = hash42(( uv * 431 + (int)t));
+    float4 hash2 = hash42(( uv * 431 + (int)t+1));
     float4 hash = lerp(hash1,hash2, t % 1);
 
     float4 grayScale = (hash.r+hash.g+hash.b)/3;
-    float4 noise = lerp(grayScale, hash, Color);
-    //noise = noise ;
-    noise = saturate(pow(noise, Exponent)+ Brightness);
+    float4 noise = (lerp(grayScale, hash, Color) - 0.5) * 2;
 
-    float4 orgColor = ImageA.Sample(texSampler, psInput.texCoord);
-    float4 color = float4( lerp( orgColor.rgb, noise.rgb, Amount), 1);
-    return color;
+    noise = noise < 0 
+            ? -pow(-noise, Exponent)
+            : pow(noise, Exponent);
+    
+    noise += Brightness ;
+    return noise;
+}
+
+float4 psMain(vsOutput psInput) : SV_TARGET
+{   
+    float2 uv = psInput.texCoord;
+    float4 orgColor = ImageA.Sample(texSampler, uv);    
+    if(Scale > 1) {
+        float2 pixelStep = float2(1/TargetWidth, 1/TargetHeight);
+        float2 offset = Scale * pixelStep;
+        //float2 offset = Scale * step;
+        float2 fraction = uv % offset;
+        float4 n1 = GetNoiseFromRandom(uv - fraction + 0.001 * pixelStep);
+        float4 n2 = GetNoiseFromRandom(uv - fraction + 0.004 * pixelStep + offset);
+        
+        float4 noise = lerp(n1, n2, 0);
+
+        float4 color= float4(orgColor.rgb + noise.rgb * Amount, 1);
+        return color;
+
+    }
+    else {
+        float4 noise = GetNoiseFromRandom(uv);
+        float4 color= float4(orgColor.rgb + noise.rgb * Amount, 1);
+        return color;
+    }
 }

@@ -48,6 +48,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float2 p = uv;
     p-= 0.5;
     p.x *=aspectRation;
+    
 
     //float2 p = psInput.texCoord;
 
