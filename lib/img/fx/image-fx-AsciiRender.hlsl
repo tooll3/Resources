@@ -70,5 +70,11 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 
     float2 letterPos = float2( columnIndex , rowIndex) / 16;
     float4 colorFromFont = ImageB.Sample(texSamplerPoint, pInCell / 16 + letterPos);    
+
+    if(Background.a  < 1) {
+        float4 orgColor =  ImageA.Sample(texSampler, psInput.texCoord);
+        return lerp(lerp(orgColor, Background, Background.a), Fill, colorFromFont.r);
+    }
+
     return lerp(Background, Fill, colorFromFont.r);
 }

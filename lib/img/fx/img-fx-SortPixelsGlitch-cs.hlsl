@@ -20,6 +20,7 @@ cbuffer ParamConstants : register(b0)
 
     float AddGrain;
     float MaxSteps;    
+    float GradientLumaBias;
     float FadeStreaks;
 }
 
@@ -169,6 +170,10 @@ void main(uint3 i : SV_DispatchThreadID)
             float4 averageColor = _colorSum / rangeSteps;
             //rangeSteps += 100;
 
+
+            averageColor.rgb = GradientLumaBias > 0
+                ? lerp(averageColor.rgb,_minColor.rgb, -GradientLumaBias)
+                : lerp(averageColor.rgb,_maxColor.rgb, GradientLumaBias);
             //rangeSteps= max(rangeSteps, max(100,2 * _colorSum.r));
             
             int offsetSteps = rangeSteps * (Offset.x + (hash - 0.5) * ScatterOffset);
@@ -199,6 +204,9 @@ void main(uint3 i : SV_DispatchThreadID)
                 f = saturate(f + (randomInStreak-0.5) * AddGrain);
                 //saturate(f)
                 //f = fmod(f ,1);
+
+                
+                //averageColor = lerp(averageColor, _minColor, 1);
                 
                 float4 streakColor = f < 0.5 
                     ? lerp(_minColor, averageColor, SchlickBias(f * 2, abs(GradientBias)) )

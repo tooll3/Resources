@@ -77,7 +77,7 @@ psInput vsMain(uint id: SV_VertexID)
     Point pointB = Points[particleId+1];
     Point pointBB = Points[particleId > SegmentCount-2 ? SegmentCount-2: particleId+2];
 
-    float3 posInWorld = cornerFactors.x < 0.5
+    float3 posInObject = cornerFactors.x < 0.5
         ? pointA.position
         : pointB.position;
 
@@ -116,7 +116,7 @@ psInput vsMain(uint id: SV_VertexID)
     
     float thickness = lerp( pointA.w , pointB.w, cornerFactors.x) * Size * discardFactor;
 
-    float4 posInCamSpace = mul(float4(posInWorld,1), WorldToCamera);
+    float4 posInCamSpace = mul(float4(posInObject,1), WorldToCamera);
     posInCamSpace.xyz /= posInCamSpace.w;
     posInCamSpace.w = 1;
 
@@ -135,29 +135,22 @@ psInput vsMain(uint id: SV_VertexID)
         : cross(pointB.position - pointA.position, pointB.position - pointBB.position);
     n =normalize(n);
 
-    //float3 posInClipSpace = mul(posInWorld, WorldToClipSpace);
+    // Fake fog
+    float4 posInClipSpace4 = mul(float4(posInObject,1), ObjectToClipSpace);    
+    float fog = pow(saturate(posInClipSpace4.w/FogRate), FogBias);
+    output.color.rgb = lerp(Color.rgb, FogColor.rgb,fog);
 
-    float4 posInClipSpace4 = mul(float4(posInWorld,1), WorldToClipSpace);
-
-    //float fog =  posInClipSpace4.w;// pow(saturate(-(posInClipSpace.z + FogBias) *FogRate), 1.2);
-    //output.color.rgb = posInClipSpace4.xyz/posInClipSpace4.w /2 + 0.5;// (posInClipSpace4.x+3)/10;// / posInClipSpace4.w;
-    float fog =  saturate(pow( 1 / posInClipSpace4.w, FogBias));
-    //float fog = abs(1 / posInClipSpace4.w)/1;
-    output.color.rgb = lerp(FogColor,Color, fog);
-    //output.color.rgb = float3(0,1,0);
     output.color.a = Color.a;
-
     return output;    
 }
 
 float4 psMain(psInput input) : SV_TARGET
 {
     float4 imgColor = texture2.Sample(texSampler, input.texCoord);
-    //return clamp(input.color * imgColor, float4(0,0,0,0), float4(1,1000,1000,1000));// * float4(input.texCoord,1,1);    
 
     float dFromLineCenter= abs(input.texCoord.y -0.5)*2;
     float a= smoothstep(1,0.95,dFromLineCenter) ;
     float4 color = input.color * imgColor;// * input.color;
 
-    return clamp(float4(color.rgb, color.a * a), 0, float4(1,100,100,100));
+    return clamp(float4(color.rgb, color.a * a), 0, float4(100,100,100,1));
 }
