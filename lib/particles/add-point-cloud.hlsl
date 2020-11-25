@@ -1,9 +1,13 @@
 
 #include "particle.hlsl"
 
-cbuffer CountConstants : register(b0)
+cbuffer TimeConstants : register(b0)
 {
-    int4 bufferCount;
+    float GlobalTime;
+    float Time;
+    float RunTime;
+    float BeatTime;
+    float LastFrameDuration;
 }
 
 cbuffer Transforms : register(b1)
@@ -19,6 +23,17 @@ cbuffer Transforms : register(b1)
     float4x4 ObjectToCamera;
     float4x4 ObjectToClipSpace;
 };
+
+cbuffer CountConstants : register(b2)
+{
+    int4 bufferCount;
+}
+
+
+cbuffer Params : register(b3)
+{
+    // eventual parameters go here
+}
 
 struct Point
 {
@@ -42,13 +57,15 @@ void main(uint3 i : SV_DispatchThreadID)
     ParticleIndex pi = DeadParticles.Consume();
         
     Particle particle = Particles[pi.index];
-    Point p = PointCloud[i.x];
+    Point aPoint = PointCloud[i.x];
 
-    particle.position = p.position;
-    particle.emitterId = p.id;
-    particle.lifetime = 10000.0;
+    particle.size = 1;
+    particle.position = aPoint.position;
+    particle.emitterId = 0; //aPoint.id;
+    particle.lifetime = 100.0;
+    particle.emitTime = BeatTime;
     particle.velocity = float3(0,0,0);
-    particle.color = p.color;
+    particle.color = aPoint.color; //float4(1,1,1,1);
 
     Particles[pi.index] = particle;
 }
