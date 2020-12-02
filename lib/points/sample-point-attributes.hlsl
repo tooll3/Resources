@@ -69,7 +69,9 @@ void main(uint3 i : SV_DispatchThreadID)
     float3 pos = P.position;
     pos -= Center;
     
-    float3 posInObject = mul(float4(pos.xyz,0), WorldToObject).xyz;
+    //float3 posInObject = mul(float4(pos.xyz,1), ObjectToWorld).xyz;
+    float3 posInObject = pos.xyz;
+  
     float4 c = inputTexture.SampleLevel(texSampler, posInObject.xy + 0.5 , 0.0);
     float gray = (c.r+c.g+c.b)/3;
 
@@ -78,7 +80,9 @@ void main(uint3 i : SV_DispatchThreadID)
             + Factors[(uint)clamp(R, 0, 5.1)] * (c * RFactor + ROffset)
             + Factors[(uint)clamp(G, 0, 5.1)] * (c * GFactor + GOffset)
             + Factors[(uint)clamp(B, 0, 5.1)] * (c * BFactor + BOffset);
+    //ResultPoints[index] = P;
 
     ResultPoints[index].position = P.position + float3(ff.xyz);
     ResultPoints[index].w = P.w + ff.w;// + ff.w;
+    ResultPoints[index].rotation = P.rotation;
 }

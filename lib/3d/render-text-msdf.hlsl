@@ -143,11 +143,11 @@ float4 psMain(PsInput input) : SV_TARGET
         return float4(Color.rgb, letterShape * Color.a);
     }
 
-    float glow = pow( smoothstep(0,1, sigDist + 0.5), 0.3);
+    float glow = pow( smoothstep(0,1, sigDist + 0.3), 0.3);
 
 
     return float4(
         lerp(Shadow.rgb, Color.rgb, letterShape ),
-        max( saturate(letterShape*2),glow) * Color.a
+        max( saturate(letterShape*2),glow * Shadow.a) * Color.a
     );
 }

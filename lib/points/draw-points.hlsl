@@ -37,9 +37,17 @@ cbuffer Transforms : register(b0)
 cbuffer Params : register(b2)
 {
     float4 Color;
+    
     float Size;
     float SegmentCount;
 };
+
+cbuffer FogParams : register(b3)
+{
+    float4 FogColor;
+    float FogDistance;
+    float FogBias;   
+}
 
 struct psInput
 {
@@ -66,13 +74,19 @@ psInput vsMain(uint id: SV_VertexID)
     float3 rotated = rotate_vector(quadPos, pointDef.rotation); 
     float3 quadPos2 = rotated;
 
-    float4 worldPos = float4(pointDef.position,1);
-    float4 quadPosInCamera = mul(worldPos, ObjectToCamera);
+    float4 posInObject = float4(pointDef.position,1);
+    float4 quadPosInCamera = mul(posInObject, ObjectToCamera);
     output.color = Color;
     quadPosInCamera.xy += quadPos2.xy*0.050  * pointDef.w * Size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
 
     output.texCoord = (quadPos.xy * 0.5 + 0.5);
+
+    // Fog
+    float4 posInCamera = mul(posInObject, ObjectToCamera);
+    float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
+    output.color.rgb = lerp(Color.rgb, FogColor.rgb,fog);
+
     return output;
 }
 
