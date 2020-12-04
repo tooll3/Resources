@@ -35,30 +35,10 @@ struct Pixel {
     float4 Color;
 };
 
-RWStructuredBuffer<Pixel> ResultPoints : u0; 
-
-float2 GetUvFromAddress(int col, int row) {
-    return float2( 
-            ((float)col + 0.1) / (float)TargetWidth, 
-            ((float)row + 0.1) / (float)TargetHeight);
-}
-
-// float GetValueFromColor(float4 color) {
-//     return (
-//         color.r * 0.299 
-//     + color.g * 0.587
-//     + color.b * 0.114);
-// }
-
-int GetIndexFromAddress(int col, int row) {
-    return row * TargetWidth + col; 
-}
-
-int GetIndexFromPos(int2 pos) {
-    return pos.y * TargetWidth + pos.x; 
-}
-
-
+RWStructuredBuffer<Pixel> ReadPoints : u0; 
+RWStructuredBuffer<Pixel> WritePoints : u1; 
+RWTexture2D<float4> WriteOutput  : register(u2); 
+//RWTexture2D<float4> outputTexture : register(u0);
 static int _maxRangeSteps;
 static int2 _centerPos;
 static int2 _screenSize;
@@ -74,26 +54,13 @@ int GetCCAMatches(int2 direction, int tc)
     {
         pos += direction;
         pos = fmod(pos,_screenSize);
-        float4 neighbourColor = ResultPoints[pos.x + pos.y *TargetWidth].Color;
+        float4 neighbourColor = WritePoints[pos.x + pos.y *TargetWidth].Color;
         int t = (int)(neighbourColor.r + 0.1) % _maxSteps;
         //bool matchesIncrement = abs(((neighbourColor.r +1) % (int)MaxSteps) - value.r ) < 0.1;
         sum+= (abs(tc - t) == 1) ? 1:0;    
     } 
     return sum;
 }
-
-// float4 SumNeighbourColor(int2 direction, int steps) 
-// {
-//     float4 sum = 0;
-//     int2 pos = _centerPos;
-//     for(int step=0; step < steps; step++) 
-//     {
-//         pos += direction;
-//         pos %= _screenSize;
-//         sum+= ResultPoints[pos.x + pos.y *TargetWidth].Color;
-//     } 
-//     return sum;
-// }
 
 static const int2 Directions[] = 
 {
@@ -115,25 +82,34 @@ static const int2 Directions2[] =
   int2(  0, +1),
 };
 
+
 [numthreads(16,16,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {         
-    int index = i.x;
+    //int index = i.x;
 
     _screenSize = int2(TargetWidth, TargetHeight);
-    _centerPos = int2(index % TargetWidth, index / TargetWidth);
+    _centerPos = i.xy;//int2(index % TargetWidth, index / TargetWidth);
     float2 uv = _centerPos / (float2)_screenSize;
     _maxSteps = (int)(MaxSteps + 0.5) +  (int)(uv.x * 6);
     _threshold = (int)(Threshold + 0.5);// +  (int)(uv.y * 4);
     
-    float4 c = ResultPoints[i.x].Color;    
-    bool isInitialized = c.a > 0.5;
+    float4 c = ReadPoints[i.x].Color;    
 
-    float hash = hash12( uv * 431 + 111 + RandomSeed);
-    bool shouldFill = hash < RandomAmount;
     
-    if(shouldFill || !isInitialized) {
-        c = float4((int)(hash * _maxSteps),0,0,1);
+    if(RandomAmount>0 ) 
+    {
+        bool isInitialized = c.a > 0.5;
+
+        float hash = hash12( uv * 431 + 111 + RandomSeed);
+        bool shouldFill = hash < RandomAmount;
+        
+        if(shouldFill || !isInitialized) 
+        {
+            c = float4((int)(hash * _maxSteps),0,0,1);
+            WritePoints[i.x + i.y * TargetWidth].Color = c;
+            ReadPoints[i.x + i.y * TargetWidth].Color = c;
+        }
     }
 
     if(DoCalculateStep) 
@@ -144,8 +120,20 @@ void main(uint3 i : SV_DispatchThreadID)
         int tc= (int)(c.r + 0.1);
 
         int sum =0;
-        for(int directionIndex = 0; directionIndex < 8; directionIndex ++){
-            sum+=GetCCAMatches(Directions[directionIndex],tc);
+        for(int directionIndex = 0; directionIndex < 8; directionIndex ++)
+        {
+            int2 direction = Directions[directionIndex];
+            //sum+=GetCCAMatches(Directions[directionIndex],tc);            
+            int2 pos = _centerPos;
+            for(int step=0; step < _maxRangeSteps; step++) 
+            {
+                pos += direction;
+                //pos = fmod(pos,_screenSize);
+                float4 neighbourColor = ReadPoints[pos.x + pos.y *TargetWidth].Color;
+                int t = (int)(neighbourColor.r + 0.1) % _maxSteps;
+                //bool matchesIncrement = abs(((neighbourColor.r +1) % (int)MaxSteps) - value.r ) < 0.1;
+                sum+= (abs(tc - t) == 1) ? 1:0;    
+            } 
         }
 
         // int sum = GetCCAMatches(int2(-1, 0),tc)
@@ -166,12 +154,14 @@ void main(uint3 i : SV_DispatchThreadID)
         {
             c.r =0;
         }
+        c.r += 0;
 
         //c.b = lerp(c.g, c.r, BlendLastStepFactor) / MaxSteps;
         //c.b = sum + 0.5;
     }
     //c.b=1;
-    c.b = lerp(c.g, c.r, BlendLastStepFactor) / _maxSteps;    
-    ResultPoints[i.x].Color = c;//float4(Threshold, 0,0,1);
+    //c.b = lerp(c.g, c.r, BlendLastStepFactor) / _maxSteps;    
+    WritePoints[i.x + i.y * TargetWidth].Color = c;// float4(Threshold, 0,0,1);
+    //ReadPoints[i.x].Color = float4(0, 1,0,1);
+    WriteOutput[i.xy] = c;// * float4(1,0,0,1); 
 }
-
