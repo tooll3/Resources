@@ -1,7 +1,7 @@
 
 cbuffer Params : register(b0)
 {
-    // do we actually need parameters for this?
+    //float4 ColorFactor;
 }
 
 struct Pixel {
@@ -36,6 +36,5 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     
     Pixel p = Pixels[pixelAddress.x + pixelAddress.y * TargetWidth];
     return p.Color;
-    return float4(psInput.texCoord, 0,1);
-    return float4(TargetHeight/ (float)TargetWidth, 0,0,1);
+
 }
