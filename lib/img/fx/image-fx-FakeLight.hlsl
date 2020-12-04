@@ -47,8 +47,8 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 
     float2 uv = psInput.texCoord;
     
-    float sx = SampleRadius / displaceMapWidth;
-    float sy = SampleRadius / displaceMapHeight;
+    float sx = SampleRadius / (float)displaceMapWidth;
+    float sy = SampleRadius / (float)displaceMapHeight;
     float4 cx1= DisplaceMap.Sample(texSampler,  float2(uv.x + sx, uv.y));
     float4 cx2= DisplaceMap.Sample(texSampler,  float2(uv.x - sx, uv.y)); 
     float4 cy1= DisplaceMap.Sample(texSampler, float2(uv.x,       uv.y + sy));
@@ -63,7 +63,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     d+= Offset/10;
 
     float4 uvImage = DisplaceMap.Sample(texSampler, uv);
-    d = (uvImage.xy-0.5) * float2(1,-1);
+    //d = (uvImage.xy-0.5) * float2(1,-1);
     //d.x =0;
     //return float4(-d.xxx,1);
 
@@ -73,8 +73,8 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 
     //float distanceFromCenter = length(uv- float2(-2,1));
     float len = length(d); //1 * pow(distanceFromCenter,DirectionImpact);
-    //float4 cc= Image.Sample(texSampler, -direction * len * 10* Impacted + 0.5);
-    float4 cc= Image.Sample(texSampler, d.xy * Impacted +0.5 );
+    float4 cc= Image.Sample(texSampler, -direction * len * 10* Impacted + 0.5);
+    //float4 cc= Image.Sample(texSampler, d.xy * Impacted +0.5 );
 
     //return float4(distanceFromCenter, 0,0,1);
     //return float4(uvImage.bbb,1);

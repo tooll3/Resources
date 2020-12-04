@@ -1,19 +1,15 @@
 #include "hash-functions.hlsl"
 
-Texture2D<float4> inputTexture : register(t0);
-sampler texSampler : register(s0);
 
 cbuffer ParamConstants : register(b0)
 {
     float Threshold;
-    float MaxSteps;
+    float MaxStates;
     float Range;
-    float Increment;
-    float RandomSeed;
     float RandomAmount;
     float DoCalculateStep;
     float BlendLastStepFactor;
-
+    float R_xThreshold;
 }
 
 cbuffer Resolution : register(b1)
@@ -35,32 +31,12 @@ struct Pixel {
     float4 Color;
 };
 
-RWStructuredBuffer<Pixel> ReadPoints : u0; 
-RWStructuredBuffer<Pixel> WritePoints : u1; 
+Texture2D<float4> FxTexture : register(t0);
+sampler texSampler : register(s0);
+
+RWStructuredBuffer<Pixel> ReadPoints : register(u0); 
+RWStructuredBuffer<Pixel> WritePoints : register(u1); 
 RWTexture2D<float4> WriteOutput  : register(u2); 
-//RWTexture2D<float4> outputTexture : register(u0);
-static int _maxRangeSteps;
-static int2 _centerPos;
-static int2 _screenSize;
-static int _maxSteps;
-static int _threshold;
-
-
-int GetCCAMatches(int2 direction, int tc) 
-{
-    int sum = 0;
-    int2 pos = _centerPos;
-    for(int step=0; step < _maxRangeSteps; step++) 
-    {
-        pos += direction;
-        pos = fmod(pos,_screenSize);
-        float4 neighbourColor = WritePoints[pos.x + pos.y *TargetWidth].Color;
-        int t = (int)(neighbourColor.r + 0.1) % _maxSteps;
-        //bool matchesIncrement = abs(((neighbourColor.r +1) % (int)MaxSteps) - value.r ) < 0.1;
-        sum+= (abs(tc - t) == 1) ? 1:0;    
-    } 
-    return sum;
-}
 
 static const int2 Directions[] = 
 {
@@ -86,27 +62,38 @@ static const int2 Directions2[] =
 [numthreads(16,16,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {         
-    //int index = i.x;
+    int _maxRangeSteps;
+    int2 _centerPos;
+    int2 _screenSize;
+    int _maxStates;
+    int _threshold;
 
     _screenSize = int2(TargetWidth, TargetHeight);
-    _centerPos = i.xy;//int2(index % TargetWidth, index / TargetWidth);
+    _centerPos = i.xy; 
     float2 uv = _centerPos / (float2)_screenSize;
-    _maxSteps = (int)(MaxSteps + 0.5) +  (int)(uv.x * 6);
-    _threshold = (int)(Threshold + 0.5);// +  (int)(uv.y * 4);
-    
-    float4 c = ReadPoints[i.x].Color;    
+    float4 fx = FxTexture.SampleLevel(texSampler, uv, 0.0);
+    //float4 fx = FxTexture.Sample(texSampler, uv,0);
+    //float4 fx = 0;
 
+    _maxStates = (int)(MaxStates + 0.3);
+    _threshold = (int)(Threshold + 0.3 + fx.r * R_xThreshold);
     
+
+    float4 c = ReadPoints[i.x+ i.y * TargetWidth].Color;    
+    if(fx.g > 0.01) {
+        c.r = fx.g * _maxStates;
+    }
+
     if(RandomAmount>0 ) 
     {
         bool isInitialized = c.a > 0.5;
 
-        float hash = hash12( uv * 431 + 111 + RandomSeed);
+        float hash = hash12( uv * 431 + 111 );
         bool shouldFill = hash < RandomAmount;
         
         if(shouldFill || !isInitialized) 
         {
-            c = float4((int)(hash * _maxSteps),0,0,1);
+            c = float4((int)(hash * _maxStates),0,0,1);
             WritePoints[i.x + i.y * TargetWidth].Color = c;
             ReadPoints[i.x + i.y * TargetWidth].Color = c;
         }
@@ -114,54 +101,40 @@ void main(uint3 i : SV_DispatchThreadID)
 
     if(DoCalculateStep) 
     {
-        int rangeOffset = (int)(uv.y * 4);
-        _maxRangeSteps = clamp(Range + rangeOffset, 1,100);
+        _maxRangeSteps = clamp(Range, 1,100);
 
-        int tc= (int)(c.r + 0.1);
+        int tc= (int)(c.r);
+        c.b = c.r; // save last state for blending
 
         int sum =0;
         for(int directionIndex = 0; directionIndex < 8; directionIndex ++)
         {
             int2 direction = Directions[directionIndex];
-            //sum+=GetCCAMatches(Directions[directionIndex],tc);            
             int2 pos = _centerPos;
             for(int step=0; step < _maxRangeSteps; step++) 
             {
                 pos += direction;
-                //pos = fmod(pos,_screenSize);
                 float4 neighbourColor = ReadPoints[pos.x + pos.y *TargetWidth].Color;
-                int t = (int)(neighbourColor.r + 0.1) % _maxSteps;
-                //bool matchesIncrement = abs(((neighbourColor.r +1) % (int)MaxSteps) - value.r ) < 0.1;
-                sum+= (abs(tc - t) == 1) ? 1:0;    
+                int t = (int)(neighbourColor.r + 0.1 % _maxStates);
+                sum+= (tc == t+ 1) ? 1:0;    
             } 
         }
 
-        // int sum = GetCCAMatches(int2(-1, 0),tc)
-        //         + GetCCAMatches(int2( 0, 1),tc)
-        //         + GetCCAMatches(int2( 1, 0),tc)
-        //         + GetCCAMatches(int2( 0,-1),tc);
-
-
-        c.g = c.r;  // keep last step in green channel
-        if(sum >= _threshold) 
+        if(sum >= _threshold)
         {            
             c.r++;
-            //c.r=0;
-            //c.b = sum * 1 + 0.1 ;
-
         }
-        if(c.r >= _maxSteps) 
+        if(c.r >= _maxStates) 
         {
             c.r =0;
         }
-        c.r += 0;
-
-        //c.b = lerp(c.g, c.r, BlendLastStepFactor) / MaxSteps;
-        //c.b = sum + 0.5;
+        c.g = c.r;
+        WritePoints[i.x + i.y * TargetWidth].Color = c;     
     }
-    //c.b=1;
-    //c.b = lerp(c.g, c.r, BlendLastStepFactor) / _maxSteps;    
-    WritePoints[i.x + i.y * TargetWidth].Color = c;// float4(Threshold, 0,0,1);
-    //ReadPoints[i.x].Color = float4(0, 1,0,1);
-    WriteOutput[i.xy] = c;// * float4(1,0,0,1); 
+    else {
+        //WritePoints[i.x + i.y * TargetWidth].Color = c;
+    }
+    
+    float result = c.r / _maxStates; // lerp(c.b, c.g, BlendLastStepFactor) / _maxStates;
+    WriteOutput[i.xy] = float4(result,result,result,1);
 }
