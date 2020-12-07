@@ -93,11 +93,31 @@ psInput vsMain(uint id: SV_VertexID)
     float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
     output.color.rgb = lerp(Color.rgb, FogColor.rgb,fog);
 
+
+    float3 light = 0;
+
+    float4 posInWorld = mul(posInObject, ObjectToWorld);
+
+    for(int i=0; i< ActiveLightCount; i++) {
+        
+        float distance = length(posInWorld.xyz - Lights[i].position);
+        
+        light += distance < Lights[i].range 
+                          ? Lights[i].color * Lights[i].intensity / (distance * distance)
+                          : 0 ;
+    }
+    output.color.rgb *= light.rgb;
+
+
     return output;
 }
 
 float4 psMain(psInput input) : SV_TARGET
 {
+
+    //return float4(ActiveLightCount / 2.,0,0,1);
     float4 xxx = texture2.Sample(texSampler, input.texCoord);
+    if(xxx.a < 0.2)
+        discard;
     return clamp(input.color * xxx, float4(0,0,0,0), float4(1,1000,1000,1000));// * float4(input.texCoord,1,1);    
 }

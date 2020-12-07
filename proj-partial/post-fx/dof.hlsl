@@ -26,7 +26,7 @@ float3 depthOfField(float2 pixelSize, float2 texCoord, float focusPoint, float f
 {
     float MAX_BLUR_SIZE = 20.0; 
     float GOLDEN_ANGLE = 2.39996323; 
-    float RAD_SCALE = 2.5; // Smaller = nicer blur, larger = faster
+    float RAD_SCALE = 0.4; // Smaller = nicer blur, larger = faster
 
 	float centerDepth = depthTexture.SampleLevel(texSampler, texCoord, 0) * Far;
 	float centerSize = getBlurSize(centerDepth, focusPoint, focusScale);
