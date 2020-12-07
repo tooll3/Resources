@@ -52,7 +52,7 @@ float3 calcStepAndOffset(float4 orgColor) {
         : 1-pow( clamp(1-cOrg,0,10), -Bias+1);  
 
     //cBiased = cOrg;// abs(Bias) < 0.01 ? cOrg :cBiased;
-    float tmp = cBiased + Offset/Steps;
+    float tmp = cBiased + Offset/Steps -0.001;  // avoid inpression offset
     float rest = mod( tmp, 1./Steps);
     float step = cBiased-rest;
     return float3(step, rest*Steps, cBiased);

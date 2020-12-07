@@ -9,7 +9,10 @@ cbuffer ParamConstants : register(b0)
     float RandomAmount;
     float DoCalculateStep;
     float BlendLastStepFactor;
+
     float R_xThreshold;
+    float G_xStates;
+    float UseMooreRegion;
 }
 
 cbuffer Resolution : register(b1)
@@ -38,7 +41,7 @@ RWStructuredBuffer<Pixel> ReadPoints : register(u0);
 RWStructuredBuffer<Pixel> WritePoints : register(u1); 
 RWTexture2D<float4> WriteOutput  : register(u2); 
 
-static const int2 Directions[] = 
+static const int2 DirectionsMoore[] = 
 {
   int2( -1,  0),
   int2( -1, +1),
@@ -50,7 +53,7 @@ static const int2 Directions[] =
   int2( -1, -1),
 };
 
-static const int2 Directions2[] = 
+static const int2 DirectionsNeumann[] = 
 {
   int2( -1,  0),
   int2( +1,  0),
@@ -72,24 +75,22 @@ void main(uint3 i : SV_DispatchThreadID)
     _centerPos = i.xy; 
     float2 uv = _centerPos / (float2)_screenSize;
     float4 fx = FxTexture.SampleLevel(texSampler, uv, 0.0);
-    //float4 fx = FxTexture.Sample(texSampler, uv,0);
-    //float4 fx = 0;
 
-    _maxStates = (int)(MaxStates + 0.3);
     _threshold = (int)(Threshold + 0.3 + fx.r * R_xThreshold);
+    _maxStates = (int)(MaxStates + 0.3 + fx.g * G_xStates);
     
-
     float4 c = ReadPoints[i.x+ i.y * TargetWidth].Color;    
-    if(fx.g > 0.01) {
-        c.r = fx.g * _maxStates;
-    }
+    float _randomAmoundFx = RandomAmount + fx.b;
+    // if(fx.b > 0.02) {
+    //     c.r = fx.b * _maxStates;
+    // }
 
-    if(RandomAmount>0 ) 
+    if(_randomAmoundFx>0 ) 
     {
         bool isInitialized = c.a > 0.5;
 
         float hash = hash12( uv * 431 + 111 );
-        bool shouldFill = hash < RandomAmount;
+        bool shouldFill = hash < _randomAmoundFx;
         
         if(shouldFill || !isInitialized) 
         {
@@ -107,17 +108,37 @@ void main(uint3 i : SV_DispatchThreadID)
         c.b = c.r; // save last state for blending
 
         int sum =0;
-        for(int directionIndex = 0; directionIndex < 8; directionIndex ++)
-        {
-            int2 direction = Directions[directionIndex];
-            int2 pos = _centerPos;
-            for(int step=0; step < _maxRangeSteps; step++) 
+        int next = (uint)(tc + 1) % _maxStates;
+        //int prev = (tc - 1 + _maxStates) % _maxStates;
+
+        if(UseMooreRegion > 0.5) {
+            for(int directionIndex = 0; directionIndex < 4; directionIndex ++)
             {
-                pos += direction;
-                float4 neighbourColor = ReadPoints[pos.x + pos.y *TargetWidth].Color;
-                int t = (int)(neighbourColor.r + 0.1 % _maxStates);
-                sum+= (tc == t+ 1) ? 1:0;    
-            } 
+                int2 direction = DirectionsNeumann[directionIndex];
+                int2 pos = _centerPos;
+                for(int step=0; step < _maxRangeSteps; step++) 
+                {
+                    pos += direction;
+                    float4 neighbourColor = ReadPoints[pos.x + pos.y *TargetWidth].Color;
+                    int t = (int)(neighbourColor.r + 0.1 % _maxStates);
+                    sum+= (t == next) ? 1:0;    
+                } 
+            }
+
+        }
+        else {
+            for(int directionIndex = 0; directionIndex < 8; directionIndex ++)
+            {
+                int2 direction = DirectionsMoore[directionIndex];
+                int2 pos = _centerPos;
+                for(int step=0; step < _maxRangeSteps; step++) 
+                {
+                    pos += direction;
+                    float4 neighbourColor = ReadPoints[pos.x + pos.y *TargetWidth].Color;
+                    int t = (int)(neighbourColor.r + 0.1 % _maxStates);
+                    sum+= (t == next) ? 1:0;    
+                } 
+            }
         }
 
         if(sum >= _threshold)
