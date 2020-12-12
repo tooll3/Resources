@@ -56,5 +56,6 @@ void main(uint3 i : SV_DispatchThreadID)
 
     ResultPoints[i.x].position =  A.position + noise;
     ResultPoints[i.x].w = A.w;
+    ResultPoints[i.x].rotation = A.rotation;
 }
 

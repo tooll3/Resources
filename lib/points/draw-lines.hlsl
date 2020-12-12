@@ -149,7 +149,7 @@ float4 psMain(psInput input) : SV_TARGET
     float4 imgColor = texture2.Sample(texSampler, input.texCoord);
 
     float dFromLineCenter= abs(input.texCoord.y -0.5)*2;
-    float a= smoothstep(1,0.95,dFromLineCenter) ;
+    float a= 1;//smoothstep(1,0.95,dFromLineCenter) ;
     float4 color = input.color * imgColor;// * input.color;
 
     return clamp(float4(color.rgb, color.a * a), 0, float4(100,100,100,1));

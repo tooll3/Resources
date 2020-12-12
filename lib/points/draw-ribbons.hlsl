@@ -1,4 +1,5 @@
 #include "point.hlsl"
+#include "point-light.hlsl"
 
 static const float3 Corners[] = 
 {
@@ -38,12 +39,25 @@ cbuffer Params : register(b2)
     float Size;
     float SegmentCount;
 
-    float FogRate;
-    float FogBias;
-    float4 FogColor;
+    // float FogRate;
+    // float FogBias;
+    // float4 FogColor;
 
     float ShrinkWithDistance;
 };
+
+cbuffer FogParams : register(b3)
+{
+    float4 FogColor;
+    float FogDistance;
+    float FogBias;   
+}
+
+cbuffer PointLights : register(b4)
+{
+    PointLight Lights[8];
+    int ActiveLightCount;
+}
 
 struct psInput
 {
@@ -103,6 +117,26 @@ psInput vsMain(uint id: SV_VertexID)
     
     //output.color.rgb = abs(normal);
     output.color.a = discardFactor;
+
+
+    float3 light = 0;
+    float4 posInWorld = mul(float4(pInObject,1), ObjectToWorld);
+
+    for(int i=0; i< ActiveLightCount; i++) {
+        
+        float distance = length(posInWorld.xyz - Lights[i].position);
+        
+        light += distance < Lights[i].range 
+                          ? Lights[i].color * Lights[i].intensity / (distance * distance)
+                          : 0 ;
+    }
+    output.color.rgb *= light;
+
+    // Fog
+    float4 posInCamera = mul(float4(pInObject,1), ObjectToCamera);
+    float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
+    output.color.rgb = lerp(output.color.rgb, FogColor.rgb,fog);
+
     return output;    
 }
 
@@ -111,7 +145,7 @@ float4 psMain(psInput input) : SV_TARGET
     float4 imgColor = texture2.Sample(texSampler, input.texCoord);
  
     float dFromLineCenter= abs(input.texCoord.y -0.5)*2;
-    float a= smoothstep(1,0.95,dFromLineCenter) ;
+    float a= 1; //smoothstep(1,0.95,dFromLineCenter) ;
     float4 color = input.color * imgColor;// * input.color;
 
     return clamp(float4(color.rgb, color.a * a), 0, float4(1,100,100,100));

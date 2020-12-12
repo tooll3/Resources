@@ -31,6 +31,7 @@ void main(uint3 i : SV_DispatchThreadID)
         Point B = Points2[targetIndex];
         ResultPoints[i.x].position =  A.position + B.position;
         ResultPoints[i.x].w = A.w * B.w;
+        ResultPoints[i.x].rotation = A.rotation;
     }
 
 }
