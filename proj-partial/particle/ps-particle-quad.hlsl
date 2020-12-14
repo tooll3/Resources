@@ -5,6 +5,7 @@ struct Input
     float2 texCoord : TEXCOORD;
     float3 objectPos: POSITIONT;
     float3 posInWorld: POSITION2;
+    float3 velocity: POSITION3;
 };
 
 cbuffer Transforms : register(b0)
@@ -35,7 +36,13 @@ cbuffer Params : register(b1)
 
 #define mod(x,y) (x-y*floor(x/y))
 
-float4 psMain(Input input) : SV_TARGET
+struct Output
+{
+    float4 color : SV_Target;
+    float4 velocity : SV_TARGET1;
+};
+
+Output psMain(Input input) 
 {
     float2 p = input.texCoord * float2(2.0, 2.0) - float2(1.0, 1.0);
     float d= dot(p, p);
@@ -64,7 +71,10 @@ float4 psMain(Input input) : SV_TARGET
     // float ambient = saturate(dot(lightDirectionInWorld.xyz, nInWorld.xyz));
     // float3 specularColor =  input.color.rgb * pow(ambient, 30) *0; // HACK TO DISABLE
 
-    return float4(input.color.rgb * diffuse, 1);
+    Output output;
+    output.color = float4(input.color.rgb * diffuse, 1);
+    output.velocity = float4(input.velocity.rg,0,1);
 
+    return output;
     // JUNK
 }

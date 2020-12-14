@@ -50,6 +50,7 @@ struct Output
     float2 texCoord : TEXCOORD;
     float3 objectPos: POSITIONT;
     float3 posInWorld: POSITION2;
+    float3 velocity: POSITION3;
 };
 
 sampler texSampler : register(s0);
@@ -107,6 +108,8 @@ Output vsMain(uint id: SV_VertexID)
     //output.color.gb = 1;
     output.texCoord = (quadPos.xy * 0.5 + 0.5);
     output.objectPos = particle.position;
+    float4 velocity = mul(float4(particle.velocity, 0), ObjectToClipSpace);
+    output.velocity.xyz = velocity.xyz / velocity.w;
     return output;
 }
 
