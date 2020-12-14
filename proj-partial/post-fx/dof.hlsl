@@ -10,43 +10,43 @@ cbuffer ParamConstants : register(b0)
     float Far;
     float FocusCenter;
     float FocusRange;
+    float MaxBlurSize;
+    float RadiusScale;
 }
 
 
 float getBlurSize(float depth, float focusPoint, float focusRange)
 {
     float MAX_BLUR_SIZE = 20.0; 
-	float coc = clamp((1.0 / focusPoint - 1.0 / depth)*focusRange, -1.0, 1.0);
-	return abs(coc) * MAX_BLUR_SIZE;
+    float coc = clamp((1.0 / focusPoint - 1.0 / depth)*focusRange, -1.0, 1.0);
+    return abs(coc) * MaxBlurSize;
     // float coc = clamp((abs(focusPoint - depth) - focusRange)/(2*focusRange), 0.0, 1.0);
-	// return abs(coc) * MAX_BLUR_SIZE;
+    // return abs(coc) * MAX_BLUR_SIZE;
 }
 
 float3 depthOfField(float2 pixelSize, float2 texCoord, float focusPoint, float focusScale)
 {
-    float MAX_BLUR_SIZE = 20.0; 
     float GOLDEN_ANGLE = 2.39996323; 
-    float RAD_SCALE = 0.4; // Smaller = nicer blur, larger = faster
 
-	float centerDepth = depthTexture.SampleLevel(texSampler, texCoord, 0) * Far;
-	float centerSize = getBlurSize(centerDepth, focusPoint, focusScale);
-	float3 color = colorTexture.SampleLevel(texSampler, texCoord, 0).rgb;
-	float tot = 1.0;
-	float radius = RAD_SCALE;
-	for (float ang = 0.0; radius < MAX_BLUR_SIZE; ang += GOLDEN_ANGLE)
-	{
-		float2 tc = texCoord + float2(cos(ang), sin(ang)) * pixelSize * radius;
-		float3 sampleColor = colorTexture.SampleLevel(texSampler, tc, 0).rgb;
-		float sampleDepth = depthTexture.SampleLevel(texSampler, tc, 0) * Far;
-		float sampleSize = getBlurSize(sampleDepth, focusPoint, focusScale);
-		if (sampleDepth > centerDepth)
-			sampleSize = clamp(sampleSize, 0.0, centerSize*2.0);
-		float m = smoothstep(radius-0.5, radius+0.5, sampleSize);
-		color += lerp(color/tot, sampleColor, m);
-		tot += 1.0;   
-        radius += RAD_SCALE/radius;
-	}
-	return color /= tot;
+    float centerDepth = depthTexture.SampleLevel(texSampler, texCoord, 0) * Far;
+    float centerSize = getBlurSize(centerDepth, focusPoint, focusScale);
+    float3 color = colorTexture.SampleLevel(texSampler, texCoord, 0).rgb;
+    float tot = 1.0;
+    float radius = RadiusScale;
+    for (float ang = 0.0; radius < MaxBlurSize; ang += GOLDEN_ANGLE)
+    {
+        float2 tc = texCoord + float2(cos(ang), sin(ang)) * pixelSize * radius;
+        float3 sampleColor = colorTexture.SampleLevel(texSampler, tc, 0).rgb;
+        float sampleDepth = depthTexture.SampleLevel(texSampler, tc, 0) * Far;
+        float sampleSize = getBlurSize(sampleDepth, focusPoint, focusScale);
+        if (sampleDepth > centerDepth)
+            sampleSize = clamp(sampleSize, 0.0, centerSize*2.0);
+        float m = smoothstep(radius-0.5, radius+0.5, sampleSize);
+        color += lerp(color/tot, sampleColor, m);
+        tot += 1.0;   
+        radius += RadiusScale/radius;
+    }
+    return color /= tot;
 }
 
 [numthreads(16,16,1)]
