@@ -72,7 +72,7 @@ void main(uint3 i : SV_DispatchThreadID)
     //float3 posInObject = mul(float4(pos.xyz,1), ObjectToWorld).xyz;
     float3 posInObject = pos.xyz;
   
-    float4 c = inputTexture.SampleLevel(texSampler, posInObject.xy + 0.5 , 0.0);
+    float4 c = inputTexture.SampleLevel(texSampler, posInObject.xy * float2(1,-1) + 0.5 , 0.0);
     float gray = (c.r+c.g+c.b)/3;
 
     float4 ff =

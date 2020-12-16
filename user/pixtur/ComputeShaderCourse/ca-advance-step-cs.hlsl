@@ -54,6 +54,11 @@ void main(uint3 i : SV_DispatchThreadID)
 
     int s = ReadField[pInFieldBuffer].State;
 
+
+    
+    {
+
+    }
     // Mouse
     // if(MousePosX >= 0 && MousePosX < 1
     // && MousePosY >=0 && MousePosY < 1) {
@@ -118,6 +123,7 @@ void main(uint3 i : SV_DispatchThreadID)
         s = ReadField[pInFieldBuffer - rez.x].State;
         WriteField[pInFieldBuffer].State =  ReadField[pInFieldBuffer - rez.x].State;
     }
+    AllMemoryBarrier();
 
     float value = (float)s/NumStates;
     WriteOutput[i.xy] = GradientTexture.SampleLevel(texSampler,float2(value,0),0);
