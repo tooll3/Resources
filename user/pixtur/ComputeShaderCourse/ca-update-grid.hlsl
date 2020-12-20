@@ -34,26 +34,41 @@ void main(uint3 i : SV_DispatchThreadID)
     WriteOutput.GetDimensions(texWidth, texHeight);
 
     float d = 0.998;
-    WriteOutput[i.xy] *= float4(d.xxx, 1);
+    WriteOutput[i.xy] *= float4(DecayRate.xxx, 1);
 
-    int s=1;
 
     // Blur grid
+    // float4 sumNeighbours = 
+    //             (0
+    //             +WriteOutput[i.xy + int2(0, 1)]
+    //             +WriteOutput[i.xy + int2(0, -1)]
+    //             +WriteOutput[i.xy + int2(-1, 0)]
+    //             +WriteOutput[i.xy + int2(+1, 0)]
+
+    //             +WriteOutput[i.xy + int2(0, 2)] /2
+    //             +WriteOutput[i.xy + int2(0, -2)]/2
+    //             +WriteOutput[i.xy + int2(-2, 0)]/2
+    //             +WriteOutput[i.xy + int2(+2, 0)]/2              
+
+    //             +WriteOutput[i.xy]                
+    //             )/7;
+
+
     float4 sumNeighbours = 
                 (0
-                +WriteOutput[i.xy + int2(0, s)]
-                +WriteOutput[i.xy + int2(0, -s)]
-                +WriteOutput[i.xy + int2(-s, 0)]
-                +WriteOutput[i.xy + int2(+s, 0)]
+                +WriteOutput[i.xy + int2(0, 1)]
+                +WriteOutput[i.xy + int2(0, -1)]
+                +WriteOutput[i.xy + int2(-1, 0)]
+                +WriteOutput[i.xy + int2(+1, 0)]
 
-                +WriteOutput[i.xy + int2(0, 2*s)] /2
-                +WriteOutput[i.xy + int2(0, -2*s)]/2
-                +WriteOutput[i.xy + int2(-2*s, 0)]/2
-                +WriteOutput[i.xy + int2(+2*s, 0)]/2              
+                // +WriteOutput[i.xy + int2(0, 2)] /2
+                // +WriteOutput[i.xy + int2(0, -2)]/2
+                // +WriteOutput[i.xy + int2(-2, 0)]/2
+                // +WriteOutput[i.xy + int2(+2, 0)]/2              
 
-                +WriteOutput[i.xy]
-                
-                )/7;
+                +WriteOutput[i.xy]                
+                )/5;
+
     
     WriteOutput[i.xy] = sumNeighbours;
     //AllMemoryBarrier();
