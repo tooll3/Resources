@@ -26,7 +26,8 @@ sampler texSampler : register(s0);
 RWTexture2D<float4> WriteOutput  : register(u0); 
 RWStructuredBuffer<Point> Points : register(u1); 
 
-[numthreads(16,16,1)]
+// Using a threadcount matching 1920 and 1080
+[numthreads(30,30,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {   
     int texWidth;
@@ -36,8 +37,8 @@ void main(uint3 i : SV_DispatchThreadID)
     float d = 0.998;
     WriteOutput[i.xy] *= float4(DecayRate.xxx, 1);
 
-
     // Blur grid
+    // Nine neighbours doesn't give a noticable quality benefit
     // float4 sumNeighbours = 
     //             (0
     //             +WriteOutput[i.xy + int2(0, 1)]
@@ -53,23 +54,17 @@ void main(uint3 i : SV_DispatchThreadID)
     //             +WriteOutput[i.xy]                
     //             )/7;
 
+    int2 res= int2(texWidth, texHeight);
 
     float4 sumNeighbours = 
                 (0
-                +WriteOutput[i.xy + int2(0, 1)]
-                +WriteOutput[i.xy + int2(0, -1)]
-                +WriteOutput[i.xy + int2(-1, 0)]
-                +WriteOutput[i.xy + int2(+1, 0)]
-
-                // +WriteOutput[i.xy + int2(0, 2)] /2
-                // +WriteOutput[i.xy + int2(0, -2)]/2
-                // +WriteOutput[i.xy + int2(-2, 0)]/2
-                // +WriteOutput[i.xy + int2(+2, 0)]/2              
-
+                +WriteOutput[(i.xy + int2(0, 1)) % res]
+                +WriteOutput[(i.xy + int2(0, -1)) % res]
+                +WriteOutput[(i.xy + int2(-1, 0)) % res]
+                +WriteOutput[(i.xy + int2(+1, 0)) % res]
                 +WriteOutput[i.xy]                
                 )/5;
 
     
-    WriteOutput[i.xy] = sumNeighbours;
-    //AllMemoryBarrier();
+    WriteOutput[i.xy] = sumNeighbours * DecayRate;
 }
