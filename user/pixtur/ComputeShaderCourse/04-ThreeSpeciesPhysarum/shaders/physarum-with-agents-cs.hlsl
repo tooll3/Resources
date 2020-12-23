@@ -24,7 +24,7 @@ cbuffer ParamConstants : register(b0)
     float BRotate;
 }
 
-struct Species
+struct Breed
 {
     float4 ComfortZones;
     float4 Emit;
@@ -53,6 +53,7 @@ sampler texSampler : register(s0);
 Texture2D<float4> InputTexture : register(t0);
 
 RWStructuredBuffer<Point> Points : register(u0); 
+RWStructuredBuffer<Breed> Breeds : register(u1); 
 //RWTexture2D<float4> WriteOutput  : register(u1); 
 
 int2 CellAddressFromPosition(float3 pos) 
@@ -100,6 +101,8 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float3 pos = Points[i.x].position;
     float angle = Points[i.x].w;
+
+    angle+= Breeds[0].BaseMovement;
 
     float hash =hash11(i.x * 123.1);
 
