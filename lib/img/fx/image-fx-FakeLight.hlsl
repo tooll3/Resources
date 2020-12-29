@@ -67,19 +67,25 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     //d.x =0;
     //return float4(-d.xxx,1);
 
+    //d = pow(1*d,3);
+    //d= 1/d;
+    //d=smoothstep(0,1,d);
     float angle = (d.x == 0 && d.y==0) ? 0 :  atan2(d.x, d.y) + Twist / 180 * 3.14158;
+    //return float4((d * Impacted+0.5),0.5,1);
 
     float2 direction = float2( sin(angle), cos(angle));
 
     //float distanceFromCenter = length(uv- float2(-2,1));
     float len = length(d); //1 * pow(distanceFromCenter,DirectionImpact);
     float4 cc= Image.Sample(texSampler, -direction * len * 10* Impacted + 0.5);
+    
     //float4 cc= Image.Sample(texSampler, d.xy * Impacted +0.5 );
 
     //return float4(distanceFromCenter, 0,0,1);
     //return float4(uvImage.bbb,1);
 
-    cc.rgb *= (1-len*Shade*100)* uvImage.b;
+    //cc.rgb *= 1-len*Shade*100 * (Shade/5) * (uvImage.r + uvImage.g + uvImage.b)/3;
+    cc.rgb = lerp(uvImage.rgb, uvImage.rgb+cc.rbg - 0.5, Shade );
 
     ///return clamp(cc, 0, float4(10,10,10,uvImage.a));
     cc.a *= uvImage.a;

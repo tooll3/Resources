@@ -3,7 +3,8 @@
 
 cbuffer ParamConstants : register(b0)
 {
-    float DecayRate;
+    float4 DecayRate;
+    float2 BlockCount;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -20,13 +21,16 @@ struct Cell {
 
 #define mod(x,y) ((x)-(y)*floor((x)/(y)))
 
-//Texture2D<float4> GradientTexture : register(t0);
+Texture2D<float4> FxTexture : register(t0);
 sampler texSampler : register(s0);
 
 RWTexture2D<float4> WriteOutput  : register(u0); 
 RWStructuredBuffer<Point> Points : register(u1); 
 
 // Using a threadcount matching 1920 and 1080
+
+//static const int2 BC = int2(7,7);
+
 [numthreads(30,30,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {   
@@ -34,37 +38,24 @@ void main(uint3 i : SV_DispatchThreadID)
     int texHeight;
     WriteOutput.GetDimensions(texWidth, texHeight);
 
-    float d = 0.998;
-    WriteOutput[i.xy] *= float4(DecayRate.xxx, 1);
-
-    // Blur grid
-    // Nine neighbours doesn't give a noticable quality benefit
-    // float4 sumNeighbours = 
-    //             (0
-    //             +WriteOutput[i.xy + int2(0, 1)]
-    //             +WriteOutput[i.xy + int2(0, -1)]
-    //             +WriteOutput[i.xy + int2(-1, 0)]
-    //             +WriteOutput[i.xy + int2(+1, 0)]
-
-    //             +WriteOutput[i.xy + int2(0, 2)] /2
-    //             +WriteOutput[i.xy + int2(0, -2)]/2
-    //             +WriteOutput[i.xy + int2(-2, 0)]/2
-    //             +WriteOutput[i.xy + int2(+2, 0)]/2              
-
-    //             +WriteOutput[i.xy]                
-    //             )/7;
-
-    int2 res= int2(texWidth, texHeight);
+    int2 res= float2(texWidth, texHeight) / BlockCount;
+    int2 block = (int2)((i.xy + float2(0.5,+0.75)) / res) * res;
 
     float4 sumNeighbours = 
                 (0
-                +WriteOutput[(i.xy + int2(0, 1)) % res]
-                +WriteOutput[(i.xy + int2(0, -1)) % res]
-                +WriteOutput[(i.xy + int2(-1, 0)) % res]
-                +WriteOutput[(i.xy + int2(+1, 0)) % res]
-                +WriteOutput[i.xy]                
+                +WriteOutput[mod((i.xy + float2(0,  1)), res) + block]
+                +WriteOutput[mod((i.xy + float2(0, -1)), res) + block]
+                +WriteOutput[mod((i.xy + float2(-1, 0)), res) + block]
+                +WriteOutput[mod((i.xy + float2(+1, 0)), res) + block]
+                +WriteOutput[mod(i.xy, res) + block]                
                 )/5;
 
+    //WriteOutput[i.xy] = float4(block.xy/1000., 0,1);
+    //return;
     
-    WriteOutput[i.xy] = sumNeighbours * DecayRate;
+    float2 uv = float2( (float)i.x /texWidth , (float)i.y / texHeight  );
+    float4 fx = FxTexture.SampleLevel(texSampler, uv, 0);
+    float4 diffused = float4((sumNeighbours * DecayRate).rgb ,1);
+
+    WriteOutput[i.xy] = float4(lerp(diffused.rgb, fx.rgb, fx.a), diffused.a);
 }
