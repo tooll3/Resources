@@ -84,5 +84,25 @@ void main(uint3 i : SV_DispatchThreadID)
 
     ResultPoints[index].position = P.position + float3(ff.xyz);
     ResultPoints[index].w = P.w + ff.w;// + ff.w;
+
+    // Rotate z
+    float4 rot = P.rotation;
     ResultPoints[index].rotation = P.rotation;
+
+    float rotXFactor = (R == 5 ? (c.r * RFactor + ROffset) : 0)
+                     + (G == 5 ? (c.g * GFactor + GOffset) : 0)
+                     + (B == 5 ? (c.b * BFactor + BOffset) : 0);
+
+    float rotYFactor = (R == 6 ? (c.r * RFactor + ROffset) : 0)
+                     + (G == 6 ? (c.g * GFactor + GOffset) : 0)
+                     + (B == 6 ? (c.b * BFactor + BOffset) : 0);
+
+    float rotZFactor = (R == 7 ? (c.r * RFactor + ROffset) : 0)
+                     + (G == 7 ? (c.g * GFactor + GOffset) : 0)
+                     + (B == 7 ? (c.b * BFactor + BOffset) : 0);
+                     
+    if(rotXFactor != 0) { rot = qmul(rot, rotate_angle_axis(rotXFactor, float3(1,0,0))); }
+    if(rotYFactor != 0) { rot = qmul(rot, rotate_angle_axis(rotYFactor, float3(0,1,0))); }
+    if(rotZFactor != 0) { rot = qmul(rot, rotate_angle_axis(rotZFactor, float3(0,0,1))); }
+    ResultPoints[index].rotation = normalize(rot);
 }
