@@ -4,6 +4,7 @@ cbuffer ParamConstants : register(b0)
 {
     float Impact;
     float SampleRadius;
+    float Twist;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -61,9 +62,8 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 
     float2 d = float2( (x2-x1) , (y1-y2));
     //d+= Offset*10;
-    return float4(d * Impact,0,1);
 
-    float4 uvImage = DisplaceMap.Sample(texSampler, uv);
+    //float4 uvImage = DisplaceMap.Sample(texSampler, uv);
     // //d = (uvImage.xy-0.5) * float2(1,-1);
     // //d.x =0;
     // //return float4(-d.xxx,1);
@@ -71,10 +71,13 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     // //d = pow(1*d,3);
     // //d= 1/d;
     // //d=smoothstep(0,1,d);
-    // float angle = (d.x == 0 && d.y==0) ? 0 :  atan2(d.x, d.y) + Twist / 180 * 3.14158;
+    float angle = (d.x == 0 && d.y==0) ? 0 :  atan2(d.x, d.y) + Twist / 180 * 3.141592;
+    float len = length(d);
+    float2 direction = float2( sin(angle), cos(angle));
+
+    return float4(len * direction * Impact, 0, 1);
     // //return float4((d * Impact+0.5),0.5,1);
 
-    // float2 direction = float2( sin(angle), cos(angle));
 
     // //float distanceFromCenter = length(uv- float2(-2,1));
     // float len = length(d); //1 * pow(distanceFromCenter,DirectionImpact);

@@ -127,6 +127,7 @@ psInput vsMain(uint id: SV_VertexID)
     posInCamSpace.w = 1;
 
     thickness *= lerp(1, 1/(posInCamSpace.z), ShrinkWithDistance);
+    
     pos+= cornerFactors.y * 0.1f * thickness * float4(meterNormal,0);   
 
     output.position = pos;

@@ -88,14 +88,6 @@ psInput vsMain(uint id: SV_VertexID)
 
     output.texCoord = (quadPos.xy * 0.5 + 0.5);
 
-    // Fog
-    float4 posInCamera = mul(posInObject, ObjectToCamera);
-    float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
-    output.color.rgb = lerp(Color.rgb, FogColor.rgb,fog);
-    
-    output.color.rgb = float3(2,2,2);
-
-
     float3 light = 0;
 
     float4 posInWorld = mul(posInObject, ObjectToWorld);
@@ -107,7 +99,17 @@ psInput vsMain(uint id: SV_VertexID)
                           ? (Lights[i].color.rgb * Lights[i].intensity.x / (distance * distance + 1))
                           : 0 ;
     }
-    output.color.rgb *= light.rgb;
+    output.color.rgb = light.rgb;
+
+    // Fog
+    float4 posInCamera = mul(posInObject, ObjectToCamera);
+    float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
+    output.color.rgb = lerp(output.color.rgb, FogColor.rgb,fog);
+    
+    //output.color.rgb = float3(2,0,0);
+
+
+
 
 
     return output;
