@@ -128,23 +128,16 @@ float4 psMain(PsInput input) : SV_TARGET
     // from https://github.com/Chlumsky/msdfgen/issues/22#issuecomment-234958005
     float dx = ddx( input.texCoord.x ) * width;
     float dy = ddy( input.texCoord.y ) * height;
-    float toPixels = 8.0 * rsqrt( dx * dx + dy * dy );
+    float toPixels = Params.x * rsqrt( dx * dx + dy * dy );
     float sigDist = median( smpl1.r, smpl1.g, smpl1.b ) - 0.5;
     float letterShape = clamp( sigDist * toPixels + 0.5, 0.0, 1.0 );
 
-    float d= -0.2;
-    float dd = 0.1;
-    float feather =0.01;
-    float strokeWidth = 0.02;
-    int steps= 10;
-    float padding = 0.8/steps;
 
     if(Shadow.a < 0.02) {
         return float4(Color.rgb, letterShape * Color.a);
     }
 
     float glow = pow( smoothstep(0,1, sigDist + 0.3), 0.3);
-
 
     return float4(
         lerp(Shadow.rgb, Color.rgb, letterShape ),
