@@ -124,7 +124,7 @@ void main(uint3 Gid : SV_GroupID, uint3 i : SV_DispatchThreadID, uint3 GTid : SV
     {
         averageDirection /= countForAlignment;
         float l = length(averageDirection);
-        if(l > 0.01) {
+        if(l > 0.0001) {
             //float3 steerAlignment =   averageDirection/l - direction;
             direction = lerp(direction, averageDirection/l, BoidsTypes[0].AlignmentDrive);
         }
@@ -140,7 +140,7 @@ void main(uint3 Gid : SV_GroupID, uint3 i : SV_DispatchThreadID, uint3 GTid : SV
         centerForSeparation /= countForSeparation;        
         float3 toSeparation = pos - centerForSeparation;
         float lenToSeparation = length(pos - centerForSeparation);
-        if(lenToSeparation > 0.01) {
+        if(lenToSeparation > 0.0001) {
             direction = lerp(direction, toSeparation / lenToSeparation, BoidsTypes[0].SeparationDrive );
         }
     }
@@ -151,7 +151,7 @@ void main(uint3 Gid : SV_GroupID, uint3 i : SV_DispatchThreadID, uint3 GTid : SV
         centerForCohesion /= countForCohesion;        
         float3 toCohesion = -(pos - centerForCohesion);
         float lenToCohesion = length(pos - centerForCohesion);
-        if(lenToCohesion > 0.01) {
+        if(lenToCohesion > 0.0001) {
             direction = lerp(direction, toCohesion / lenToCohesion, BoidsTypes[0].CohesionDrive );
         }
     }

@@ -144,7 +144,7 @@ psInput vsMain(uint id: SV_VertexID)
 
     // Fake fog
     float4 posInClipSpace4 = mul(float4(posInObject,1), ObjectToClipSpace);    
-    float fog = pow(saturate(posInClipSpace4.w/FogRate), FogBias);
+    float fog = FogRate <=0 ? 0 : pow(saturate(posInClipSpace4.w/FogRate), FogBias);
     output.color.rgb = lerp(Color.rgb, FogColor.rgb,fog);
 
     output.color.a = Color.a;

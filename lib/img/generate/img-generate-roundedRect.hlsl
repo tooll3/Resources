@@ -65,13 +65,6 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         cosa * p.y + sina * p.x 
     );
 
-    //p.x /=aspectRatio;
-    //return float4(p, 0,1);
-
-
-    //p.x += 0.5;
-
-    //p  += 0.5;
     p-=Position * float2(1,-1);
     
     float d = sdBox(p, Size/2);
@@ -86,7 +79,12 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float4 c= lerp(Fill, Background,  dBiased);
 
     float4 orgColor = ImageA.Sample(texSampler, psInput.texCoord);
+    //orgColor = float4(1,1,1,0);
     float a = clamp(orgColor.a + c.a - orgColor.a*c.a, 0,1);
+
+    // FIXME: blend
+    //float mixA = a;
+    //float3 rgb = lerp(orgColor.rgb, c.rgb,  mixA);    
     float3 rgb = (1.0 - c.a)*orgColor.rgb + c.a*c.rgb;   
     return float4(rgb,a);
 }

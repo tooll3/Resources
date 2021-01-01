@@ -5,6 +5,7 @@ cbuffer ParamConstants : register(b0)
     float Impact;
     float SampleRadius;
     float Twist;
+    float WriteAngleAndStrength;
 }
 
 cbuffer TimeConstants : register(b1)
@@ -37,6 +38,7 @@ float IsBetween( float value, float low, float high) {
     return (value >= low && value <= high) ? 1:0;
 }
 
+#define mod(x, y) ((x) - (y) * floor((x) / (y)))
 
 float4 psMain(vsOutput psInput) : SV_TARGET
 {       
@@ -75,8 +77,11 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float len = length(d);
     float2 direction = float2( sin(angle), cos(angle));
 
-    return float4(len * direction * Impact, 0, 1);
-    // //return float4((d * Impact+0.5),0.5,1);
+    return WriteAngleAndStrength < 0.5 
+        ? float4(len * direction * Impact, 0, 1)
+        : float4(mod(-angle, 2*3.141592), len * Impact, 0,1  );    
+    //return float4(uniRad ,0,0,1);
+    //return float4((d * Impact+0.5),0.5, uniRad );
 
 
     // //float distanceFromCenter = length(uv- float2(-2,1));
