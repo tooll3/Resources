@@ -5,6 +5,8 @@ cbuffer ParamConstants : register(b0)
 {
     float AgentCount;
     float2 BlockCount;
+    float FrameCount;
+    float EffectLayer;
 }
 
 cbuffer ResolutionBuffer : register(b1)
@@ -22,7 +24,7 @@ struct Boid
     float SeparationRadius;
     float SeparationDrive;
     float MaxSpeed;
-    float _padding2;
+    float _padding;
 };
 
 struct Agent {
@@ -46,51 +48,34 @@ static const float ToRad = 3.141592/180;
 
 #define CB BoidsTypes[breedIndex]
 
-//groupshared Agent SharedAgents[4096];
 
 static const float3 FORWARD = float3(0,1,0);
 static const float3 UP = float3(0,0,1);
 
+//groupshared Agent SharedAgents[1024];
+
+static const int SLICE = 1024;
+
 [numthreads(1024,1,1)]
-//void main(uint3 i : SV_DispatchThreadID)
 void main(uint3 Gid : SV_GroupID, uint3 i : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint GI : SV_GroupIndex)
 {
     if(i.x >= (uint)AgentCount)
         return;
 
-    //SharedAgents[GI] = Agents[i.x];
+    //uint otherIndex = ((uint)FrameCount * SLICE + i.x) % (uint) AgentCount;
+    //SharedAgents[GI] = Agents[otherIndex];
 
-    //GroupMemoryBarrierWithGroupSync();    // Doesn't work
-
+    GroupMemoryBarrier();
     Agent agent = Agents[i.x];
-    //GroupMemoryBarrier();
 
     block = int2(i.x % BlockCount.x,  i.x / BlockCount.x % BlockCount.y);
 
     // Rotate back
-    float3 velocity = rotate_vector(FORWARD, Agents[i.x].SpriteOrientation) * BoidsTypes[0].MaxSpeed; 
-    // float3 anchorPosition = 0;
-    // float anchorRadius = 1.2;
-    // float3 distanceToAnchor = anchorPosition - agent.Position;
-    // float r = length(distanceToAnchor) / anchorRadius;
-    // float rotateBack = saturate(r - 1);
-    // if (rotateBack > 0.01f)
-    // {
-    //     if(dot( normalize(-distanceToAnchor), normalize(-velocity)) < -.5) 
-    //     {
-    //         float3 crossVector = cross(normalize(velocity), normalize(distanceToAnchor));
-    //         float4 rotBack = rotate_angle_axis( i.x % 2== 0 ? 0.02 : -0.02, UP);
-    //         //velocity +=  rotate_vector(velocity, rotateBack);
-    //         //velocity = 0;
+    float3 direction = rotate_vector(FORWARD, Agents[i.x].SpriteOrientation); 
+    direction.z=0;
 
-    //         agent.SpriteOrientation = qmul(agent.SpriteOrientation, rotateBack);
-    //         //agent.Position.z = -4;
-    //     }
-    //     velocity +=  distanceToAnchor* smoothstep(0,1, rotateBack) * 0.1;
-    //     agent.Position +=distanceToAnchor* smoothstep(0,1, rotateBack) * 0.01;
-    // }
-    agent.Position.z =0;
-
+    float3 pos = Agents[i.x].Position;
+    pos.z = 0;
 
     float3 centerForCohesion;
     int countForCohesion =0;
@@ -98,17 +83,20 @@ void main(uint3 Gid : SV_GroupID, uint3 i : SV_DispatchThreadID, uint3 GTid : SV
     float3 centerForSeparation;
     int countForSeparation =0;
 
-    float3 averageVelocity;
+    float3 averageDirection;
     int countForAlignment =0;
 
     for(int index =0; index < AgentCount; index++)
     {
+        if(index == i.x)
+            continue;
+
         float3 otherPos = Agents[index].Position;
-        float distance =  length(otherPos - agent.Position);
+        float distance =  length(otherPos - pos);
 
         if(distance < BoidsTypes[0].AlignmentRadius)
         {
-            averageVelocity += rotate_vector(FORWARD, Agents[index].SpriteOrientation);
+            averageDirection += rotate_vector(FORWARD, Agents[index].SpriteOrientation);
             countForAlignment++;
         }
 
@@ -125,48 +113,81 @@ void main(uint3 Gid : SV_GroupID, uint3 i : SV_DispatchThreadID, uint3 GTid : SV
         }
     }
 
+    ;
     centerForCohesion /= countForCohesion;
-    centerForSeparation /= countForSeparation;
-    averageVelocity /= countForAlignment;
-    //averageVelocity.z =0;
-    //averageVelocity = normalize(averageVelocity);
 
-    // Effect Texture
-    float4 c = InputTexture.SampleLevel(texSampler, float2((agent.Position.xy+0.5) * 1), 0);
+
+
 
     // Aligment
-    //float3 toAverage = centerForCohesion - agent.Position + (c.r-0.5) * 0.5;
-
-    //agent.Position += toAverage * BoidsTypes[0].CohesionDrive;
-
-    float4 averageRotation = rotate_angle_axis(atan2(averageVelocity.y, averageVelocity.x) - 3.141592/2, UP);//  q_look_at(averageVelocity, UP);
-    agent.SpriteOrientation = q_slerp(agent.SpriteOrientation, averageRotation, BoidsTypes[0].AlignmentDrive);
-
-    
+    if(countForAlignment > 0) 
+    {
+        averageDirection /= countForAlignment;
+        float l = length(averageDirection);
+        if(l > 0.01) {
+            //float3 steerAlignment =   averageDirection/l - direction;
+            direction = lerp(direction, averageDirection/l, BoidsTypes[0].AlignmentDrive);
+        }
+    }
 
     // Cohesion
-    velocity += -(agent.Position - centerForCohesion) * BoidsTypes[0].CohesionDrive;
+    //velocity += -(pos - centerForCohesion) * BoidsTypes[0].CohesionDrive;
+    //direction = lerp(direction,-(pos - centerForCohesion), BoidsTypes[0].CohesionDrive );
     
     // Separation
-    velocity += (agent.Position - centerForSeparation) * BoidsTypes[0].SeparationDrive;
+    if(countForSeparation > 0) 
+    {
+        centerForSeparation /= countForSeparation;        
+        float3 toSeparation = pos - centerForSeparation;
+        float lenToSeparation = length(pos - centerForSeparation);
+        if(lenToSeparation > 0.01) {
+            direction = lerp(direction, toSeparation / lenToSeparation, BoidsTypes[0].SeparationDrive );
+        }
+    }
+
+    // Cohesion
+    if(countForCohesion > 0) 
+    {
+        centerForCohesion /= countForCohesion;        
+        float3 toCohesion = -(pos - centerForCohesion);
+        float lenToCohesion = length(pos - centerForCohesion);
+        if(lenToCohesion > 0.01) {
+            direction = lerp(direction, toCohesion / lenToCohesion, BoidsTypes[0].CohesionDrive );
+        }
+    }
 
 
 
+    // Effect Texture
+    float2 uv= (pos.xy * 0.5) +0.5;
+    uv = float2(uv.x, 1- uv.y);
+    float4 c = InputTexture.SampleLevel(texSampler, uv, 0);
+    direction.xy -= c.xy * EffectLayer;
 
 
-    agent.Position += normalize(velocity) * BoidsTypes[0].MaxSpeed;
-    //velocity.z =0;
-
-
-    agent.Position = mod(agent.Position + 1, 2) - 1;
-
+    float len = length(direction);
+    if(isnan(len) || len == 0) 
+    {
+         direction = float3(-1,-1,0);
+    }
+    else 
+    {
+        direction /= len;
+    }
     
 
-    //GroupMemoryBarrierWithGroupSync();
+    pos += direction * BoidsTypes[0].MaxSpeed;
+    pos = mod(pos + 1, 2) - 1;
+    
+    float4 rot = Agents[i.x].SpriteOrientation;
+    
+    // Use look at velocity rotation and rotate back into xy plane
+    rot = normalize(q_look_at(direction, float3(0,0,1)));
+    rot = qmul(rot, rotate_angle_axis(0.5*PI , float3(1,0,0)));
 
+    // 2d-rotation around z
+    //rot = rotate_angle_axis( atan2(velocity.x, velocity.y), float3(0,0,-1));
 
-    //float3 pos = Agents[i.x].Position + forward * BoidsTypes[0].CohesionRadius;
-
-    Agents[i.x].Position = agent.Position;
-    Agents[i.x].SpriteOrientation = normalize(agent.SpriteOrientation);
+    Agents[i.x].SpriteOrientation = rot;
+    Agents[i.x].Position = pos;
 }

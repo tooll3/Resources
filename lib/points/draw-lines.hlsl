@@ -109,12 +109,18 @@ psInput vsMain(uint id: SV_VertexID)
     float3 normal =  normalize( cross(direction * aspect.xyz, float3(0,0,1)))/aspect.xyz; 
     float3 normalA =  normalize( cross(directionA * aspect.xyz, float3(0,0,1)))/aspect.xyz; 
     float3 normalB =  normalize( cross(directionB * aspect.xyz, float3(0,0,1)))/aspect.xyz; 
+    if(isnan(pointAA.w) || pointAA.w < 0.01) {
+        normalA =normal;
+    }
+    if(isnan(pointBB.w) || pointAA.w < 0.01) {
+        normalB =normal;
+    }
 
     float3 neighboarNormal = lerp(normalA, normalB, cornerFactors.x);
     float3 meterNormal = (normal + neighboarNormal) / 2;
     float4 pos = lerp(aInScreen, bInScreen, cornerFactors.x);
     
-    float thickness = lerp( pointA.w , pointB.w, cornerFactors.x) * Size * discardFactor;
+    float thickness = lerp( pointA.w  , pointB.w , cornerFactors.x) * Size * discardFactor;
 
     float4 posInCamSpace = mul(float4(posInObject,1), WorldToCamera);
     posInCamSpace.xyz /= posInCamSpace.w;

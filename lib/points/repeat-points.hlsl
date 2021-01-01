@@ -23,7 +23,7 @@ void main(uint3 i : SV_DispatchThreadID)
     
     if(pointIndex == sourcePointsBatch-1) {
         ResultPoints[i.x].position =  0;
-        ResultPoints[i.x].w = 1./0;
+        ResultPoints[i.x].w = sqrt(-1);
     }
     else {
         uint targetIndex = (i.x / sourcePointsBatch )  % (uint)CountB;
