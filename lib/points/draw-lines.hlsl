@@ -48,6 +48,8 @@ cbuffer Params : register(b2)
     float4 FogColor;
 
     float ShrinkWithDistance;
+    float UseWFor;
+    float TransitionProgress;
 };
 
 struct psInput
@@ -120,24 +122,30 @@ psInput vsMain(uint id: SV_VertexID)
     float3 meterNormal = (normal + neighboarNormal) / 2;
     float4 pos = lerp(aInScreen, bInScreen, cornerFactors.x);
     
-    float thickness = lerp( pointA.w  , pointB.w , cornerFactors.x) * Size * discardFactor;
 
     float4 posInCamSpace = mul(float4(posInObject,1), WorldToCamera);
     posInCamSpace.xyz /= posInCamSpace.w;
     posInCamSpace.w = 1;
 
-    thickness *= lerp(1, 1/(posInCamSpace.z), ShrinkWithDistance);
+    float wAtPoint = lerp( pointA.w  , pointB.w , cornerFactors.x);
+        
+    if(UseWFor > 0.5 && !isnan(wAtPoint)) 
+    {
+        output.texCoord = float2(wAtPoint, cornerFactors.y /2 +0.5);
+        wAtPoint = 1;
+    }
+    else {
+        float strokeFactor = (particleId+ cornerFactors.x) / SegmentCount;
+        output.texCoord = float2(strokeFactor, cornerFactors.y /2 +0.5);
+    }
+    output.texCoord.x += TransitionProgress;
     
+    float thickness = wAtPoint * Size * discardFactor * lerp(1, 1/(posInCamSpace.z), ShrinkWithDistance);
     float miter = dot(-meterNormal, normal);
     pos+= cornerFactors.y * 0.1f * thickness * float4(meterNormal,0) / clamp(miter, -2.0,-0.13) ;   
 
     output.position = pos / aspect;
     
-
-    float strokeFactor = (particleId+ cornerFactors.x) / SegmentCount;
-    output.texCoord = float2(strokeFactor, cornerFactors.y /2 +0.5);
-    //output.texCoord = float2(cornerFactors.x , cornerFactors.y /2 +0.5);
-
     float3 n = cornerFactors.x < 0.5 
         ? cross(pointA.position - pointAA.position, pointA.position - pointB.position)
         : cross(pointB.position - pointA.position, pointB.position - pointBB.position);
