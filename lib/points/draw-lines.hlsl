@@ -82,20 +82,20 @@ psInput vsMain(uint id: SV_VertexID)
         : pointB.position;
 
 
-    float4 aaInScreen  = mul(float4(pointAA.position,1), ObjectToClipSpace);
+    float4 aaInScreen  = mul(float4(pointAA.position,1), ObjectToClipSpace) * aspect;
     aaInScreen /= aaInScreen.w;
-    float4 aInScreen  = mul(float4(pointA.position,1), ObjectToClipSpace);
+    float4 aInScreen  = mul(float4(pointA.position,1), ObjectToClipSpace) * aspect;
     if(aInScreen.z < -0)
         discardFactor = 0;
     aInScreen /= aInScreen.w;
 
     
-    float4 bInScreen  = mul(float4(pointB.position,1), ObjectToClipSpace);
+    float4 bInScreen  = mul(float4(pointB.position,1), ObjectToClipSpace) * aspect;
     if(bInScreen.z < -0)
         discardFactor = 0;
 
     bInScreen /= bInScreen.w;
-    float4 bbInScreen  = mul(float4(pointBB.position,1), ObjectToClipSpace);
+    float4 bbInScreen  = mul(float4(pointBB.position,1), ObjectToClipSpace) * aspect;
     bbInScreen /= bbInScreen.w;
 
     float3 direction = (aInScreen - bInScreen).xyz;
@@ -106,9 +106,9 @@ psInput vsMain(uint id: SV_VertexID)
                             ? (bInScreen - bbInScreen).xyz
                             : direction;
 
-    float3 normal =  normalize( cross(direction * aspect.xyz, float3(0,0,1)))/aspect.xyz; 
-    float3 normalA =  normalize( cross(directionA * aspect.xyz, float3(0,0,1)))/aspect.xyz; 
-    float3 normalB =  normalize( cross(directionB * aspect.xyz, float3(0,0,1)))/aspect.xyz; 
+    float3 normal =  normalize( cross(direction, float3(0,0,1))); 
+    float3 normalA =  normalize( cross(directionA, float3(0,0,1))); 
+    float3 normalB =  normalize( cross(directionB, float3(0,0,1))); 
     if(isnan(pointAA.w) || pointAA.w < 0.01) {
         normalA =normal;
     }
@@ -128,9 +128,10 @@ psInput vsMain(uint id: SV_VertexID)
 
     thickness *= lerp(1, 1/(posInCamSpace.z), ShrinkWithDistance);
     
-    pos+= cornerFactors.y * 0.1f * thickness * float4(meterNormal,0);   
+    float miter = dot(-meterNormal, normal);
+    pos+= cornerFactors.y * 0.1f * thickness * float4(meterNormal,0) / clamp(miter, -2.0,-0.13) ;   
 
-    output.position = pos;
+    output.position = pos / aspect;
     
 
     float strokeFactor = (particleId+ cornerFactors.x) / SegmentCount;
