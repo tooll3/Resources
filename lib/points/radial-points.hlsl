@@ -1,38 +1,8 @@
 #include "hash-functions.hlsl"
 #include "point.hlsl"
-//#include "cbuffer-structs.hlsl"
 
-cbuffer TimeConstants : register(b0)
-{
-    float GlobalTime;
-    float Time;
-    float RunTime;
-    float BeatTime;
-    float LastFrameDuration;
-}; 
- 
-//ConstantBuffer<TimeConstants> myTimeConstants : register(b0);
 
-// cbuffer Transforms : register(b1)
-// {
-//     float4x4 CameraToClipSpace;
-//     float4x4 ClipSpaceToCamera;
-//     float4x4 WorldToCamera;
-//     float4x4 CameraToWorld;
-//     float4x4 WorldToClipSpace;
-//     float4x4 ClipSpaceToWorld;
-//     float4x4 ObjectToWorld;
-//     float4x4 WorldToObject;
-//     float4x4 ObjectToCamera;
-//     float4x4 ObjectToClipSpace;
-// };
-
-// cbuffer CountConstants : register(b2)
-// {
-//     int4 BufferCount;
-// }
-
-cbuffer Params : register(b2)
+cbuffer Params : register(b0)
 {
     float Count;
     float Radius;
@@ -52,7 +22,21 @@ cbuffer Params : register(b2)
     float3 Axis;
     float W;
     float WOffset;
+    float CloseCircle;
 }
+
+
+// cbuffer TimeConstants : register(b1)
+// {
+//     float GlobalTime;
+//     float Time;
+//     float RunTime;
+//     float BeatTime;
+//     float LastFrameDuration;
+// }; 
+ 
+
+
 
 // struct Point {
 //     float3 Position;
@@ -83,15 +67,21 @@ void main(uint3 i : SV_DispatchThreadID)
 //void main(uint i : SV_GroupIndex)
 {
     uint index = i.x; 
-    float f = (float)(index)/Count;
+    bool closeCircle = CloseCircle > 0.5;
+    float count = closeCircle ? (Count -2) : Count;
+
+    float f = (float)(index)/count;
     float l = Radius + RadiusOffset * f;
     float angle = (StartAngle * 3.141578/180 + Cycles * 2 *3.141578 * f);
     float3 direction = normalize(cross(Axis, Axis.y > 0.7 ? float3(0,0,1) :  float3(0,1,0)));
 
     float3 v = RotatePointAroundAxis(direction * l , Axis, angle) + Center + CenterOffset * f;
 
+    
     ResultPoints[index].position = v;
-    ResultPoints[index].w = W + WOffset * f;
+    ResultPoints[index].w = (closeCircle && index == Count -1)
+                          ? sqrt(-1) // NaN
+                          : W + WOffset * f;
     float4 quat = rotate_angle_axis(angle, normalize(Axis));
     ResultPoints[index].rotation = quat;
     //ResultPoints[index].w = quat.w+ 0.5;

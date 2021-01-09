@@ -15,29 +15,7 @@ static const float3 Corners[] =
   float3(0, -1, 0),  
 };
 
-cbuffer Transforms : register(b0)
-{
-    float4x4 CameraToClipSpace;
-    float4x4 ClipSpaceToCamera;
-    float4x4 WorldToCamera;
-    float4x4 CameraToWorld;
-    float4x4 WorldToClipSpace;
-    float4x4 ClipSpaceToWorld;
-    float4x4 ObjectToWorld;
-    float4x4 WorldToObject;
-    float4x4 ObjectToCamera;
-    float4x4 ObjectToClipSpace;
-};
-
-cbuffer TimeConstants : register(b1)
-{
-    float GlobalTime;
-    float Time;
-    float RunTime;
-    float BeatTime;    
-}
-
-cbuffer Params : register(b2)
+cbuffer Params : register(b0)
 {
     float4 Color;
     float Size;
@@ -50,6 +28,21 @@ cbuffer Params : register(b2)
     float ShrinkWithDistance;
     float UseWFor;
     float TransitionProgress;
+};
+
+
+cbuffer Transforms : register(b1)
+{
+    float4x4 CameraToClipSpace;
+    float4x4 ClipSpaceToCamera;
+    float4x4 WorldToCamera;
+    float4x4 CameraToWorld;
+    float4x4 WorldToClipSpace;
+    float4x4 ClipSpaceToWorld;
+    float4x4 ObjectToWorld;
+    float4x4 WorldToObject;
+    float4x4 ObjectToCamera;
+    float4x4 ObjectToClipSpace;
 };
 
 struct psInput
