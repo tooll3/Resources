@@ -77,16 +77,17 @@ psInput vsMain(uint id: SV_VertexID)
 
     float4 aspect = float4(CameraToClipSpace[1][1] / CameraToClipSpace[0][0],1,1,1);
     float3 quadPos = Corners[quadIndex];
-    float3 rotated = rotate_vector(quadPos, pointDef.rotation); 
-    float3 quadPos2 = rotated;
+    output.texCoord = (quadPos.xy * 0.5 + 0.5);
+
+    //quadPos = rotate_vector(quadPos, pointDef.rotation); 
+    //float3 quadPos2 = rotated;
 
     float4 posInObject = float4(pointDef.position,1);
     float4 quadPosInCamera = mul(posInObject, ObjectToCamera);
     output.color = Color;
-    quadPosInCamera.xy += quadPos2.xy*0.050  * pointDef.w * Size;
+    quadPosInCamera.xy += quadPos.xy*0.050  * pointDef.w * Size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
 
-    output.texCoord = (quadPos.xy * 0.5 + 0.5);
 
     float3 light = 0;
 
@@ -99,7 +100,9 @@ psInput vsMain(uint id: SV_VertexID)
                           ? (Lights[i].color.rgb * Lights[i].intensity.x / (distance * distance + 1))
                           : 0 ;
     }
-    output.color.rgb = light.rgb;
+    //output.color.rgb = light.rgb;
+    output.color.rgb *= pointDef.rotation.xyz;
+
 
     // Fog
     float4 posInCamera = mul(posInObject, ObjectToCamera);

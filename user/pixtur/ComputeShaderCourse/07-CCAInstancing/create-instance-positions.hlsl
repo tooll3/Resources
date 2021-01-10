@@ -3,17 +3,9 @@
 
 cbuffer ParamConstants : register(b0)
 {
-    float Time;
+    //float Time;
+    float SlicePosition;
     float Threshold;
-    // float MaxStates;
-    // float Range;
-    // float RandomAmount;
-    // float DoCalculateStep;
-    // float BlendLastStepFactor;
-
-    // float R_xThreshold;
-    // float G_xStates;
-    // float UseMooreRegion;
 }
 
 cbuffer Resolution : register(b1)
@@ -81,10 +73,10 @@ void main(uint3 DTid : SV_DispatchThreadID)
         uint counter;
         InterlockedAdd(Counters[0], 1,  counter);
         uint pointIndex = counter % pointCount;
-        PointBuffer[pointIndex].position = float3(DTid.xy,(Time%2.5) * 100);
+        PointBuffer[pointIndex].position = float3(DTid.xy,SlicePosition);
         PointBuffer[pointIndex].w = col.r > Threshold 
                                     ? col.r
                                     : sqrt(-1); // NaN -> don't render
-        PointBuffer[pointIndex].rotation = float4(0,0,0,1);
+        PointBuffer[pointIndex].rotation =  float4(0,0,0,1);// float4(col.rgb,1);//float4(0,0,0,1);
     //}
 }

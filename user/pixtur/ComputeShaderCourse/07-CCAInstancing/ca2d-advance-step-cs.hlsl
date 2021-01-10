@@ -14,34 +14,34 @@ cbuffer ParamConstants : register(b0)
     float RandomSeed;
 }
 
-cbuffer TimeConstants : register(b1)
-{
-    float globalTime;
-    float time;
-    float runTime;
-    float beatTime;
-}
+// cbuffer TimeConstants : register(b1)
+// {
+//     float globalTime;
+//     float time;
+//     float runTime;
+//     float beatTime;
+// }
 
-struct Cell {
-    int State;
-};
+// struct Cell {
+//     int State;
+// };
 
 Texture2D<float4> GradientTexture : register(t0);
 sampler texSampler : register(s0);
 
-RWStructuredBuffer<Cell> ReadField : register(u0); 
-RWStructuredBuffer<Cell> WriteField : register(u1); 
+RWStructuredBuffer<int> ReadField : register(u0); 
+RWStructuredBuffer<int> WriteField : register(u1); 
 
-RWStructuredBuffer<Cell> TransitionFunctions : register(u2); 
+RWStructuredBuffer<int> TransitionFunctions : register(u2); 
 RWTexture2D<float4> WriteOutput  : register(u3); 
 
 static const int2 NeighbourOffsets[] = 
 {
-  int2( -2,  0),
+  int2( 0, -1),
   int2( -1,  0),
   int2(  0,  0),
   int2( +1,  0),
-  int2( +2,  0),
+  int2( 0,  +1),
 };
 
 //static const int NeighbourCount = 5;
@@ -53,13 +53,7 @@ void main(uint3 i : SV_DispatchThreadID)
     int3 rez = int3((int)WidthF, (int)HeightF, (int)HistoryStepsF  );
     int pInFieldBuffer = i.x + rez.x * i.y;
 
-    int s = ReadField[pInFieldBuffer].State;
-
-
-    
-    {
-
-    }
+    int s = ReadField[pInFieldBuffer.x];
     // Mouse
     // if(MousePosX >= 0 && MousePosX < 1
     // && MousePosY >=0 && MousePosY < 1) {
@@ -76,22 +70,24 @@ void main(uint3 i : SV_DispatchThreadID)
 
     if(Reset > 0.5) 
     {
-        int s= 0;
-        if(i.y == 0) 
-        {
-            bool isInCenter = abs(i.x - WidthF/3) < 5;
-            s = isInCenter ? (int)(hash11(i.x + RandomSeed) * NumStates)
-                            :0;
+        //int s= 0;
+        // if(i.y == 0) 
+        // {
+            //bool isInCenter = abs(i.y * 39 +  i.x - WidthF/3) < 5;
+            //s = isInCenter ? (int)(hash11(i.x + RandomSeed) * NumStates)
+            //                :0;
 
-        }
-        WriteField[pInFieldBuffer].State =  s;
+        // }
+        //WriteField[pInFieldBuffer] =  (int)(hash11(i.x + RandomSeed) * NumStates);
+        s =  (int)(hash11(i.x + i.y * 39+ RandomSeed) * NumStates);
+        WriteField[pInFieldBuffer] = s;
         return;
     }
 
 
     // Simulate first line
-    if(i.y == 0) 
-    {
+    // if(i.y == 0) 
+    // {
         // Permanent seed
         {
             bool isInCenter = abs(i.x - WidthF/3) < 10;
@@ -111,26 +107,28 @@ void main(uint3 i : SV_DispatchThreadID)
         {
 
             lookupResult = lookupResult << requiredBitCount;
-            int x = (pInFieldBuffer + NeighbourOffsets[nIndex + offset].x);
+            int2 offsetXY= NeighbourOffsets[nIndex + offset];
 
-            if(x < 0) {
-                x += rez.x;
-            }
-            else if(x >= rez.x) {
-                x -= rez.x;
-            }
+            int nPos = pInFieldBuffer + offsetXY.x + rez.x * offsetXY.y;
 
-            lookupResult+= ReadField[x].State;// & mask; 
+            // if(xy < 0) {
+            //     xy += rez.xy;
+            // }
+            // else if(xy >= rez.xy) {
+            //     xy -= rez.xy;
+            // }
+
+            lookupResult+= ReadField[nPos];// & mask; 
         }
-        s = TransitionFunctions[lookupResult].State;
+        s = TransitionFunctions[lookupResult];
+        WriteField[pInFieldBuffer] =  s;
+    // }
+    // // Copy to history 
+    // else {
+    //     s = ReadField[pInFieldBuffer - rez.x];
+    //     WriteField[pInFieldBuffer] =  ReadField[pInFieldBuffer - rez.x];
+    // }
 
-        WriteField[pInFieldBuffer].State =  s;
-    }
-    // Copy to history 
-    else {
-        s = ReadField[pInFieldBuffer - rez.x].State;
-        WriteField[pInFieldBuffer].State =  ReadField[pInFieldBuffer - rez.x].State;
-    }
     AllMemoryBarrier();
 
     float value = (float)s/NumStates;
