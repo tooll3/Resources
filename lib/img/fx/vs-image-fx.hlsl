@@ -11,7 +11,7 @@ static const float3 Quad[] =
 
 cbuffer Params : register(b0)
 {
-    float size;
+    //float size;
 }
 
 struct vsOutput
