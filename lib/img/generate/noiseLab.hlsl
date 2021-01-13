@@ -12,15 +12,7 @@ cbuffer ParamConstants : register(b0)
     float Bias;
 }
 
-cbuffer TimeConstants : register(b1)
-{
-    float globalTime;
-    float time;
-    float runTime;
-    float beatTime;
-}
-
-cbuffer Resolution : register(b2)
+cbuffer Resolution : register(b1)
 {
     float TargetWidth;
     float TargetHeight;
