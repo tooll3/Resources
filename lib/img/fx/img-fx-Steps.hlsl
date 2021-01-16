@@ -87,13 +87,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         colorFromRamp.rgb = lerp(colorFromRamp.rgb, Highlight.rgb, Highlight.a);
     }
 
-    //float edgePos = 
     float4 colorFromEdge= RampImageA.Sample(texSampler, float2(sAndC.y* extremes , 1.5/2));
-
-    // float4 colorFromRampB= RampImageA.Sample(texSampler, float2(rampColor ,0.5/2));    
-    // float4 colorFromEdgeB= RampImageA.Sample(texSampler, float2(sAndC.y -0 / 255 , 1.5/2));
-
-
     float a = clamp(colorFromRamp.a + colorFromEdge.a - colorFromRamp.a*colorFromEdge.a, 0,1);
     float3 rgb = (1.0 - colorFromEdge.a)*colorFromRamp.rgb + colorFromEdge.a*colorFromEdge.rgb;   
     return float4(rgb,a);

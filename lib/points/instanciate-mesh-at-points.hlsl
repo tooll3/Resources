@@ -23,6 +23,16 @@ struct Face
 };
 
 
+struct PbrVertex
+{
+    float3 Position;
+    float3 Normal;
+    float3 Tangent;
+    float3 Bitangent;
+    float2 TexCoord;
+    float2 __padding;
+};
+
 cbuffer Transforms : register(b0)
 {
     float4x4 CameraToClipSpace;
@@ -67,7 +77,6 @@ cbuffer PointLights : register(b4)
     int ActiveLightCount;
 }
 
-
 struct psInput
 {
     float4 position : SV_POSITION;
@@ -78,22 +87,24 @@ struct psInput
 
 sampler texSampler : register(s0);
 
-StructuredBuffer<Point> Points : t0;
-StructuredBuffer<Face> Faces : t1;
+StructuredBuffer<PbrVertex> PbrVertices : t0;
+StructuredBuffer<int3> FaceIndices : t1;
 
-Texture2D<float4> texture2 : register(t2);
+StructuredBuffer<Point> Points : t2;
+//StructuredBuffer<Face> Faces : t3;
+Texture2D<float4> texture2 : register(t3);
 
 psInput vsMain(uint id: SV_VertexID)
 {
     psInput output;
 
     uint faceCount, meshStride;
-    Faces.GetDimensions( faceCount,meshStride);
+    FaceIndices.GetDimensions( faceCount,meshStride);
 
     int verticesPerInstance = faceCount * 3;
 
     int faceIndex = (id % verticesPerInstance) / 3;
-    int vertexIndex = id % 3;
+    int faceVertexIndex = id % 3;
 
     uint instanceCount, instanceStride;
     Points.GetDimensions( instanceCount,instanceStride);
@@ -111,7 +122,12 @@ psInput vsMain(uint id: SV_VertexID)
     //quadPos = rotate_vector(quadPos, pointDef.rotation); 
     //float3 quadPos2 = rotated;
 
-    float4 posInObject = float4( Faces[faceIndex].positions[vertexIndex],1);
+    //float4 posInObject = float4( Faces[faceIndex].positions[vertexIndex],1);
+
+    PbrVertex vertex = PbrVertices[FaceIndices[faceIndex][faceVertexIndex]];
+    float4 posInObject = float4( vertex.Position,1);
+
+
     posInObject.xyz *= Points[instanceIndex].w * Size;
     posInObject = float4(rotate_vector(posInObject.xyz, Points[instanceIndex].rotation ),1);
 
@@ -121,7 +137,7 @@ psInput vsMain(uint id: SV_VertexID)
     posInClipSpace /= posInClipSpace.w;
     output.position = posInClipSpace;
 
-    float2 uv = Faces[faceIndex].texCoords[vertexIndex];
+    float2 uv = vertex.TexCoord;
     output.texCoord = float2(uv.x , 1- uv.y);
 
     float3 light;
