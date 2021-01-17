@@ -59,8 +59,7 @@ cbuffer TimeConstants : register(b1)
 
 cbuffer Params : register(b2)
 {
-    float4 Color;
-    
+    float4 Color;    
     float Size;
     float SegmentCount;
 };
@@ -76,6 +75,15 @@ cbuffer PointLights : register(b4)
 {
     PointLight Lights[8];
     int ActiveLightCount;
+}
+
+cbuffer PbrParams : register(b5)
+{
+    float4 BaseColor;
+    float4 EmissiveColor;
+    float Roughness;
+    float Specular;
+    float Metal;
 }
 
 struct psInput
@@ -97,7 +105,11 @@ StructuredBuffer<PbrVertex> PbrVertices : t0;
 StructuredBuffer<int3> FaceIndices : t1;
 StructuredBuffer<Point> Points : t2;
 
-Texture2D<float4> albedoTexture : register(t3);
+Texture2D<float4> BaseColorMap : register(t3);
+Texture2D<float4> EmissiveColorMap : register(t4);
+Texture2D<float4> RSMOMap : register(t5);
+Texture2D<float4> NormalMap : register(t6);
+
 
 psInput vsMain(uint id: SV_VertexID)
 {
@@ -180,7 +192,7 @@ psInput vsMain(uint id: SV_VertexID)
 float4 psMain(psInput pin) : SV_TARGET
 {
     // Sample input textures to get shading model params.
-    float3 albedo = albedoTexture.Sample(texSampler, pin.texCoord).rgb;
+    float3 albedo = BaseColorMap.Sample(texSampler, pin.texCoord).rgb;
     float metalness = 0; //metalnessTexture.Sample(texSampler, pin.texCoord).r;
     float roughness = 0.4; //roughnessTexture.Sample(texSampler, pin.texCoord).r;
 
@@ -259,8 +271,9 @@ float4 psMain(psInput pin) : SV_TARGET
         float3 diffuseIBL = kd * albedo * irradiance;
 
         // Sample pre-filtered specular reflection environment at correct mipmap level.
-        uint specularTextureLevels = querySpecularTextureLevels(albedoTexture);
-        float3 specularIrradiance = albedoTexture.SampleLevel(texSampler, Lr.xy, roughness * specularTextureLevels).rgb;
+        //uint specularTextureLevels = querySpecularTextureLevels(BaseColorMap);
+        //float3 specularIrradiance = BaseColorMap.SampleLevel(texSampler, Lr.xy, roughness * specularTextureLevels).rgb;
+        float3 specularIrradiance = 0;
 
         // Split-sum approximation factors for Cook-Torrance specular BRDF.
         float2 specularBRDF = 0.4; //specularBRDF_LUT.Sample(spBRDF_Sampler, float2(cosLo, roughness)).rg;
@@ -273,7 +286,7 @@ float4 psMain(psInput pin) : SV_TARGET
     }
 
     // Final fragment color.
-    return float4(directLighting + ambientLighting * 0, 1.0);
+    return float4(directLighting + ambientLighting * 0, 1.0) * BaseColor;
 
     // float4 textureCol = albedoTexture.Sample(texSampler, input.texCoord);
     // float4 color = textureCol;
