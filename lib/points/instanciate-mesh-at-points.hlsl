@@ -95,7 +95,7 @@ struct psInput
     float4 pixelPosition : SV_POSITION;
     float3 worldPosition : POSITION;
     //float2 texcoord : TEXCOORD;
-    float3x3 tangentBasis : TBASIS;    
+    float3x3 tbnToWorld : TBASIS;    
     float fog:VPOS;
 };
 
@@ -130,7 +130,6 @@ psInput vsMain(uint id: SV_VertexID)
 
     PbrVertex vertex = PbrVertices[FaceIndices[faceIndex][faceVertexIndex]];
     float4 posInObject = float4( vertex.Position,1);
-    output.worldPosition = posInObject; //TODO: this is probably wrong
 
     posInObject.xyz *= Points[instanceIndex].w * Size;
     posInObject = float4(rotate_vector(posInObject.xyz, Points[instanceIndex].rotation ),1);
@@ -138,7 +137,6 @@ psInput vsMain(uint id: SV_VertexID)
     posInObject += float4(Points[instanceIndex].position, 1) ; 
 
     float4 posInClipSpace = mul(posInObject, ObjectToClipSpace);
-    //posInClipSpace /= posInClipSpace.w;
     output.pixelPosition = posInClipSpace;
 
     float2 uv = vertex.TexCoord;
@@ -146,26 +144,10 @@ psInput vsMain(uint id: SV_VertexID)
 
     // Pass tangent space basis vectors (for normal mapping).
     float3x3 TBN = float3x3(vertex.Tangent, vertex.Bitangent, vertex.Normal);
-    output.tangentBasis = mul((float3x3)ObjectToWorld, transpose(TBN));
+    //output.tbnToWorld = mul((float3x3)ObjectToWorld, transpose(TBN));
+    output.tbnToWorld = mul(TBN, (float3x3)ObjectToWorld);
 
-    //float3 light;
-
-    // if(ActiveLightCount > 0) 
-    // {
-    //     light = 0; // HACK
-    //     float4 posInWorld = mul(posInObject, ObjectToWorld);
-    //     for(int i=0; i< ActiveLightCount; i++) 
-    //     {            
-    //         float distance = length(posInWorld.xyz - Lights[i].position);        
-    //         light += distance < Lights[i].range 
-    //                         ? (Lights[i].color.rgb * Lights[i].intensity.x / (distance * distance + 1))
-    //                         : 0 ;
-    //     }
-    // }
-    // else {
-    //     light = 1;
-    // }
-    // output.color.rgb = light.rgb;
+    output.worldPosition =  mul(posInObject, ObjectToWorld); 
 
     // Fog
     if(FogDistance > 0) 
@@ -193,16 +175,19 @@ float4 psMain(psInput pin) : SV_TARGET
 {
     // Sample input textures to get shading model params.
     float3 albedo = BaseColorMap.Sample(texSampler, pin.texCoord).rgb;
-    float metalness = 0; //metalnessTexture.Sample(texSampler, pin.texCoord).r;
-    float roughness = 0.4; //roughnessTexture.Sample(texSampler, pin.texCoord).r;
+    float4 roughnessSpecularMetallic = RSMOMap.Sample(texSampler, pin.texCoord);
+    //float metalness = ro.Sample(texSampler, pin.texCoord).r;
+    float metalness = roughnessSpecularMetallic.z + Metal;
+    float roughness = roughnessSpecularMetallic.x + Roughness;
 
     // Outgoing light direction (vector from world-space fragment position to the "eye").
     float3 eyePosition =  mul( float4(0,0,0,1), CameraToWorld);
     float3 Lo = normalize(eyePosition - pin.worldPosition);
 
     // Get current fragment's normal and transform to world space.
-    float3 N = float3(0,1,0);// normalize(2.0 * normalTexture.Sample(texSampler, pin.texCoord).rgb - 1.0);
-    N = normalize(mul(pin.tangentBasis, N));
+    float3 N = normalize(2.0 * NormalMap.Sample(texSampler, pin.texCoord).rgb - 1.0);
+    N = normalize(mul(N,pin.tbnToWorld));
+    //return float4(N.xyz,1);
     
     // Angle between surface normal and outgoing light direction.
     float cosLo = max(0.0, dot(N, Lo));
@@ -218,8 +203,10 @@ float4 psMain(psInput pin) : SV_TARGET
     float3 directLighting = 0.0;
     for(uint i=0; i < ActiveLightCount; ++i)
     {
-        float3 Li =  Lights[i].position; //- Lights[i].direction;
-        float3 Lradiance = Lights[i].color; //Lights[i].radiance;
+        float3 Li =   Lights[i].position - pin.worldPosition; //- Lights[i].direction;
+        float distance = length(Li);
+        float intensity = Lights[i].intensity / (distance * distance + 1);
+        float3 Lradiance = Lights[i].color * intensity; //Lights[i].radiance;
 
         // Half-vector between Li and Lo.
         float3 Lh = normalize(Li + Lo);
@@ -230,6 +217,8 @@ float4 psMain(psInput pin) : SV_TARGET
 
         // Calculate Fresnel term for direct lighting. 
         float3 F  = fresnelSchlick(F0, max(0.0, dot(Lh, Lo)));
+        //F = 0;  // HACK Disable to fix black spots
+
         // Calculate normal distribution for specular BRDF.
         float D = ndfGGX(cosLh, roughness);
         // Calculate geometric attenuation for specular BRDF.
@@ -238,55 +227,57 @@ float4 psMain(psInput pin) : SV_TARGET
         // Diffuse scattering happens due to light being refracted multiple times by a dielectric medium.
         // Metals on the other hand either reflect or absorb energy, so diffuse contribution is always zero.
         // To be energy conserving we must scale diffuse BRDF contribution based on Fresnel factor & metalness.
-        float3 kd = lerp(float3(1, 1, 1) - F, float3(0, 0, 0), metalness);
+        float3 kd = lerp(float3(1, 1, 1), float3(0, 0, 0), metalness);
+        //return float4(F, 1);
 
         // Lambert diffuse BRDF.
         // We don't scale by 1/PI for lighting & material units to be more convenient.
         // See: https://seblagarde.wordpress.com/2012/01/08/pi-or-not-to-pi-in-game-lighting-equation/
-        float3 diffuseBRDF = kd * albedo;
+        float3 diffuseBRDF = kd * albedo ;
 
         // Cook-Torrance specular microfacet BRDF.
-        float3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo);
+        float3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo) * Specular;
 
         // Total contribution for this light.
         directLighting += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
     }
 
     // Ambient lighting (IBL).
-    float3 ambientLighting;
-    {
-        // Sample diffuse irradiance at normal direction.
-        float3 irradiance = 0;// irradianceTexture.Sample(texSampler, N).rgb;
+    float3 ambientLighting = 0;
+    // {
+    //     // Sample diffuse irradiance at normal direction.
+    //     float3 irradiance = 0;// irradianceTexture.Sample(texSampler, N).rgb;
 
-        // Calculate Fresnel term for ambient lighting.
-        // Since we use pre-filtered cubemap(s) and irradiance is coming from many directions
-        // use cosLo instead of angle with light's half-vector (cosLh above).
-        // See: https://seblagarde.wordpress.com/2011/08/17/hello-world/
-        float3 F = fresnelSchlick(F0, cosLo);
+    //     // Calculate Fresnel term for ambient lighting.
+    //     // Since we use pre-filtered cubemap(s) and irradiance is coming from many directions
+    //     // use cosLo instead of angle with light's half-vector (cosLh above).
+    //     // See: https://seblagarde.wordpress.com/2011/08/17/hello-world/
+    //     float3 F = fresnelSchlick(F0, cosLo);
 
-        // Get diffuse contribution factor (as with direct lighting).
-        float3 kd = lerp(1.0 - F, 0.0, metalness);
+    //     // Get diffuse contribution factor (as with direct lighting).
+    //     float3 kd = lerp(1.0 - F, 0.0, metalness);
 
-        // Irradiance map contains exitant radiance assuming Lambertian BRDF, no need to scale by 1/PI here either.
-        float3 diffuseIBL = kd * albedo * irradiance;
+    //     // Irradiance map contains exitant radiance assuming Lambertian BRDF, no need to scale by 1/PI here either.
+    //     float3 diffuseIBL = kd * albedo * irradiance;
 
-        // Sample pre-filtered specular reflection environment at correct mipmap level.
-        //uint specularTextureLevels = querySpecularTextureLevels(BaseColorMap);
-        //float3 specularIrradiance = BaseColorMap.SampleLevel(texSampler, Lr.xy, roughness * specularTextureLevels).rgb;
-        float3 specularIrradiance = 0;
+    //     // Sample pre-filtered specular reflection environment at correct mipmap level.
+    //     //uint specularTextureLevels = querySpecularTextureLevels(BaseColorMap);
+    //     //float3 specularIrradiance = BaseColorMap.SampleLevel(texSampler, Lr.xy, roughness * specularTextureLevels).rgb;
+    //     float3 specularIrradiance = 0;
 
-        // Split-sum approximation factors for Cook-Torrance specular BRDF.
-        float2 specularBRDF = 0.4; //specularBRDF_LUT.Sample(spBRDF_Sampler, float2(cosLo, roughness)).rg;
+    //     // Split-sum approximation factors for Cook-Torrance specular BRDF.
+    //     float2 specularBRDF = 0.4; //specularBRDF_LUT.Sample(spBRDF_Sampler, float2(cosLo, roughness)).rg;
 
-        // Total specular IBL contribution.
-        float3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
+    //     // Total specular IBL contribution.
+    //     float3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
 
-        // Total ambient lighting contribution.
-        ambientLighting = diffuseIBL + specularIBL;
-    }
+    //     // Total ambient lighting contribution.
+    //     ambientLighting = diffuseIBL + specularIBL;
+    // }
 
-    // Final fragment color.
-    return float4(directLighting + ambientLighting * 0, 1.0) * BaseColor;
+    // Final fragment color.    
+    return float4(directLighting + ambientLighting, 1.0) * BaseColor +  float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
+    //return float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb,1);
 
     // float4 textureCol = albedoTexture.Sample(texSampler, input.texCoord);
     // float4 color = textureCol;
