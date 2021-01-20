@@ -2,15 +2,15 @@
 #include "point-light.hlsl"
 #include "pbr.hlsl"
 
-static const float3 Corners[] = 
-{
-  float3(-1, -1, 0),
-  float3( 1, -1, 0), 
-  float3( 1,  1, 0), 
-  float3( 1,  1, 0), 
-  float3(-1,  1, 0), 
-  float3(-1, -1, 0), 
-};
+// static const float3 Corners[] = 
+// {
+//   float3(-1, -1, 0),
+//   float3( 1, -1, 0), 
+//   float3( 1,  1, 0), 
+//   float3( 1,  1, 0), 
+//   float3(-1,  1, 0), 
+//   float3(-1, -1, 0), 
+// };
 
 
 // struct Face
@@ -131,10 +131,13 @@ psInput vsMain(uint id: SV_VertexID)
     PbrVertex vertex = PbrVertices[FaceIndices[faceIndex][faceVertexIndex]];
     float4 posInObject = float4( vertex.Position,1);
 
-    posInObject.xyz *= Points[instanceIndex].w * Size;
-    posInObject = float4(rotate_vector(posInObject.xyz, Points[instanceIndex].rotation ),1);
+    float4x4 orientationMatrix = transpose(quaternion_to_matrix(Points[instanceIndex].rotation));
 
-    posInObject += float4(Points[instanceIndex].position, 1) ; 
+    posInObject.xyz *= Points[instanceIndex].w * Size;
+    //posInObject = float4(rotate_vector(posInObject.xyz, Points[instanceIndex].rotation ),1) ;
+    posInObject = mul( float4(posInObject.xyz, 1), orientationMatrix) ;
+
+    posInObject += float4(Points[instanceIndex].position, 0); 
 
     float4 posInClipSpace = mul(posInObject, ObjectToClipSpace);
     output.pixelPosition = posInClipSpace;
@@ -145,7 +148,9 @@ psInput vsMain(uint id: SV_VertexID)
     // Pass tangent space basis vectors (for normal mapping).
     float3x3 TBN = float3x3(vertex.Tangent, vertex.Bitangent, vertex.Normal);
     //output.tbnToWorld = mul((float3x3)ObjectToWorld, transpose(TBN));
-    output.tbnToWorld = mul(TBN, (float3x3)ObjectToWorld);
+    TBN = mul(TBN, (float3x3)orientationMatrix);
+    TBN = mul(TBN, (float3x3)ObjectToWorld);
+    output.tbnToWorld = TBN;
 
     output.worldPosition =  mul(posInObject, ObjectToWorld); 
 
@@ -178,15 +183,20 @@ float4 psMain(psInput pin) : SV_TARGET
     float4 roughnessSpecularMetallic = RSMOMap.Sample(texSampler, pin.texCoord);
     //float metalness = ro.Sample(texSampler, pin.texCoord).r;
     float metalness = roughnessSpecularMetallic.z + Metal;
+    float normalStrength = roughnessSpecularMetallic.y;
     float roughness = roughnessSpecularMetallic.x + Roughness;
+    //return float4(roughness.xxx,1);
 
     // Outgoing light direction (vector from world-space fragment position to the "eye").
     float3 eyePosition =  mul( float4(0,0,0,1), CameraToWorld);
     float3 Lo = normalize(eyePosition - pin.worldPosition);
 
     // Get current fragment's normal and transform to world space.
-    float3 N = normalize(2.0 * NormalMap.Sample(texSampler, pin.texCoord).rgb - 1.0);
+    float3 N = lerp(float3(0,0,1),  normalize(2.0 * NormalMap.Sample(texSampler, pin.texCoord).rgb - 1.0), normalStrength);
+
+    //return float4(pin.tbnToWorld[0],1);
     N = normalize(mul(N,pin.tbnToWorld));
+
     //return float4(N.xyz,1);
     
     // Angle between surface normal and outgoing light direction.
@@ -236,7 +246,7 @@ float4 psMain(psInput pin) : SV_TARGET
         float3 diffuseBRDF = kd * albedo ;
 
         // Cook-Torrance specular microfacet BRDF.
-        float3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo) * Specular;
+        float3 specularBRDF = ((F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo)) * Specular;
 
         // Total contribution for this light.
         directLighting += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;

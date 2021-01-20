@@ -98,7 +98,7 @@ void main(uint3 i : SV_DispatchThreadID)
     float3x3 m = float3x3(v.Tangent, v.Bitangent, v.Normal);
     float4 rot = quad_from_Mat3(m[0], m[1], m[2]);
     //rot = qmul(rot, rotate_angle_axis(1*PI , float3(0,1,0)));
-    ResultPoints[index].rotation = rot;
+    ResultPoints[index].rotation = normalize(rot);
     //ResultPoints[index].rotation = quad_from_Mat3(v.Tangent, v.Bitangent, v.Normal);
     
     //ResultPoints[index].rotation = q_look_at(-v.Normal, float3(0,1,0));

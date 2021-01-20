@@ -21,8 +21,14 @@ cbuffer Params : register(b0)
     
     float3 Axis;
     float W;
+
     float WOffset;
-    float CloseCircle;
+    float CloseCircle;    
+    float2 __padding5;
+
+    float3 OrientationAxis;
+    float1 OrientationAngle;
+
 }
 
 
@@ -82,8 +88,10 @@ void main(uint3 i : SV_DispatchThreadID)
     ResultPoints[index].w = (closeCircle && index == Count -1)
                           ? sqrt(-1) // NaN
                           : W + WOffset * f;
-    float4 quat = rotate_angle_axis(angle, normalize(Axis));
-    ResultPoints[index].rotation = quat;
+
+    float4 orientation = normalize(rotate_angle_axis(OrientationAngle , normalize(OrientationAxis)));
+    float4 quat = qmul(  rotate_angle_axis(angle, normalize(Axis)), orientation);
+    ResultPoints[index].rotation = normalize(quat);
     //ResultPoints[index].w = quat.w+ 0.5;
 }
 

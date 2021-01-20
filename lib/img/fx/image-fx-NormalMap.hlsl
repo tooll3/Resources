@@ -78,7 +78,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float2 direction = float2( sin(angle), cos(angle));
 
     return WriteAngleAndStrength < 0.5 
-        ? float4(len * direction * Impact, 0, 1)
+        ? float4(  normalize(float3(len * direction * Impact, 1)) /2 + 0.5, 1)
         : float4(mod(-angle, 2*3.141592), len * Impact, 0,1  );    
     //return float4(uniRad ,0,0,1);
     //return float4((d * Impact+0.5),0.5, uniRad );

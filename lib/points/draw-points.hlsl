@@ -101,7 +101,7 @@ psInput vsMain(uint id: SV_VertexID)
                           : 0 ;
     }
     //output.color.rgb = light.rgb;
-    output.color.rgb *= pointDef.rotation.xyz;
+    //output.color.rgb *= pointDef.rotation.xyz;
 
 
     // Fog
