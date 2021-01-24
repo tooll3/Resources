@@ -19,6 +19,7 @@ cbuffer Params : register(b1)
     float Phase;
     float Variation;
     float3 AmountDistribution;
+    float RotationLookupDistance;
 
 }
 
@@ -33,29 +34,39 @@ RWStructuredBuffer<Point> ResultPoints : u0;    // output
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
-    Point A = Points1[i.x];
-    //Point B = Points2[i.x];
+    uint numStructs, stride;
+    Points1.GetDimensions(numStructs, stride);
+    if(i.x >= numStructs) {
+        ResultPoints[i.x].w = 0 ;
+        return;
+    }
 
-    //float3 hash = hash31(index);
-    // float Variation = 1;
-    // float Frequency = 1;
-    // float Phase = 0;
-    // float Amount = 1;
+    float3 variationOffset = hash31((float)(i.x%1234)/0.123 ) * Variation;
 
-    // 2 lines below only relevant for sorting
-    // float3 posInCamera = mul(Particles[i.x].position, ObjectToCamera).xyz; // todo: optimize
-    // AliveParticles[index].squaredDistToCamera = posInCamera.z;//dot(-WorldToCamera[2].xyz, posInCamera);
+    Point p = Points1[i.x];
+    //float3 pos = Points1[i.x].position*0.9; // avoid simplex noice glitch at -1,0,0 
+    float3 lookupPos = p.position * 0.9;
+    float3 noiseLookup = (lookupPos + variationOffset + Phase ) * Frequency;
 
-    //float3 v =  p.velocity; //float3(0,0,0)
-    //float3 hash = hash31(index);
-    //float3 variationOffset = (hash - 0.5)*2 * Variation;
-    float3 variationOffset = float3(0,0,0);
+    float3 noise = snoiseVec3(noiseLookup) * Amount/100 * AmountDistribution;
 
-    //float3 noise = curlNoise((A.Position + variationOffset + Phase ) * Frequency)* Amount * AmountDistribution;
-    float3 noise = snoiseVec3((A.position + variationOffset + Phase ) * Frequency)* Amount * AmountDistribution;
+    float3 n = float3(1, 0.0, 0) * RotationLookupDistance;
 
-    ResultPoints[i.x].position =  A.position + noise;
-    ResultPoints[i.x].w = A.w;
-    ResultPoints[i.x].rotation = A.rotation;
+    float3 posNormal = Points1[i.x].position*0.9; // avoid simplex noice glitch at -1,0,0 
+    float3 noiseLookupNormal = (posNormal + variationOffset + Phase  ) * Frequency + n/Frequency;
+    float3 noiseNormal = snoiseVec3(noiseLookup) * Amount/100 * AmountDistribution;
+    float4 rotationFromDisplace = normalize(from_to_rotation(normalize(n), normalize(n+ noiseNormal) ) );
+
+    ResultPoints[i.x].position = p.position + noise ;
+    ResultPoints[i.x].rotation = qmul(rotationFromDisplace , Points1[i.x].rotation);
+    ResultPoints[i.x].w = Points1[i.x].w;
+    // Point A = Points1[i.x];
+    // float3 variationOffset = float3(0,0,0);
+
+    // float3 noise = snoiseVec3((A.position + variationOffset + Phase ) * Frequency)* Amount * AmountDistribution;
+
+    // ResultPoints[i.x].position =  A.position + noise;
+    // ResultPoints[i.x].w = A.w;
+    // ResultPoints[i.x].rotation = A.rotation;
 }
 
