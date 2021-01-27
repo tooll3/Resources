@@ -2,15 +2,15 @@
 #include "point-light.hlsl"
 #include "pbr.hlsl"
 
-struct PbrVertex
-{
-    float3 Position;
-    float3 Normal;
-    float3 Tangent;
-    float3 Bitangent;
-    float2 TexCoord;
-    float2 __padding;
-};
+// struct PbrVertex
+// {
+//     float3 Position;
+//     float3 Normal;
+//     float3 Tangent;
+//     float3 Bitangent;
+//     float2 TexCoord;
+//     float2 __padding;
+// };
 
 cbuffer Transforms : register(b0)
 {
