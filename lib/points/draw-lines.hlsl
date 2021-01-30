@@ -18,12 +18,9 @@ static const float3 Corners[] =
 cbuffer Params : register(b0)
 {
     float4 Color;
+
     float Size;
     float SegmentCount;
-
-    float FogDistance;
-    float FogBias;
-    float4 FogColor;
 
     float ShrinkWithDistance;
     float UseWFor;
@@ -44,6 +41,13 @@ cbuffer Transforms : register(b1)
     float4x4 ObjectToCamera;
     float4x4 ObjectToClipSpace;
 };
+
+cbuffer FogParams : register(b2)
+{
+    float4 FogColor;
+    float FogDistance;
+    float FogBias;  
+}
 
 struct psInput
 {
@@ -153,15 +157,13 @@ psInput vsMain(uint id: SV_VertexID)
 
     // output.fog = fog;
 
-    if(FogDistance > 0) 
-    {
-        //float4 posInCamera = mul(float4(posInObject, 1), ObjectToCamera);
-        output.fog = pow(saturate(-posInCamSpace.z/FogDistance), FogBias);
-        //output.fog = -posInCamSpace.z/FogDistance;
-        //output.fog = -posInCamSpace.z / 100;
-    }
+    //if(FogDistance > 0) 
+    //{
+        //output.fog = pow(saturate(-posInCamSpace.z/FogDistance), FogBias);
+        output.fog = saturate(-posInCamSpace.z/FogDistance);
+    //}
 
-    output.color.rgb = Color.rgb;
+    output.color.rgb =  Color.rgb;
     //output.color.rgb = lerp(Color.rgb, FogColor.rgb,fog);
 
     output.color.a = Color.a;
@@ -170,6 +172,7 @@ psInput vsMain(uint id: SV_VertexID)
 
 float4 psMain(psInput input) : SV_TARGET
 {
+    //return float4(input.fog.xxx,1);
     float4 imgColor = texture2.Sample(texSampler, input.texCoord);
 
     float dFromLineCenter= abs(input.texCoord.y -0.5)*2;

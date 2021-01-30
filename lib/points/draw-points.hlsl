@@ -26,20 +26,13 @@ cbuffer Transforms : register(b0)
     float4x4 ObjectToClipSpace;
 };
 
-// cbuffer TimeConstants : register(b1)
-// {
-//     float GlobalTime;
-//     float Time;
-//     float RunTime;
-//     float BeatTime;
-// }
-
 cbuffer Params : register(b2)
 {
     float4 Color;
     
     float Size;
     float SegmentCount;
+    float CutOffTransparent;
 };
 
 cbuffer FogParams : register(b3)
@@ -79,52 +72,28 @@ psInput vsMain(uint id: SV_VertexID)
     float3 quadPos = Corners[quadIndex];
     output.texCoord = (quadPos.xy * 0.5 + 0.5);
 
-    //quadPos = rotate_vector(quadPos, pointDef.rotation); 
-    //float3 quadPos2 = rotated;
-
     float4 posInObject = float4(pointDef.position,1);
     float4 quadPosInCamera = mul(posInObject, ObjectToCamera);
     output.color = Color;
     quadPosInCamera.xy += quadPos.xy*0.050  * pointDef.w * Size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
-
-
-    float3 light = 0;
-
     float4 posInWorld = mul(posInObject, ObjectToWorld);
-
-    for(int i=0; i< ActiveLightCount; i++) {
-        
-        float distance = length(posInWorld.xyz - Lights[i].position);        
-        light += distance < Lights[i].range 
-                          ? (Lights[i].color.rgb * Lights[i].intensity.x / (distance * distance + 1))
-                          : 0 ;
-    }
-    //output.color.rgb = light.rgb;
-    //output.color.rgb *= pointDef.rotation.xyz;
-
 
     // Fog
     float4 posInCamera = mul(posInObject, ObjectToCamera);
     float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
-    output.color.rgb = lerp(output.color.rgb, FogColor.rgb,fog);
     
-    //output.color.rgb = float3(2,0,0);
-
-
-
-
-
+    output.color.rgb = lerp(output.color.rgb, FogColor.rgb,fog);
     return output;
 }
 
 float4 psMain(psInput input) : SV_TARGET
-{
-
+{    
     //return float4(ActiveLightCount / 2.,0,0,1);
     float4 textureCol = texture2.Sample(texSampler, input.texCoord);
-    if(textureCol.a < 0.2)
+    
+    if(textureCol.a < CutOffTransparent)
         discard;
 
-    return clamp(input.color * textureCol, float4(0,0,0,0), float4(1000,1000,1000,1));// * float4(input.texCoord,1,1);    
+    return clamp(input.color * textureCol, float4(0,0,0,0), float4(1000,1000,1000,1));
 }
