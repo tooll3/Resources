@@ -2,6 +2,11 @@
 
 RWTexture3D<float4> outputTexture : register(u0);
 
+cbuffer Params : register(b0)
+{
+    float seed;
+}
+
 [numthreads(8,8,8)]
 void main(uint3 i : SV_DispatchThreadID)
 {
@@ -14,7 +19,13 @@ void main(uint3 i : SV_DispatchThreadID)
     /*uv *= strength * sin(l*time*speed);*/
     /*uv = uv*0.5 + 0.5;*/
 
-    float3 s = 1.0 / 8.0;
-    float3 c = cnoise((float3)i.xyz * s);
-    outputTexture[i.xyz] = float4(c.xxx, 0.7);
+    float sum = 0.0;
+    const int NUM_OCTAVES = 9;
+    for (int j = 0; j < NUM_OCTAVES; j++)
+    {
+        float s = 1.0 / float(1 << j);
+        float c = snoise((float3(i.xyz) + float3(seed, seed, seed))* s).x;
+        sum += c * 1.0/float(256 >> j);
+    }
+    outputTexture[i.xyz] = float4(sum, sum, sum, 1);
 }
