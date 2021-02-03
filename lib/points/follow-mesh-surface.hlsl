@@ -19,21 +19,9 @@ cbuffer Params : register(b1)
     float Speed;
     float SurfaceDistance;
     float Spin;
-    //float Acceleration;
-
-    // float Amount;
-    // float Frequency;
-    // float Phase;
-    // float Variation;
-    // float3 AmountDistribution;
-    // float RotationLookupDistance;
+    float ScatterSurfaceDistance;
 
 }
-
-// struct Point {
-//     float3 Position;
-//     float W;
-// };
 
 StructuredBuffer<Point> Points : t0;         // input
 StructuredBuffer<PbrVertex> Vertices: t1;
@@ -196,16 +184,18 @@ void main(uint3 i : SV_DispatchThreadID)
     Indices.GetDimensions(faceCount, faceStride);
 
     
+    float pointHash = hash11(i.x);
+    float signedPointHash = hash11(i.x);
     Point p = ResultPoints[i.x];
-    p.w = 1;
-    //p.rotation = float4(0,0,0,1);
 
+    if(RestorePosition > 1) {
+        p = Points[i.x];
+    }
 
     float3 pos = RestorePosition > 1
                  ? Points[i.x].position
                  : lerp( p.position, Points[i.x].position, RestorePosition) ;
 
-    //p.rotation = float4(0,0,0,1);
     float3 forward =  rotate_vector( float3(0,0,1), p.rotation);
     float3 pos2 = pos + forward * Speed;
 
@@ -213,31 +203,21 @@ void main(uint3 i : SV_DispatchThreadID)
     float3 closestSurfacePoint;
     findClosestPointAndDistance(faceCount, pos2,  closestFaceIndex, closestSurfacePoint);
 
-    float3 targetPosWithDistance = closestSurfacePoint + normalize(pos2 - closestSurfacePoint) * SurfaceDistance;
+    // Keep outside
+    float3 distanceFromSurface= normalize(pos2 - closestSurfacePoint) * (SurfaceDistance + signedPointHash * ScatterSurfaceDistance);
+    distanceFromSurface *= dot(distanceFromSurface, Vertices[Indices[closestFaceIndex].x].Normal) > 0 
+        ? 1 : -1;
 
-
-
-    //float3 pos = p.position;
-
-    // for(uint vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++) 
-    // {
-    //     closesPointOnTriangle();
-        
-    //     float distance2 = length(Vertices[vertexIndex].Position - pos);
-    //     if(distance2 < closestDistance) {
-    //         closestDistance = distance2;
-    //         closestIndex = vertexIndex;
-    //     }
-    // }
+    float3 targetPosWithDistance = closestSurfacePoint + distanceFromSurface;
 
     if(closestFaceIndex >= 0) 
     {
-        p.position = targetPosWithDistance;
+        p.position = targetPosWithDistance; // FIXME: We should still limit to max speed to avoid jumps
     }
 
 
-    float randomRot = (hash11(i.x) - 0.5) * Spin;
-    p.rotation = normalize(qmul(p.rotation, normalize(float4(randomRot, 0.005, 0, 1))));
+    float randomRot = signedPointHash  * Spin;
+    p.rotation = normalize(qmul(p.rotation, normalize(float4(randomRot, randomRot * 0.4, 0.001, 1))));
 
     ResultPoints[i.x] = p;
 }
