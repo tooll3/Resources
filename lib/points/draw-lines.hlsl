@@ -159,8 +159,9 @@ psInput vsMain(uint id: SV_VertexID)
 
     //if(FogDistance > 0) 
     //{
-        //output.fog = pow(saturate(-posInCamSpace.z/FogDistance), FogBias);
-        output.fog = saturate(-posInCamSpace.z/FogDistance);
+        output.fog = pow(saturate(-posInCamSpace.z/FogDistance), FogBias);
+        //output.fog = saturate(-posInCamSpace.z/FogDistance);
+        //float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
     //}
 
     output.color.rgb =  Color.rgb;
