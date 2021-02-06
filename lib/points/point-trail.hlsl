@@ -26,12 +26,13 @@ void main(uint3 i : SV_DispatchThreadID)
     uint targetIndex = (cycleIndex + sourceIndex * trailLength) % bufferLength;
 
     TrailPoints[targetIndex] = SourcePoints[sourceIndex];
-    float3 lastPos = SourcePoints[sourceIndex-1].position;
-    TrailPoints[targetIndex].rotation = normalize(q_look_at(SourcePoints[sourceIndex].position, lastPos));
 
-    Point p = SourcePoints[i.x];
+    //float3 lastPos = TrailPoints[(targetIndex-1) % bufferLength ].position;
+    //TrailPoints[targetIndex].rotation = normalize(q_look_at(SourcePoints[sourceIndex].position, lastPos));
+
+    //Point p = SourcePoints[i.x];
     //TrailPoints[targetIndex].w = 0.4;
 
     // Flag follow position W as NaN line devider
-    TrailPoints[(targetIndex + 1) % bufferLength].w = 1./0;
+    TrailPoints[(targetIndex + 1) % bufferLength].w = sqrt(-1);
 }

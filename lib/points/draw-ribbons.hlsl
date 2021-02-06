@@ -49,84 +49,213 @@ cbuffer PointLights : register(b3)
     int ActiveLightCount;
 }
 
+cbuffer PbrParams : register(b4)
+{
+    float4 BaseColor;
+    float4 EmissiveColor;
+    float Roughness;
+    float Specular;
+    float Metal;
+}
+
 struct psInput
 {
-    float4 position : SV_POSITION;
-    float4 color : COLOR;
     float2 texCoord : TEXCOORD;
+    float4 pixelPosition : SV_POSITION;
+    float3 worldPosition : POSITION;
+    float3x3 tbnToWorld : TBASIS;    
+    float fog:VPOS;
 };
 
 sampler texSampler : register(s0);
 
 StructuredBuffer<Point> Points : t0;
-Texture2D<float4> texture2 : register(t1);
+//Texture2D<float4> texture2 : register(t1);
+
+Texture2D<float4> BaseColorMap : register(t1);
+Texture2D<float4> EmissiveColorMap : register(t2);
+Texture2D<float4> RSMOMap : register(t3);
+Texture2D<float4> NormalMap : register(t4);
 
 psInput vsMain(uint id: SV_VertexID)
 {
+    uint pointCount, pointStride;
+    Points.GetDimensions(pointCount, pointStride);
+
     psInput output;
     float discardFactor = 1;
     int quadIndex = id % 6;
     int particleId = id / 6;
+
+
     float3 cornerFactors = Corners[quadIndex];
+    float f = (float)(particleId + cornerFactors.x)  / clamp(pointCount - 1, 1,100000);
 
     int offset = cornerFactors.x < 0.5 ? 0 : 1; 
     Point p = Points[particleId+offset];
 
-    float side = cornerFactors.y;
+    float spinRad = (Spin + Twist *f) * 3.141578/180;
+    float3 side = float3(0, cos(spinRad), sin(spinRad)) * cornerFactors.y;
 
-    float3 widthV = rotate_vector(float3(side,0,0), p.rotation) * Width * p.w;;
+
+    float3 widthV = rotate_vector(side, p.rotation) * Width * p.w;;
     float3 pInObject = p.position + widthV;
 
-    float3 normal = normalize(rotate_vector(float3(0,1,0), p.rotation));
+    float3 normalTwisted =  float3(0, cos(spinRad + 3.141578/2), sin(spinRad + 3.141578/2));
+    //float3 normalTwisted = float3(1,0,0);
+    float3 normal = normalize(rotate_vector(normalTwisted, p.rotation));
     float4 normalInScreen = mul(float4(normal,0), ObjectToClipSpace);
+
+
+
+    output.texCoord = float2(cornerFactors.x , cornerFactors.y /2 +0.5);
+    if(TextureMode < 0.5) {
+        output.texCoord = float2( f * (TextureRange.y - TextureRange.x) + TextureRange.x ,  cornerFactors.y /2 +0.5);
+    }
+    else if (TextureMode < 1.5) {
+        output.texCoord = float2( f * TextureRange.y + TextureRange.x ,  cornerFactors.y /2 +0.5);        
+    }
+    else if (TextureMode < 2.5) {
+        output.texCoord += TextureRange;
+    }
+    else  {
+        output.texCoord.x = p.w;
+    }
+
+    // Pass tangent space basis vectors (for normal mapping).
+    float3x3 TBN = float3x3(
+        normalize(rotate_vector(float3(1,0,0), p.rotation)), //  vertex.Bitangent, 
+        side, 
+        normal
+        );
+    TBN = mul(TBN, (float3x3)ObjectToWorld);
+    output.tbnToWorld = TBN;
+
+    output.worldPosition =  mul(float4(pInObject,0), ObjectToWorld); 
 
     float4 pInScreen  = mul(float4(pInObject,1), ObjectToClipSpace);
 
-    if(pInScreen.z < -0)
-        discardFactor = 0;
+    // if(pInScreen.z < -0)
+    //     discardFactor = 0;
 
     float3 lightDirection = float3(1.2, 1, -0.1);
     float phong = pow(  abs(dot(normal,lightDirection )),1);
     
-    output.position = pInScreen;
-
-    output.texCoord = float2(cornerFactors.x , cornerFactors.y /2 +0.5);
-    output.color = Color;
-    if(normalInScreen.z < 0) {
-        output.color.rgb = float3(0.4,0,0);
-    }
-    
-    output.color.rgb *= phong;
-    output.color.a = discardFactor;
-
-    float3 light = 0;
-    float4 posInWorld = mul(float4(pInObject,1), ObjectToWorld);
-
-    for(int i=0; i< ActiveLightCount; i++) {
-        
-        float distance = length(posInWorld.xyz - Lights[i].position);
-        
-        light += distance < Lights[i].range 
-                          ? Lights[i].color * Lights[i].intensity / (distance * distance)
-                          : 0 ;
-    }
-    output.color.rgb *= light;
+    output.pixelPosition = pInScreen;
 
     // Fog
     float4 posInCamera = mul(float4(pInObject,1), ObjectToCamera);
     float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
-    output.color.rgb = lerp(output.color.rgb, FogColor.rgb,fog);
-
     return output;    
 }
 
-float4 psMain(psInput input) : SV_TARGET
-{
-    float4 imgColor = texture2.Sample(texSampler, input.texCoord);
- 
-    float dFromLineCenter= abs(input.texCoord.y -0.5)*2;
-    float a= 1; //smoothstep(1,0.95,dFromLineCenter) ;
-    float4 color = input.color * imgColor;// * input.color;
 
-    return clamp(float4(color.rgb, color.a * a), 0, float4(1,100,100,100));
+float4 psMain(psInput pin) : SV_TARGET
+{
+    // Sample input textures to get shading model params.
+    float4 albedo = BaseColorMap.Sample(texSampler, pin.texCoord).rgba;
+    float4 roughnessSpecularMetallic = RSMOMap.Sample(texSampler, pin.texCoord);
+    float metalness = roughnessSpecularMetallic.z + Metal;
+    float normalStrength = roughnessSpecularMetallic.y;
+    float roughness = roughnessSpecularMetallic.x + Roughness;
+
+    // Outgoing light direction (vector from world-space fragment position to the "eye").
+    float3 eyePosition =  mul( float4(0,0,0,1), CameraToWorld);
+    float3 Lo = normalize(eyePosition - pin.worldPosition);
+
+    // Get current fragment's normal and transform to world space.
+    float3 N = lerp(float3(0,0,1),  normalize(2.0 * NormalMap.Sample(texSampler, pin.texCoord).rgb - 1.0), normalStrength);
+
+    //return float4(pin.tbnToWorld[0],1);
+    N = normalize(mul(N,pin.tbnToWorld));
+    //return float4(N,1);
+    
+    // Angle between surface normal and outgoing light direction.
+    float cosLo = max(0.0, dot(N, Lo));
+        
+    // Specular reflection vector.
+    float3 Lr = 2.0 * cosLo * N - Lo;
+
+    // Fresnel reflectance at normal incidence (for metals use albedo color).
+    float3 F0 = lerp(Fdielectric, albedo, metalness);
+
+    // Direct lighting calculation for analytical lights.
+    float3 directLighting = 0.0;
+    for(uint i=0; i < ActiveLightCount; ++i)
+    {
+        float3 Li =   Lights[i].position - pin.worldPosition; //- Lights[i].direction;
+        float distance = length(Li);
+        float intensity = Lights[i].intensity / (pow(distance,2) + 0.2);
+        float3 Lradiance = Lights[i].color * intensity; //Lights[i].radiance;
+
+        // Half-vector between Li and Lo.
+        float3 Lh = normalize(Li + Lo);
+
+        // Calculate angles between surface normal and various light vectors.
+        float cosLi = max(0.0, dot(N, Li));
+        float cosLh = max(0.0, dot(N, Lh));
+
+        // Calculate Fresnel term for direct lighting. 
+        float3 F  = fresnelSchlick(F0, max(0.0, dot(Lh, Lo)));
+
+        // Calculate normal distribution for specular BRDF.
+        float D = ndfGGX(cosLh, roughness);
+        // Calculate geometric attenuation for specular BRDF.
+        float G = gaSchlickGGX(cosLi, cosLo, roughness);
+
+        // Diffuse scattering happens due to light being refracted multiple times by a dielectric medium.
+        // Metals on the other hand either reflect or absorb energy, so diffuse contribution is always zero.
+        // To be energy conserving we must scale diffuse BRDF contribution based on Fresnel factor & metalness.
+        float3 kd = lerp(float3(1, 1, 1), float3(0, 0, 0), metalness);
+        //return float4(F, 1);
+
+        // Lambert diffuse BRDF.
+        // We don't scale by 1/PI for lighting & material units to be more convenient.
+        // See: https://seblagarde.wordpress.com/2012/01/08/pi-or-not-to-pi-in-game-lighting-equation/
+        float3 diffuseBRDF = kd * albedo.rgb;
+
+        // Cook-Torrance specular microfacet BRDF.
+        float3 specularBRDF = ((F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo)) * Specular;
+
+        // Total contribution for this light.
+        directLighting += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
+    }
+
+    // Ambient lighting (IBL).
+    float3 ambientLighting = 0;
+    // {
+    //     // Sample diffuse irradiance at normal direction.
+    //     float3 irradiance = 0;// irradianceTexture.Sample(texSampler, N).rgb;
+
+    //     // Calculate Fresnel term for ambient lighting.
+    //     // Since we use pre-filtered cubemap(s) and irradiance is coming from many directions
+    //     // use cosLo instead of angle with light's half-vector (cosLh above).
+    //     // See: https://seblagarde.wordpress.com/2011/08/17/hello-world/
+    //     float3 F = fresnelSchlick(F0, cosLo);
+
+    //     // Get diffuse contribution factor (as with direct lighting).
+    //     float3 kd = lerp(1.0 - F, 0.0, metalness);
+
+    //     // Irradiance map contains exitant radiance assuming Lambertian BRDF, no need to scale by 1/PI here either.
+    //     float3 diffuseIBL = kd * albedo * irradiance;
+
+    //     // Sample pre-filtered specular reflection environment at correct mipmap level.
+    //     //uint specularTextureLevels = querySpecularTextureLevels(BaseColorMap);
+    //     //float3 specularIrradiance = BaseColorMap.SampleLevel(texSampler, Lr.xy, roughness * specularTextureLevels).rgb;
+    //     float3 specularIrradiance = 0;
+
+    //     // Split-sum approximation factors for Cook-Torrance specular BRDF.
+    //     float2 specularBRDF = 0.4; //specularBRDF_LUT.Sample(spBRDF_Sampler, float2(cosLo, roughness)).rg;
+
+    //     // Total specular IBL contribution.
+    //     float3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
+
+    //     // Total ambient lighting contribution.
+    //     ambientLighting = diffuseIBL + specularIBL;
+    // }
+
+    // Final fragment color.    
+    
+    return float4(directLighting + ambientLighting, 1.0) * BaseColor * Color * float4(1,1,1,albedo.a)
+         + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
 }

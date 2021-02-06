@@ -80,6 +80,7 @@ void main(uint3 i : SV_DispatchThreadID)
     float l = Radius + RadiusOffset * f;
     float angle = (StartAngle * 3.141578/180 + Cycles * 2 *3.141578 * f);
     float3 direction = normalize(cross(Axis, Axis.y > 0.7 ? float3(0,0,1) :  float3(0,1,0)));
+    //float direction = normalize(Axis);
 
     float3 v = RotatePointAroundAxis(direction * l , Axis, angle) + Center + CenterOffset * f;
 
@@ -89,7 +90,7 @@ void main(uint3 i : SV_DispatchThreadID)
                           ? sqrt(-1) // NaN
                           : W + WOffset * f;
 
-    float4 orientation = normalize(rotate_angle_axis(OrientationAngle , normalize(OrientationAxis)));
+    float4 orientation = normalize(rotate_angle_axis(OrientationAngle * 3.141578/180 , normalize(OrientationAxis)));
     float4 quat = qmul(  rotate_angle_axis(angle, normalize(Axis)), orientation);
     ResultPoints[index].rotation = normalize(quat);
     //ResultPoints[index].w = quat.w+ 0.5;
