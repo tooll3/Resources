@@ -16,36 +16,27 @@ cbuffer Transforms : register(b0)
     float4x4 ObjectToClipSpace;
 };
 
-cbuffer TimeConstants : register(b1)
-{
-    float GlobalTime;
-    float Time;
-    float RunTime;
-    float BeatTime;
-}
-
-
-cbuffer Params : register(b2)
+cbuffer Params : register(b1)
 {
     float4 Color;    
     float Size;
     float SegmentCount;
 };
 
-cbuffer FogParams : register(b3)
+cbuffer FogParams : register(b2)
 {
     float4 FogColor;
     float FogDistance;
     float FogBias;   
 }
 
-cbuffer PointLights : register(b4)
+cbuffer PointLights : register(b3)
 {
     PointLight Lights[8];
     int ActiveLightCount;
 }
 
-cbuffer PbrParams : register(b5)
+cbuffer PbrParams : register(b4)
 {
     float4 BaseColor;
     float4 EmissiveColor;

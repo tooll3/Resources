@@ -1,14 +1,14 @@
 #include "hash-functions.hlsl"
 #include "point.hlsl"
 
-cbuffer TimeConstants : register(b0)
-{
-    float GlobalTime;
-    float Time;
-    float RunTime;
-    float BeatTime;
-    float LastFrameDuration;
-}; 
+// cbuffer TimeConstants : register(b0)
+// {
+//     float GlobalTime;
+//     float Time;
+//     float RunTime;
+//     float BeatTime;
+//     float LastFrameDuration;
+// }; 
  
 // cbuffer Transforms : register(b1)
 // {
@@ -22,10 +22,10 @@ cbuffer TimeConstants : register(b0)
 //     float4x4 WorldToObject;
 //     float4x4 ObjectToCamera;
 //     float4x4 ObjectToClipSpace;
-// };
+// }; 
 
 
-cbuffer Params : register(b2)
+cbuffer Params : register(b0)
 {
     float BlendFactor;
     float CountA;

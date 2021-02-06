@@ -1,5 +1,6 @@
 #include "point.hlsl"
 #include "point-light.hlsl"
+#include "pbr.hlsl"
 
 static const float3 Corners[] = 
 {
@@ -25,35 +26,24 @@ cbuffer Transforms : register(b0)
     float4x4 ObjectToClipSpace;
 };
 
-cbuffer TimeConstants : register(b1)
-{
-    float GlobalTime;
-    float Time;
-    float RunTime;
-    float BeatTime;    
-}
-
-cbuffer Params : register(b2)
+cbuffer Params : register(b1)
 {
     float4 Color;
-    float Size;
-    float SegmentCount;
-
-    // float FogRate;
-    // float FogBias;
-    // float4 FogColor;
-
-    float ShrinkWithDistance;
+    float Width;
+    float Spin;
+    float Twist;
+    float TextureMode;
+    float2 TextureRange;    
 };
 
-cbuffer FogParams : register(b3)
+cbuffer FogParams : register(b2)
 {
     float4 FogColor;
     float FogDistance;
     float FogBias;   
 }
 
-cbuffer PointLights : register(b4)
+cbuffer PointLights : register(b3)
 {
     PointLight Lights[8];
     int ActiveLightCount;
@@ -84,12 +74,11 @@ psInput vsMain(uint id: SV_VertexID)
 
     float side = cornerFactors.y;
 
-    float3 widthV = rotate_vector(float3(side,0,0), p.rotation) * Size * p.w;;
+    float3 widthV = rotate_vector(float3(side,0,0), p.rotation) * Width * p.w;;
     float3 pInObject = p.position + widthV;
 
     float3 normal = normalize(rotate_vector(float3(0,1,0), p.rotation));
     float4 normalInScreen = mul(float4(normal,0), ObjectToClipSpace);
-    //normalInScreen /= normalInScreen.w;
 
     float4 pInScreen  = mul(float4(pInObject,1), ObjectToClipSpace);
 
@@ -98,8 +87,6 @@ psInput vsMain(uint id: SV_VertexID)
 
     float3 lightDirection = float3(1.2, 1, -0.1);
     float phong = pow(  abs(dot(normal,lightDirection )),1);
-
-    //pInScreen /= pInScreen.w;
     
     output.position = pInScreen;
 
@@ -108,16 +95,9 @@ psInput vsMain(uint id: SV_VertexID)
     if(normalInScreen.z < 0) {
         output.color.rgb = float3(0.4,0,0);
     }
-    //if(phong >0) {
-        output.color.rgb *= phong;
-    //}
-    //else {
-    //    output.color.rgb = float3(0.02,0.06, 0.1) * 0.2;
-    //}
     
-    //output.color.rgb = abs(normal);
+    output.color.rgb *= phong;
     output.color.a = discardFactor;
-
 
     float3 light = 0;
     float4 posInWorld = mul(float4(pInObject,1), ObjectToWorld);
