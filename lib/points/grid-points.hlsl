@@ -9,8 +9,11 @@ cbuffer Params : register(b0)
     float __padding3;
 
     float3 Center;
-
     float W;    
+
+    float3 OrientationAxis;
+    float OrientationAngle;
+
 }
 
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
@@ -43,6 +46,6 @@ void main(uint3 i : SV_DispatchThreadID)
     float3 pos = Center +  zeroAdjustedSize * (cell / clampedCount) - zeroAdjustedSize * 0.5f;
     ResultPoints[index].position = pos;
     ResultPoints[index].w = W;
-    ResultPoints[index].rotation = float4(0,0,0,1);
+    ResultPoints[index].rotation = rotate_angle_axis(OrientationAngle*PI/180, normalize(OrientationAxis));
 }
 

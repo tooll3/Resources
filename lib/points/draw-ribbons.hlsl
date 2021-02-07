@@ -87,7 +87,6 @@ psInput vsMain(uint id: SV_VertexID)
     int quadIndex = id % 6;
     int particleId = id / 6;
 
-
     float3 cornerFactors = Corners[quadIndex];
     float f = (float)(particleId + cornerFactors.x)  / clamp(pointCount - 1, 1,100000);
 
@@ -97,16 +96,12 @@ psInput vsMain(uint id: SV_VertexID)
     float spinRad = (Spin + Twist *f) * 3.141578/180;
     float3 side = float3(0, cos(spinRad), sin(spinRad)) * cornerFactors.y;
 
-
     float3 widthV = rotate_vector(side, p.rotation) * Width * p.w;;
     float3 pInObject = p.position + widthV;
 
     float3 normalTwisted =  float3(0, cos(spinRad + 3.141578/2), sin(spinRad + 3.141578/2));
-    //float3 normalTwisted = float3(1,0,0);
     float3 normal = normalize(rotate_vector(normalTwisted, p.rotation));
     float4 normalInScreen = mul(float4(normal,0), ObjectToClipSpace);
-
-
 
     output.texCoord = float2(cornerFactors.x , cornerFactors.y /2 +0.5);
     if(TextureMode < 0.5) {
@@ -134,9 +129,6 @@ psInput vsMain(uint id: SV_VertexID)
     output.worldPosition =  mul(float4(pInObject,0), ObjectToWorld); 
 
     float4 pInScreen  = mul(float4(pInObject,1), ObjectToClipSpace);
-
-    // if(pInScreen.z < -0)
-    //     discardFactor = 0;
 
     float3 lightDirection = float3(1.2, 1, -0.1);
     float phong = pow(  abs(dot(normal,lightDirection )),1);
@@ -166,9 +158,13 @@ float4 psMain(psInput pin) : SV_TARGET
     // Get current fragment's normal and transform to world space.
     float3 N = lerp(float3(0,0,1),  normalize(2.0 * NormalMap.Sample(texSampler, pin.texCoord).rgb - 1.0), normalStrength);
 
+
     //return float4(pin.tbnToWorld[0],1);
     N = normalize(mul(N,pin.tbnToWorld));
-    //return float4(N,1);
+
+    float isFrontSide = dot(N, Lo)/10;
+    if( isFrontSide < 0)
+        N = -N;
     
     // Angle between surface normal and outgoing light direction.
     float cosLo = max(0.0, dot(N, Lo));
