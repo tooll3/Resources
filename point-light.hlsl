@@ -4,5 +4,6 @@ struct PointLight
     float intensity;
     float4 color;
     float range;
-    float3 __padding;
+    float decay;
+    float2 __padding;
 };
