@@ -19,6 +19,7 @@ void main(uint3 i : SV_DispatchThreadID)
     /*uv *= strength * sin(l*time*speed);*/
     /*uv = uv*0.5 + 0.5;*/
 
+
     float sum = 0.0;
     const int NUM_OCTAVES = 9;
     for (int j = 0; j < NUM_OCTAVES; j++)
@@ -27,5 +28,9 @@ void main(uint3 i : SV_DispatchThreadID)
         float c = snoise((float3(i.xyz) + float3(seed, seed, seed))* s).x;
         sum += c * 1.0/float(256 >> j);
     }
+
+    // float3 p = float3(i) - float(width)/2.0;
+    // if (length(p) > 96)
+    //     sum = 0;
     outputTexture[i.xyz] = float4(sum, sum, sum, 1);
 }
