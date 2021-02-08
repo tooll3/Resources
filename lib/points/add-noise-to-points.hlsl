@@ -33,15 +33,30 @@ float3 GetNoise(float3 pos, float3 variation)
 }
 
 
-float4 q_from_matrix (float3x3 m) {
-    
-	float w = sqrt( 1.0 + m._m00 + m._m11 + m._m22) / 2.0;
-	float  w4 = (4.0 * w);
-	float x = (m._m21 - m._m12) / w4 ;
-	float y = (m._m02 - m._m20) / w4 ;
-	float z = (m._m10 - m._m01) / w4 ;
+float4 q_from_matrix (float3x3 m) 
+{   
+    float w = sqrt( 1.0 + m._m00 + m._m11 + m._m22) / 2.0;
+    float  w4 = (4.0 * w);
+    float x = (m._m21 - m._m12) / w4 ;
+    float y = (m._m02 - m._m20) / w4 ;
+    float z = (m._m10 - m._m01) / w4 ;
     return float4(x,y,z,w);
 }
+
+float4 q_from_tangentAndNormal(float3 rotatedXDir, float3 rotatedYDir)
+{
+    float3 rotatedXDirNormalized = normalize(rotatedXDir);
+    float3 rotatedYDirNormalized = normalize(rotatedYDir);
+    
+    float3 crossXY = cross(rotatedXDirNormalized, rotatedYDirNormalized);
+    float3x3 orientationDest= float3x3(
+        rotatedXDirNormalized, 
+        cross(crossXY, rotatedXDirNormalized), 
+        crossXY );
+    
+    return q_from_matrix(orientationDest);
+}
+
 
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)

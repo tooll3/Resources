@@ -20,7 +20,7 @@ cbuffer Params : register(b1)
     float SurfaceDistance;
     float Spin;
     float ScatterSurfaceDistance;
-
+    float Freeze;
 }
 
 StructuredBuffer<Point> Points : t0;         // input
@@ -28,10 +28,8 @@ StructuredBuffer<PbrVertex> Vertices: t1;
 StructuredBuffer<int3> Indices: t2;
 
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
-
-
-
-
+RWStructuredBuffer<Point> DebugPoints : u1;    // output
+RWStructuredBuffer<Point> DebugPoints2 : u1;    // output
 
 
 //--------------------------------------------
@@ -166,9 +164,84 @@ void findClosestPointAndDistance(
 }
 
 
+float4 q_from_matrix (float3x3 m) 
+{   
+    float w = sqrt( 1.0 + m._m00 + m._m11 + m._m22) / 2.0;
+    float  w4 = (4.0 * w);
+    float x = (m._m21 - m._m12) / w4 ;
+    float y = (m._m02 - m._m20) / w4 ;
+    float z = (m._m10 - m._m01) / w4 ;
+    return float4(x,y,z,w);
+}
+
+float4 q_from_matrix2 (float3x3 m) 
+{   
+    float tr = m._m00 + m._m11 + m._m22;
+
+    if (tr > 0) { 
+        float S = sqrt(tr+1.0) * 2; // S=4*qw 
+        return float4(
+            (m._m21 - m._m12) / S,
+            (m._m02 - m._m20) / S,
+            (m._m10 - m._m01) / S, 
+            0.25 * S
+        );
+    } else if ((m._m00 > m._m11)&(m._m00 > m._m22)) { 
+        float S = sqrt(1.0 + m._m00 - m._m11 - m._m22) * 2; // S=4*qx 
+        return float4(
+            0.25 * S,
+            (m._m01 + m._m10) / S ,
+            (m._m02 + m._m20) / S ,
+            (m._m21 - m._m12) / S
+        );
+    } else if (m._m11 > m._m22) { 
+        float S = sqrt(1.0 + m._m11 - m._m00 - m._m22) * 2; // S=4*qy
+        return float4(
+            (m._m01 + m._m10) / S,
+            0.25 * S,
+            (m._m12 + m._m21) / S,
+            (m._m02 - m._m20) / S
+        );
+    } else { 
+        float S = sqrt(1.0 + m._m22 - m._m00 - m._m11) * 2; // S=4*qz
+        return float4(
+            (m._m02 + m._m20) / S,
+            (m._m12 + m._m21) / S,
+            0.25 * S,
+            (m._m10 - m._m01) / S
+        );
+    }
+}
+
+float4 q_from_tangentAndNormal(float3 dx, float3 dz)
+{
+    // float a = -acos(dot( dx, dz));
+    // float4 r = rotate_angle_axis(a, dz);
+
+    // float4 rx = rotate_angle_axis(PI/2, dx) ;
+    // rx = float4(0,0,0,1);
+    // return qmul(rx,r);
+
+    dx = normalize(dx);
+    dz = normalize(dz);
+    float3 dy = -cross(dx, dz);
+    
+    float3x3 orientationDest= float3x3(
+        dx, 
+        dy,
+        dz
+        );
+    
+    return normalize( q_from_matrix2( transpose( orientationDest)));
+}
+
+
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
+    if(Freeze > 0.5)
+        return;
+
     uint pointCount, pointStride;
     Points.GetDimensions(pointCount, pointStride);
     if(i.x >= pointCount) {
@@ -196,7 +269,7 @@ void main(uint3 i : SV_DispatchThreadID)
                  ? Points[i.x].position
                  : lerp( p.position, Points[i.x].position, RestorePosition) ;
 
-    float3 forward =  rotate_vector( float3(0,0,1), p.rotation);
+    float3 forward =  rotate_vector( float3(1,0,0), p.rotation);
     float3 pos2 = pos + forward * Speed;
 
     int closestFaceIndex;
@@ -210,15 +283,23 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float3 targetPosWithDistance = closestSurfacePoint + distanceFromSurface;
 
-    if(closestFaceIndex >= 0) 
-    {
-        p.position = targetPosWithDistance; // FIXME: We should still limit to max speed to avoid jumps
+    
+    if(closestFaceIndex < 0) {
+        return;
     }
 
+    float3 movement = targetPosWithDistance - p.position;
+    p.position = targetPosWithDistance;
+    float4 orientation = q_from_tangentAndNormal(movement, distanceFromSurface);
+    float4 mixedOrientation = q_slerp(orientation, p.rotation, 0.96);
 
-    float randomRot = signedPointHash  * Spin;
-    p.rotation = normalize(qmul(p.rotation, normalize(float4(randomRot, randomRot * 0.4, 0.001, 1))));
-
+    if(abs(Spin) > 0.001) 
+    {
+        float randomAngle = signedPointHash  * Spin;
+        mixedOrientation = qmul( mixedOrientation, rotate_angle_axis(randomAngle, distanceFromSurface ));
+    }
+        
+    p.rotation = mixedOrientation;
     ResultPoints[i.x] = p;
 }
 
