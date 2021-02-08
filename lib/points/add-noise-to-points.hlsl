@@ -54,7 +54,7 @@ float4 q_from_tangentAndNormal(float3 rotatedXDir, float3 rotatedYDir)
         cross(crossXY, rotatedXDirNormalized), 
         crossXY );
     
-    return q_from_matrix(orientationDest);
+    return quaternion_to_from_matrix(orientationDest);
 }
 
 

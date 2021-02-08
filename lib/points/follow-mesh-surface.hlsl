@@ -174,44 +174,7 @@ float4 q_from_matrix (float3x3 m)
     return float4(x,y,z,w);
 }
 
-float4 q_from_matrix2 (float3x3 m) 
-{   
-    float tr = m._m00 + m._m11 + m._m22;
 
-    if (tr > 0) { 
-        float S = sqrt(tr+1.0) * 2; // S=4*qw 
-        return float4(
-            (m._m21 - m._m12) / S,
-            (m._m02 - m._m20) / S,
-            (m._m10 - m._m01) / S, 
-            0.25 * S
-        );
-    } else if ((m._m00 > m._m11)&(m._m00 > m._m22)) { 
-        float S = sqrt(1.0 + m._m00 - m._m11 - m._m22) * 2; // S=4*qx 
-        return float4(
-            0.25 * S,
-            (m._m01 + m._m10) / S ,
-            (m._m02 + m._m20) / S ,
-            (m._m21 - m._m12) / S
-        );
-    } else if (m._m11 > m._m22) { 
-        float S = sqrt(1.0 + m._m11 - m._m00 - m._m22) * 2; // S=4*qy
-        return float4(
-            (m._m01 + m._m10) / S,
-            0.25 * S,
-            (m._m12 + m._m21) / S,
-            (m._m02 - m._m20) / S
-        );
-    } else { 
-        float S = sqrt(1.0 + m._m22 - m._m00 - m._m11) * 2; // S=4*qz
-        return float4(
-            (m._m02 + m._m20) / S,
-            (m._m12 + m._m21) / S,
-            0.25 * S,
-            (m._m10 - m._m01) / S
-        );
-    }
-}
 
 float4 q_from_tangentAndNormal(float3 dx, float3 dz)
 {
@@ -232,7 +195,7 @@ float4 q_from_tangentAndNormal(float3 dx, float3 dz)
         dz
         );
     
-    return normalize( q_from_matrix2( transpose( orientationDest)));
+    return normalize( quaternion_to_from_matrix( transpose( orientationDest)));
 }
 
 

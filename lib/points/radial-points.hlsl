@@ -73,7 +73,7 @@ void main(uint3 i : SV_DispatchThreadID)
 //void main(uint i : SV_GroupIndex)
 {
     uint index = i.x; 
-    bool closeCircle = CloseCircle > 0.5;
+    bool closeCircle =  CloseCircle > 0.5;
     float count = closeCircle ? (Count -2) : Count;
 
     float f = (float)(index)/count;
