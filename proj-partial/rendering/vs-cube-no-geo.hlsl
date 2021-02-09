@@ -104,6 +104,6 @@ float4 psMainOnlyColor(vsOutput input) : SV_TARGET
     // f = max(smoothstep(width- ddx_uv, width+ ddx_uv, d.x),
     //         smoothstep(width- ddy_uv, width+ ddx_uv, d.y));
 
-    float3 color = float3(0.7, 0.7, 0.7);
-    return float4(color * f, f); 
+    float3 color = Color.rgb;
+    return float4(color * f, Color.a * f); 
 }
