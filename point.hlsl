@@ -27,6 +27,14 @@ float3 rotate_vector(float3 v, float4 quat)
     return qmul(quat, qmul(float4(v, 0), r_c)).xyz;
 }
 
+// https://blog.molecular-matters.com/2013/05/24/a-faster-quaternion-vector-multiplication/
+float3 rotate_vector2(float3 v, float4 q)
+{
+    float3 t = 2 * cross(q.xyz, v);
+    return v + q.w * t + cross(q.xyz, t);
+}
+
+
 // float3 rotate_vector( float4 quat, float3 vec )
 // {
 //     return vec + 2.0 * cross( cross( vec, quat.xyz ) + quat.w * vec, quat.xyz );
