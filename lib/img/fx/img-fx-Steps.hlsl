@@ -4,9 +4,11 @@ cbuffer ParamConstants : register(b0)
     float Repeats;
     float Bias;
     float Offset;
-    float SmoothRadius;
+
+    
     float4 Highlight;
     float HighlightIndex;
+    float SmoothRadius;
     
     // float2 OffsetImage;
     // float __dummy__;
@@ -61,6 +63,7 @@ float3 calcStepAndOffset(float4 orgColor) {
 
 float4 psMain(vsOutput psInput) : SV_TARGET
 {   
+    //return Highlight;
     float2 p = psInput.texCoord;
     float2 res= float2(0.5/TargetWidth, 0.5/TargetHeight) * SmoothRadius;
     static float smoothExtremes = 0.5/ Steps;
