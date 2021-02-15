@@ -14,12 +14,13 @@ RWStructuredBuffer<Point> ResultPoints : u0;    // output
 
 
 static uint sourceCount;
-float3 SamplePosAtF(float f) 
+float3 SamplePosAtF(float f, out float weight) 
 {
     float sourceF = saturate(f) * (sourceCount -1);
     int index = (int)sourceF;
     float fraction = sourceF - index;    
     index = clamp(index,0, sourceCount -1);
+    weight = lerp(SourcePoints[index].w, SourcePoints[index+1].w, fraction );
     return lerp(SourcePoints[index].position, SourcePoints[index+1].position, fraction );
 }
 
@@ -59,19 +60,29 @@ void main(uint3 i : SV_DispatchThreadID)
     }
 
     int maxSteps = 5;
+    float sampledWeight;
+    float sumWeight = 0;
+    float3 sumPoint =  SamplePosAtF( f, sampledWeight );
+    sumWeight += sampledWeight;
 
-    float3 sumPoint =  SamplePosAtF( f );
+    
     for(int step = 1; step <= maxSteps; step++) 
     {
         float d = step * SmoothDistance / maxSteps / sourceCount;
-        sumPoint += SamplePosAtF( f - d);
-        sumPoint += SamplePosAtF( f + d);
+        
+        sumPoint += SamplePosAtF( f - d, sampledWeight);
+        sumWeight += sampledWeight;
+        sumPoint += SamplePosAtF( f + d, sampledWeight);
+        sumWeight += sampledWeight;
     }
 
     sumPoint /= (maxSteps * 2 + 1);
+    sumWeight /=(maxSteps * 2 + 1);
+
     ResultPoints[i.x].position = sumPoint;
+    ResultPoints[i.x].w = sumWeight;
 
     ResultPoints[i.x].rotation = SampleRotationAtF(f);// float4(0,0,0,1);//  p.rotation; //qmul(rotationFromDisplace , SourcePoints[i.x].rotation);
-    ResultPoints[i.x].w = 1;//SourcePoints[i.x].w;
+    //ResultPoints[i.x].w = 1;//SourcePoints[i.x].w;
 }
 
