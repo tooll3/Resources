@@ -11,6 +11,10 @@ struct Point
 #define PI 3.14159265359f
 #endif 
 
+#ifndef mod
+#define mod(x, y) ((x) - (y) * floor((x) / (y)))
+#endif 
+
 float4 qmul(float4 q1, float4 q2)
 {
     return float4(
