@@ -30,6 +30,9 @@ cbuffer Transforms : register(b1)
 
 RWStructuredBuffer<Point> ResultPoints : u0; 
 
+
+
+
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
@@ -46,20 +49,37 @@ void main(uint3 i : SV_DispatchThreadID)
         return;
     }
 
-    float3 p= mod(ResultPoints[i.x].position - center + Size/2, Size);
+    float3 p = ResultPoints[i.x].position - center;
 
-    if(isnan( p.x + p.y + p.x)) {
-        p = Size/2;
+    if(isnan( p.x + p.y + p.x)    ) {
+         ResultPoints[i.x].w = 0.010;
+         ResultPoints[i.x].position = center - Size * 0.2; // some not in center
+         return;
+    }    
+
+    float3 Padding = Size.x * 0.1;
+
+    float3 halfSize = Size/2;
+    float3 padded = halfSize + Padding;
+
+    float3 offsetFactor = 0;
+
+    if(abs(p.x) > padded.x ) { offsetFactor.x = p.x < 0 ? 1 : -1; }
+    if(abs(p.y) > padded.y ) { offsetFactor.y = p.y < 0 ? 1 : -1; }
+    if(abs(p.z) > padded.z ) { offsetFactor.z = p.z < 0 ? 1 : -1; }
+    
+    float3 wrappedP =  p + Size * offsetFactor;
+    ResultPoints[i.x].position = wrappedP + center;
+
+    // Add line break for all wraps
+    if(abs(offsetFactor.x) +abs(offsetFactor.y) + abs(offsetFactor.z) !=0 ) {
+        ResultPoints[i.x].w = sqrt(-1);
     }
-
-
-    if( abs(p.x) < 0.001) {  p.x = Size.x/2; }
-    if( abs(p.y) < 0.001) {  p.y = Size.y/2; }
-    if( abs(p.z) < 0.001) {  p.z = Size.z/2; }
-
-
-
-
-    ResultPoints[i.x].position = p + center - Size/2;
+    else {
+        float3 distToEdge = halfSize - abs(wrappedP);
+        float3 minDist = saturate(distToEdge * 10);
+        float minD = minDist.x * minDist.y * minDist.z;
+        ResultPoints[i.x].w = minD;
+    }
 }
 

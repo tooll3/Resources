@@ -204,7 +204,10 @@ float4 psMain(psInput pin) : SV_TARGET
     //     ambientLighting = diffuseIBL + specularIBL;
     // }
 
-    // Final fragment color.    
-    return float4(directLighting + ambientLighting, 1.0) * BaseColor 
+    // Final fragment color.
+
+
+    float4 litColor= float4(directLighting + ambientLighting, 1.0) * BaseColor;
+    return lerp(litColor, FogColor, pin.fog)
          + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
 }
