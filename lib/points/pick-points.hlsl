@@ -42,6 +42,5 @@ void main(uint3 i : SV_DispatchThreadID)
 
     uint index = ((uint)StartIndex + i.x + scatterOffset) % sourceCount;
     ResultPoints[i.x] = SourcePoints[index];
-    ResultPoints[i.x].position += float3(0,1,0) * Scatter;
 }
 

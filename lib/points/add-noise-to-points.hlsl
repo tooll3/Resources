@@ -33,19 +33,21 @@ float3 GetNoise(float3 pos, float3 variation)
     return snoiseVec3(noiseLookup) * Amount/100 * AmountDistribution;
 }
 
+static float3 variationOffset;
 
-float4 q_from_matrix (float3x3 m) 
-{   
-    float w = sqrt( 1.0 + m._m00 + m._m11 + m._m22) / 2.0;
-    float  w4 = (4.0 * w);
-    float x = (m._m21 - m._m12) / w4 ;
-    float y = (m._m02 - m._m20) / w4 ;
-    float z = (m._m10 - m._m01) / w4 ;
-    return float4(x,y,z,w);
-}
+void GetTranslationAndRotation(float weight, float3 pointPos, float4 rotation, 
+                               out float3 offset, out float4 newRotation) 
+{    
+    offset = GetNoise(pointPos, variationOffset) * weight;
 
-float4 q_from_tangentAndNormal(float3 rotatedXDir, float3 rotatedYDir)
-{
+    float3 xDir = rotate_vector(float3(RotationLookupDistance,0,0), rotation);
+    float3 offsetAtPosXDir = GetNoise(pointPos + xDir, variationOffset) * weight;
+    float3 rotatedXDir = (pointPos + xDir + offsetAtPosXDir) - (pointPos + offset);
+
+    float3 yDir = rotate_vector(float3(0, RotationLookupDistance,0), rotation);
+    float3 offsetAtPosYDir = GetNoise(pointPos + yDir, variationOffset) * weight;
+    float3 rotatedYDir = (pointPos + yDir + offsetAtPosYDir) - (pointPos + offset);
+
     float3 rotatedXDirNormalized = normalize(rotatedXDir);
     float3 rotatedYDirNormalized = normalize(rotatedYDir);
     
@@ -54,10 +56,9 @@ float4 q_from_tangentAndNormal(float3 rotatedXDir, float3 rotatedYDir)
         rotatedXDirNormalized, 
         cross(crossXY, rotatedXDirNormalized), 
         crossXY );
-    
-    return quaternion_to_from_matrix(orientationDest);
-}
 
+    newRotation = normalize(q_from_matrix(transpose(orientationDest)));
+}
 
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
@@ -77,31 +78,13 @@ void main(uint3 i : SV_DispatchThreadID)
     float weight = UseWAsWeight < 0 ? lerp(1, 1- p.w, -UseWAsWeight) 
                                 : lerp(1, p.w, UseWAsWeight);
 
-    float3 pointPos = p.position;
-    float3 offsetAtPoint = GetNoise(pointPos, variationOffset) * weight;
+    float3 offset;;
+    float4 newRotation = p.rotation;
+    GetTranslationAndRotation(weight, p.position, p.rotation, offset, newRotation);
 
-    float3 xDir = rotate_vector(float3(RotationLookupDistance,0,0), p.rotation);
-    float3 offsetAtPosXDir = GetNoise(pointPos + xDir, variationOffset) * weight;
-    float3 rotatedXDir = (pointPos + xDir + offsetAtPosXDir) - (pointPos + offsetAtPoint);
-    //float4 rotationFromXDisplace = from_to_rotation( normalize(xDir), normalize(rotatedXDir));
+    ResultPoints[i.x].position = p.position + offset ;
+    ResultPoints[i.x].rotation = newRotation;
 
-    float3 yDir = rotate_vector(float3(0, RotationLookupDistance,0), p.rotation);
-    float3 offsetAtPosYDir = GetNoise(pointPos + yDir, variationOffset) * weight;
-    float3 rotatedYDir = (pointPos + yDir + offsetAtPosYDir) - (pointPos + offsetAtPoint);
-    //float4 rotationFromYDisplace = from_to_rotation( normalize(yDir), normalize(rotatedYDir));
-
-    float3 rotatedXDirNormalized = normalize(rotatedXDir);
-    float3 rotatedYDirNormalized = normalize(rotatedYDir);
-    
-    float3 crossXY = cross(rotatedXDirNormalized, rotatedYDirNormalized);
-    float3x3 orientationDest= float3x3(
-        rotatedXDirNormalized, 
-        cross(crossXY, rotatedXDirNormalized), 
-        crossXY );
-
-    ResultPoints[i.x].rotation = normalize(q_from_matrix(transpose(orientationDest)));
-
-    ResultPoints[i.x].position = p.position + offsetAtPoint ;
     ResultPoints[i.x].w = SourcePoints[i.x].w;
 }
 

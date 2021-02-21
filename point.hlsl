@@ -230,6 +230,17 @@ float4x4 quaternion_to_matrix(float4 quat)
     return m;
 }
 
+
+float4 q_from_matrix (float3x3 m) 
+{   
+    float w = sqrt( 1.0 + m._m00 + m._m11 + m._m22) / 2.0;
+    float w4 = (4.0 * w);
+    float x = (m._m21 - m._m12) / w4 ;
+    float y = (m._m02 - m._m20) / w4 ;
+    float z = (m._m10 - m._m01) / w4 ;
+    return float4(x,y,z,w);
+}
+
 float4 quaternion_to_from_matrix (float3x3 m) 
 {   
     float tr = m._m00 + m._m11 + m._m22;

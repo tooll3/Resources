@@ -121,7 +121,7 @@ psInput vsMain(uint id: SV_VertexID)
     float4 pos = lerp(aInScreen, bInScreen, cornerFactors.x);
     
 
-    float4 posInCamSpace = mul(float4(posInObject,1), WorldToCamera);
+    float4 posInCamSpace = mul(float4(posInObject,1), ObjectToCamera);
     posInCamSpace.xyz /= posInCamSpace.w;
     posInCamSpace.w = 1;
 
@@ -159,7 +159,7 @@ psInput vsMain(uint id: SV_VertexID)
 
     //if(FogDistance > 0) 
     //{
-        output.fog = pow(saturate(-posInCamSpace.z/FogDistance), FogBias);
+    output.fog = pow(saturate(-posInCamSpace.z/FogDistance), FogBias);
         //output.fog = saturate(-posInCamSpace.z/FogDistance);
         //float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
     //}

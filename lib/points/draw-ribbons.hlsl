@@ -137,7 +137,7 @@ psInput vsMain(uint id: SV_VertexID)
 
     // Fog
     float4 posInCamera = mul(float4(pInObject,1), ObjectToCamera);
-    float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
+    output.fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
     return output;    
 }
 
@@ -251,7 +251,12 @@ float4 psMain(psInput pin) : SV_TARGET
     // }
 
     // Final fragment color.    
+
     
-    return float4(directLighting + ambientLighting, 1.0) * BaseColor * Color * float4(1,1,1,albedo.a)
-         + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
+    //return float4(directLighting + ambientLighting, 1.0) * BaseColor * Color * float4(1,1,1,albedo.a)
+    //     + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
+
+    float4 litColor= float4(directLighting + ambientLighting, 1.0) * BaseColor;
+    return lerp(litColor, FogColor, pin.fog)
+         + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);    
 }

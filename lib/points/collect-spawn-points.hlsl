@@ -43,7 +43,7 @@ void main(uint3 i : SV_DispatchThreadID)
         // uint cycleIndex = (uint)(CycleIndex + 0.5);
         // uint targetIndex = (cycleIndex + gi * trailLength) % bufferLength;
         CollectedPoints[gi] = NewPoints[addIndex];
-        CollectedPoints[gi].w = 0.1;
+        CollectedPoints[gi].w = 0.0001;
     }
     else 
     {
