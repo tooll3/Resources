@@ -130,7 +130,7 @@ psInput vsMain(uint id: SV_VertexID)
     if(UseWFor > 0.5 && !isnan(wAtPoint)) 
     {
         output.texCoord = float2(wAtPoint, cornerFactors.y /2 +0.5);
-        wAtPoint = 1;
+        //wAtPoint = 1;
     }
     else {
         float strokeFactor = (particleId+ cornerFactors.x) / SegmentCount;
@@ -163,7 +163,6 @@ psInput vsMain(uint id: SV_VertexID)
         //output.fog = saturate(-posInCamSpace.z/FogDistance);
         //float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
     //}
-
     output.color.rgb =  Color.rgb;
     //output.color.rgb = lerp(Color.rgb, FogColor.rgb,fog);
 
@@ -178,7 +177,7 @@ float4 psMain(psInput input) : SV_TARGET
 
     float dFromLineCenter= abs(input.texCoord.y -0.5)*2;
     float a= 1;//smoothstep(1,0.95,dFromLineCenter) ;
-    float4 color = lerp(input.color * imgColor, FogColor, input.fog);// * input.color;
+    float4 color = lerp(input.color * imgColor, FogColor, input.fog); // * input.color;
     //return float4(input.fog.xxx,1);
 
     return clamp(float4(color.rgb, color.a * a), 0, float4(100,100,100,1));

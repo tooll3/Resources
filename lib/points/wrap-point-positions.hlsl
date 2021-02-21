@@ -7,6 +7,7 @@ cbuffer Params : register(b0)
     float3 Center;
     float UseCamera;
     float3 Size;
+    float WriteLineBreaks;
 }
 
 cbuffer Transforms : register(b1)
@@ -72,10 +73,11 @@ void main(uint3 i : SV_DispatchThreadID)
     ResultPoints[i.x].position = wrappedP + center;
 
     // Add line break for all wraps
-    if(abs(offsetFactor.x) +abs(offsetFactor.y) + abs(offsetFactor.z) !=0 ) {
+    if(WriteLineBreaks > 0.5 && abs(offsetFactor.x) +abs(offsetFactor.y) + abs(offsetFactor.z) !=0 ) {
         ResultPoints[i.x].w = sqrt(-1);
     }
-    else {
+    else 
+    {
         float3 distToEdge = halfSize - abs(wrappedP);
         float3 minDist = saturate(distToEdge * 10);
         float minD = minDist.x * minDist.y * minDist.z;

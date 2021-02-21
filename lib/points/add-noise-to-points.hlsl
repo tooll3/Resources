@@ -20,6 +20,7 @@ cbuffer Params : register(b1)
     float Variation;
     float3 AmountDistribution;
     float RotationLookupDistance;
+    float UseWAsWeight;
 
 }
 
@@ -68,19 +69,24 @@ void main(uint3 i : SV_DispatchThreadID)
         return;
     }
 
+
     float3 variationOffset = hash31((float)(i.x%1234)/0.123 ) * Variation;
 
     Point p = SourcePoints[i.x];
+
+    float weight = UseWAsWeight < 0 ? lerp(1, 1- p.w, -UseWAsWeight) 
+                                : lerp(1, p.w, UseWAsWeight);
+
     float3 pointPos = p.position;
-    float3 offsetAtPoint = GetNoise(pointPos, variationOffset);
+    float3 offsetAtPoint = GetNoise(pointPos, variationOffset) * weight;
 
     float3 xDir = rotate_vector(float3(RotationLookupDistance,0,0), p.rotation);
-    float3 offsetAtPosXDir = GetNoise(pointPos + xDir, variationOffset);
+    float3 offsetAtPosXDir = GetNoise(pointPos + xDir, variationOffset) * weight;
     float3 rotatedXDir = (pointPos + xDir + offsetAtPosXDir) - (pointPos + offsetAtPoint);
     //float4 rotationFromXDisplace = from_to_rotation( normalize(xDir), normalize(rotatedXDir));
 
     float3 yDir = rotate_vector(float3(0, RotationLookupDistance,0), p.rotation);
-    float3 offsetAtPosYDir = GetNoise(pointPos + yDir, variationOffset);
+    float3 offsetAtPosYDir = GetNoise(pointPos + yDir, variationOffset) * weight;
     float3 rotatedYDir = (pointPos + yDir + offsetAtPosYDir) - (pointPos + offsetAtPoint);
     //float4 rotationFromYDisplace = from_to_rotation( normalize(yDir), normalize(rotatedYDir));
 

@@ -53,6 +53,7 @@ struct psInput
     float4 position : SV_POSITION;
     float4 color : COLOR;
     float2 texCoord : TEXCOORD;
+    float fog : FOG;
 };
 
 sampler texSampler : register(s0);
@@ -81,19 +82,17 @@ psInput vsMain(uint id: SV_VertexID)
 
     // Fog
     float4 posInCamera = mul(posInObject, ObjectToCamera);
-    float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
-    
-    output.color.rgb = lerp(output.color.rgb, FogColor.rgb,fog);
+    output.fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
     return output;
 }
 
 float4 psMain(psInput input) : SV_TARGET
 {    
-    //return float4(ActiveLightCount / 2.,0,0,1);
     float4 textureCol = texture2.Sample(texSampler, input.texCoord);
     
     if(textureCol.a < CutOffTransparent)
         discard;
 
-    return clamp(input.color * textureCol, float4(0,0,0,0), float4(1000,1000,1000,1));
+    float4 col = lerp(input.color * textureCol, FogColor, input.fog);
+    return clamp(col, float4(0,0,0,0), float4(1000,1000,1000,1));
 }
