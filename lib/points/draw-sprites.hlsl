@@ -28,12 +28,15 @@ cbuffer Transforms : register(b0)
 cbuffer Params : register(b2)
 {
     float4 Color;
+
     float2 Stretch;
     float2 Offset;
+
     float Size;
     float UseWForSize;
     float __padding;
     float Rotate;
+
     float3 RotateAxis;
 };
 
@@ -63,7 +66,8 @@ psInput vsMain(uint id: SV_VertexID)
     axis.xy = (axis.xy + Offset) * Stretch;
     axis.z = 0;
 
-    float4 rotation = qmul(p.rotation, rotate_angle_axis(Rotate/180*PI, RotateAxis));
+    float4 rotation = qmul( normalize(p.rotation), rotate_angle_axis(Rotate/180*PI, RotateAxis));
+
 
     axis = rotate_vector(axis, rotation) * Size * lerp(1,p.w, UseWForSize);
     float3 pInObject = p.position + axis;

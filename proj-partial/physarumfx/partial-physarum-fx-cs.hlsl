@@ -3,8 +3,8 @@
 
 cbuffer ParamConstants : register(b0)
 {
-    float AgentCount;
-    float2 BlockCount;
+    //float AgentCount;
+    //float2 BlockCount;
 }
 
 cbuffer ResolutionBuffer : register(b1)
@@ -51,6 +51,7 @@ RWTexture2D<float4> WriteOutput  : register(u2);
 static int2 block;
 //static  int BlockCount =7;
 
+static const float2 BlockCount = 1;
 
 int2 CellAddressFromPosition(float3 pos) 
 {
@@ -61,29 +62,6 @@ int2 CellAddressFromPosition(float3 pos)
     celAddress += float2(TargetWidth, TargetHeight)/ BlockCount * block;
     return celAddress;
 }
-
-// float2 GetUvFromPosition(float3 pos) 
-// {
-//     float aspectRatio = TargetHeight/TargetWidth;
-//     float2 gridPos = (pos.xy * float2(aspectRatio,-1) +1)/2;
-//     return  float2(gridPos.x, gridPos.y);
-// }
-
-// // Rounds an input value i to steps values
-// // See: https://www.desmos.com/calculator/qpvxjwnsmu
-// float RoundValue(float i, float stepsPerUnit, float stepRatio) 
-// {
-//     float u = 1 / stepsPerUnit;
-//     float v = stepRatio / (2 * stepsPerUnit);
-//     float m = i % u;
-//     float r = m - (m < v
-//                     ? 0
-//                     : m > (u - v)
-//                         ? u
-//                         : (m - v) / (1 - 2 * stepsPerUnit * v));
-//     float y = i - r;
-//     return y;
-// }
 
 static const float ToRad = 3.141592/180;
 
@@ -110,6 +88,9 @@ float ComputeComfortZone(float4 x, float4 cz)
 [numthreads(256,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {   
+    uint AgentCount, stride;
+    Points.GetDimensions(AgentCount, stride);
+
     if(i.x >= AgentCount)
         return;
 
@@ -120,11 +101,11 @@ void main(uint3 i : SV_DispatchThreadID)
     WriteOutput.GetDimensions(texWidth, texHeight);
 
     float3 pos = Points[i.x].position;
-    float angle = Points[i.x].w;
+    float angle = Points[i.x].rotation.w;
 
     float hash =hash11(i.x * 123.1);
 
-    int breedIndex = (i.x % 133 == 0) ? 1 : 0;
+    int breedIndex = 0;//(i.x % 133 == 0) ? 1 : 0;
 
     // Sample environment
     float3 frontSamplePos = pos + float3(sin(angle),cos(angle),0) * CB.FrontRadius / TargetHeight;
@@ -155,12 +136,16 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float move = clamp(((leftComfort + rightComfort)/2 - frontComfort),-1,1) * CB.MoveToComfort + _baseMove;
     pos += float3(sin(angle),cos(angle),0) * move / TargetHeight;
-    Points[i.x].w = angle;
+    Points[i.x].rotation.w = angle;
     
     float3 aspectRatio = float3(TargetWidth / BlockCount.x /((float)TargetHeight / BlockCount.y),1,1);
-    pos = (mod((pos  / aspectRatio + 1),2) - 1) * aspectRatio; 
+
+    
+    float3 newPos = (mod((pos  / aspectRatio + 1),2) - 1) * aspectRatio; 
+    Points[i.x].w = length(newPos - pos) > 0.1 ? sqrt(-1) : 1;
+
     Points[i.x].position = pos;
-    Points[i.x].rotation = rotate_angle_axis(-angle, float3(0,0,1));
+    //Points[i.x].rotation = rotate_angle_axis(-angle, float3(0,0,1));
     
     // Update map
     float2 gridPos = (pos.xy * float2(1,-1) +1)  * float2(texWidth, texHeight)/2;
