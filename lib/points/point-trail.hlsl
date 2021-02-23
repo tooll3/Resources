@@ -33,6 +33,12 @@ void main(uint3 i : SV_DispatchThreadID)
     //Point p = SourcePoints[i.x];
     //TrailPoints[targetIndex].w = 0.4;
 
-    // Flag follow position W as NaN line devider
+    // Flag follow position W as NaN line seperator
     TrailPoints[(targetIndex + 1) % bufferLength].w = sqrt(-1);
+
+    // Flag too small w as separator
+    if(TrailPoints[targetIndex].w < 0.001 ) 
+    {
+        TrailPoints[targetIndex].w = sqrt(-1);
+    }
 }

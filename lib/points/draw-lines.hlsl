@@ -20,11 +20,10 @@ cbuffer Params : register(b0)
     float4 Color;
 
     float Size;
-    float SegmentCount;
-
     float ShrinkWithDistance;
-    float UseWFor;
-    float TransitionProgress;
+    float OffsetU;
+    float UseWForWidth;
+    float UseWForU;
 };
 
 
@@ -67,9 +66,12 @@ psInput vsMain(uint id: SV_VertexID)
     psInput output;
     float discardFactor = 1;
 
+    uint SegmentCount, Stride;
+    Points.GetDimensions(SegmentCount, Stride);
+
     float4 aspect = float4(CameraToClipSpace[1][1] / CameraToClipSpace[0][0],1,1,1);
     int quadIndex = id % 6;
-    int particleId = id / 6;
+    uint particleId = id / 6;
     float3 cornerFactors = Corners[quadIndex];
     
     Point pointAA = Points[ particleId<1 ? 0: particleId-1];
@@ -127,18 +129,22 @@ psInput vsMain(uint id: SV_VertexID)
 
     float wAtPoint = lerp( pointA.w  , pointB.w , cornerFactors.x);
         
-    if(UseWFor > 0.5 && !isnan(wAtPoint)) 
+    if(UseWForU > 0.5 && !isnan(wAtPoint)) 
     {
         output.texCoord = float2(wAtPoint, cornerFactors.y /2 +0.5);
-        //wAtPoint = 1;
     }
     else {
         float strokeFactor = (particleId+ cornerFactors.x) / SegmentCount;
         output.texCoord = float2(strokeFactor, cornerFactors.y /2 +0.5);
     }
-    output.texCoord.x += TransitionProgress;
+
+    output.texCoord.x += OffsetU;
     
-    float thickness = wAtPoint * Size * discardFactor * lerp(1, 1/(posInCamSpace.z), ShrinkWithDistance);
+
+    float thickness = Size * discardFactor * lerp(1, 1/(posInCamSpace.z), ShrinkWithDistance);
+    thickness *= UseWForWidth < 0 ? lerp(1, 1-wAtPoint, -UseWForWidth) 
+                                : lerp(1, wAtPoint, UseWForWidth);
+
     float miter = dot(-meterNormal, normal);
     pos+= cornerFactors.y * 0.1f * thickness * float4(meterNormal,0) / clamp(miter, -2.0,-0.13) ;   
 

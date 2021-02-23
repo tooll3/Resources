@@ -78,8 +78,6 @@ void main(uint3 i : SV_DispatchThreadID)
     }
     else 
     {
-
-
         uint targetIndex = (i.x / sourceCount )  % targetPosCount;
         Point A = PointsA[sourceIndex];
         Point B = PointsB[targetIndex];
