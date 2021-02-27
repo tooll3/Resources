@@ -163,7 +163,7 @@ float4 psMain(psInput pin) : SV_TARGET
     N = normalize(mul(N,pin.tbnToWorld));
 
     float isFrontSide = dot(N, Lo)/10;
-    if( isFrontSide < 0)
+    if( isFrontSide < -0.1)
         N = -N;
     
     // Angle between surface normal and outgoing light direction.
