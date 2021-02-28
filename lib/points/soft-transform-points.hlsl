@@ -1,6 +1,7 @@
 #include "hash-functions.hlsl"
 #include "noise-functions.hlsl"
 #include "point.hlsl"
+#include "utils.hlsl"
 
 cbuffer Params : register(b0)
 {
@@ -38,7 +39,7 @@ float sdEllipsoid( float3 p, float3 r )
 
 float Bias2(float x, float bias)
 {
-    float biasNormalized = clamp(Bias, 0.005, 0.995)+1 / 2;
+    float biasNormalized = (clamp(Bias, 0.005, 0.995)+1) / 2;
     return x / ((1 / biasNormalized - 2) * (1 - x) + 1);
 }
 

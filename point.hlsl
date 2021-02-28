@@ -44,6 +44,18 @@ float3 rotate_vector2(float3 v, float4 q)
 //     return vec + 2.0 * cross( cross( vec, quat.xyz ) + quat.w * vec, quat.xyz );
 // }
 
+float4 q_conj(float4 q)
+{
+    return float4(-q.x, -q.y, -q.z, q.w);
+}
+
+// https://jp.mathworks.com/help/aeroblks/quaternioninverse.html
+float4 q_inverse(float4 q)
+{
+    float4 conj = q_conj(q);
+    return conj / (q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+}
+
 
 // A given angle of rotation about a given axis
 float4 rotate_angle_axis(float angle, float3 axis)
@@ -205,7 +217,7 @@ return float4(
 
 float4x4 quaternion_to_matrix(float4 quat)
 {
-    float4x4 m = float4x4(float4(0, 0, 0, 0), float4(0, 0, 0, 0), float4(0, 0, 0, 0), float4(0, 0, 0, 0));
+    float4x4 m = 0; //float4x4(float4(0, 0, 0, 0), float4(0, 0, 0, 0), float4(0, 0, 0, 0), float4(0, 0, 0, 0));
 
     float x = quat.x, y = quat.y, z = quat.z, w = quat.w;
     float x2 = x + x, y2 = y + y, z2 = z + z;
@@ -230,6 +242,35 @@ float4x4 quaternion_to_matrix(float4 quat)
     return m;
 }
 
+// Transposed matrix
+float4x4 quaternion_to_tmatrix(float4 quat)
+{
+    float4x4 m = 0;
+
+    float x = quat.x, y = quat.y, z = quat.z, w = quat.w;
+    float x2 = x + x, y2 = y + y, z2 = z + z;
+    float xx = x * x2, xy = x * y2, xz = x * z2;
+    float yy = y * y2, yz = y * z2, zz = z * z2;
+    float wx = w * x2, wy = w * y2, wz = w * z2;
+
+    m[0][0] = 1.0 - (yy + zz);
+    m[1][0] = xy - wz;
+    m[2][0] = xz + wy;
+
+    m[0][1] = xy + wz;
+    m[1][1] = 1.0 - (xx + zz);
+    m[2][1] = yz - wx;
+
+    m[0][2] = xz - wy;
+    m[1][2] = yz + wx;
+    m[2][2] = 1.0 - (xx + yy);
+
+    m[3][3] = 1.0;
+
+    return m;
+}
+
+
 
 float4 q_from_matrix (float3x3 m) 
 {   
@@ -241,7 +282,7 @@ float4 q_from_matrix (float3x3 m)
     return float4(x,y,z,w);
 }
 
-float4 quaternion_to_from_matrix (float3x3 m) 
+float4 quaternion_from_matrix_precise (float3x3 m) 
 {   
     float tr = m._m00 + m._m11 + m._m22;
 
@@ -279,3 +320,5 @@ float4 quaternion_to_from_matrix (float3x3 m)
         );
     }
 }
+
+

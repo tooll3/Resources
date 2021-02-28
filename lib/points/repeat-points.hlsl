@@ -6,6 +6,7 @@ cbuffer Params : register(b0)
     float CountB;
     float ApplyTargetOrietnation;
     float ApplyTargetScaleW;
+    float MultiplyTargetW;
 }
 
 // struct Point {
@@ -37,7 +38,7 @@ void main(uint3 i : SV_DispatchThreadID)
                         : A.position;
 
         ResultPoints[i.x].position = pLocal  * s + B.position;
-        ResultPoints[i.x].w = A.w;
+        ResultPoints[i.x].w = MultiplyTargetW > 0.5 ? A.w * B.w : A.w;
         ResultPoints[i.x].rotation = A.rotation;
     }
 
