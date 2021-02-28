@@ -2,15 +2,19 @@
 #include "noise-functions.hlsl"
 #include "point.hlsl"
 
-cbuffer TimeConstants : register(b0)
+cbuffer Transforms : register(b0)
 {
-    float GlobalTime;
-    float Time;
-    float RunTime;
-    float BeatTime;
-    float LastFrameDuration;
-}; 
- 
+    float4x4 CameraToClipSpace;
+    float4x4 ClipSpaceToCamera;
+    float4x4 WorldToCamera;
+    float4x4 CameraToWorld;
+    float4x4 WorldToClipSpace;
+    float4x4 ClipSpaceToWorld;
+    float4x4 ObjectToWorld;
+    float4x4 WorldToObject;
+    float4x4 ObjectToCamera;
+    float4x4 ObjectToClipSpace;
+};
 
 cbuffer Params : register(b1)
 {
@@ -80,11 +84,13 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float3 offset;;
     float4 newRotation = p.rotation;
-    GetTranslationAndRotation(weight, p.position, p.rotation, offset, newRotation);
+
+    float4 posInWorld = mul(float4(p.position ,1), ObjectToWorld);
+    GetTranslationAndRotation(weight, posInWorld.xyz, p.rotation, offset, newRotation);
 
     ResultPoints[i.x].position = p.position + offset ;
     ResultPoints[i.x].rotation = newRotation;
 
-    ResultPoints[i.x].w = SourcePoints[i.x].w;
+    ResultPoints[i.x].w =  SourcePoints[i.x].w;
 }
 
