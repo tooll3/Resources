@@ -172,7 +172,7 @@ float4 psMain(psInput pin) : SV_TARGET
     {
         float3 Li =   Lights[i].position - pin.worldPosition; //- Lights[i].direction;
         float distance = length(Li);
-        float intensity = Lights[i].intensity / (distance * distance + 1);
+        float intensity = Lights[i].intensity / (pow(distance, Lights[i].decay) + 1);
         float3 Lradiance = Lights[i].color * intensity; //Lights[i].radiance;
 
         // Half-vector between Li and Lo.
@@ -242,6 +242,7 @@ float4 psMain(psInput pin) : SV_TARGET
     // }
 
     // Final fragment color.    
-    return float4(directLighting + ambientLighting, 1.0) * BaseColor 
+    float4 litColor= float4(directLighting + ambientLighting, 1.0) * BaseColor;
+    return lerp(litColor, FogColor, pin.fog)
          + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
 }

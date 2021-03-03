@@ -3,8 +3,9 @@
 
 cbuffer ParamConstants : register(b0)
 {
-    //float AgentCount;
-    //float2 BlockCount;
+    float FXRedFor_Rotate;
+    float FXGreenFor_FrontRadius;
+    float FXBlueFor_SideAngle;
 }
 
 cbuffer ResolutionBuffer : register(b1)
@@ -41,7 +42,8 @@ struct Breed
 #define mod(x,y) ((x)-(y)*floor((x)/(y)))
 
 sampler texSampler : register(s0);
-Texture2D<float4> InputTexture : register(t0);
+//Texture2D<float4> InputTexture : register(t0);
+Texture2D<float4> FxTexture : register(t0);
 
 RWStructuredBuffer<Breed> Breeds : register(u0); 
 RWStructuredBuffer<Point> Points : register(u1); 
@@ -107,22 +109,28 @@ void main(uint3 i : SV_DispatchThreadID)
 
     int breedIndex = 0;//(i.x % 133 == 0) ? 1 : 0;
 
+    float2 uv = CellAddressFromPosition(pos) / float2(texWidth, texHeight);
+    float4 fxTexture = FxTexture.SampleLevel(texSampler, uv,0);
+    float fxG = (fxTexture.g -0.5) * FXGreenFor_FrontRadius;
+    //float fxA = (fxTexture.a -0.5) * FXGreenFor_FrontRadius;
+
     // Sample environment
-    float3 frontSamplePos = pos + float3(sin(angle),cos(angle),0) * CB.FrontRadius / TargetHeight;
+    float3 frontSamplePos = pos + float3(sin(angle),cos(angle),0) * CB.FrontRadius / TargetHeight  + (fxTexture.g -0.5);// * FXGreenFor_FrontRadius;
     float4 frontSample = WriteOutput[CellAddressFromPosition(frontSamplePos)];
-    float frontComfort= ComputeComfortZone(frontSample, CB.ComfortZones);
+    float frontComfort= ComputeComfortZone(frontSample, CB.ComfortZones + fxG);
 
-    float3 leftSamplePos = pos + float3(sin(angle - CB.SideAngle),cos(angle - CB.SideAngle),0) * CB.SideRadius / TargetHeight;
+    float sideAngle = CB.SideAngle  - (fxTexture.b -0.5) * FXBlueFor_SideAngle;
+    float3 leftSamplePos = pos + float3(sin(angle - sideAngle),cos(angle - sideAngle),0) * CB.SideRadius / TargetHeight;
     float4 leftSample = WriteOutput[CellAddressFromPosition(leftSamplePos)];
-    float leftComfort= ComputeComfortZone(leftSample, CB.ComfortZones);
+    float leftComfort= ComputeComfortZone(leftSample, CB.ComfortZones+fxG);
 
-    float3 rightSamplePos = pos + float3(sin(angle + CB.SideAngle),cos(angle + CB.SideAngle),0) * CB.SideRadius / TargetHeight;
+    float3 rightSamplePos = pos + float3(sin(angle + sideAngle),cos(angle + sideAngle),0) * CB.SideRadius / TargetHeight;
     float4 rightSample = WriteOutput[CellAddressFromPosition(rightSamplePos)];
-    float rightComfort= ComputeComfortZone(rightSample, CB.ComfortZones);
+    float rightComfort= ComputeComfortZone(rightSample, CB.ComfortZones+fxG);
 
     // float dir = -SoftLimit(( min(leftComfort.r, frontComfort.r ) -  min(rightComfort.r, frontComfort.r)), 1);
 
-    float _rotateToComfort = CB.RotateToComfort + (float)(block.x - BlockCount/2) * 0.1 ;
+    float _rotateToComfort = CB.RotateToComfort + (float)(block.x - BlockCount/2) * 0.1 + (fxTexture.r -0.5) * FXRedFor_Rotate;
 
     float dir =   (frontComfort < min(leftComfort,  rightComfort))
                     ? 0

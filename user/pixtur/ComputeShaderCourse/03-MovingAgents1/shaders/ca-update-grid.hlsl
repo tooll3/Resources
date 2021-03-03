@@ -57,5 +57,7 @@ void main(uint3 i : SV_DispatchThreadID)
     float4 fx = FxTexture.SampleLevel(texSampler, uv, 0);
     float4 diffused = float4((sumNeighbours * DecayRate).rgb ,1);
 
-    WriteOutput[i.xy] = float4(lerp(diffused.rgb, fx.rgb, fx.a), diffused.a);
+
+    WriteOutput[i.xy] = diffused + float4(fx.rgb,0) * fx.a ;
+    //WriteOutput[i.xy] = float4(lerp(diffused.rgb, fx.rgb, fx.a), diffused.a);
 }
