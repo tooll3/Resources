@@ -155,22 +155,8 @@ psInput vsMain(uint id: SV_VertexID)
         : cross(pointB.position - pointA.position, pointB.position - pointBB.position);
     n =normalize(n);
 
-    // Fake fog
-    // float4 posInClipSpace4 = mul(float4(posInObject,1), ObjectToClipSpace);    
-    // float fog = FogRate <= 0 
-    //     ? 0 
-    //     : pow(saturate(posInClipSpace4.w/FogRate), FogBias);
-
-    // output.fog = fog;
-
-    //if(FogDistance > 0) 
-    //{
     output.fog = pow(saturate(-posInCamSpace.z/FogDistance), FogBias);
-        //output.fog = saturate(-posInCamSpace.z/FogDistance);
-        //float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
-    //}
     output.color.rgb =  Color.rgb;
-    //output.color.rgb = lerp(Color.rgb, FogColor.rgb,fog);
 
     output.color.a = Color.a;
     return output;    
@@ -178,13 +164,10 @@ psInput vsMain(uint id: SV_VertexID)
 
 float4 psMain(psInput input) : SV_TARGET
 {
-    //return float4(input.fog.xxx,1);
     float4 imgColor = texture2.Sample(texSampler, input.texCoord);
 
     float dFromLineCenter= abs(input.texCoord.y -0.5)*2;
     float a= 1;//smoothstep(1,0.95,dFromLineCenter) ;
     float4 color = lerp(input.color * imgColor, FogColor, input.fog); // * input.color;
-    //return float4(input.fog.xxx,1);
-
     return clamp(float4(color.rgb, color.a * a), 0, float4(100,100,100,1));
 }

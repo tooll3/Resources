@@ -3,17 +3,7 @@
 #include "point.hlsl"
 #include "pbr.hlsl"
 
-cbuffer TimeConstants : register(b0)
-{
-    float GlobalTime;
-    float Time;
-    float RunTime;
-    float BeatTime;
-    float LastFrameDuration;
-}; 
- 
-
-cbuffer Params : register(b1)
+cbuffer Params : register(b0)
 {
     float RestorePosition;
     float Speed;
@@ -21,18 +11,14 @@ cbuffer Params : register(b1)
     float Spin;
     float ScatterSurfaceDistance;
     float Freeze;
+    float MaxSpeed;
 }
 
-StructuredBuffer<Point> Points : t0;         // input
-StructuredBuffer<PbrVertex> Vertices: t1;
-StructuredBuffer<int3> Indices: t2;
+StructuredBuffer<PbrVertex> Vertices: t0;
+StructuredBuffer<int3> Indices: t1;
+StructuredBuffer<Point> SourcePoints : t2;         // input
 
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
-RWStructuredBuffer<Point> DebugPoints : u1;    // output
-RWStructuredBuffer<Point> DebugPoints2 : u1;    // output
-
-
-//--------------------------------------------
 
 
 float3 closesPointOnTriangle( in float3 p0, in float3 p1, in float3 p2, in float3 sourcePosition )
@@ -164,27 +150,9 @@ void findClosestPointAndDistance(
 }
 
 
-// float4 q_from_matrix (float3x3 m) 
-// {   
-//     float w = sqrt( 1.0 + m._m00 + m._m11 + m._m22) / 2.0;
-//     float  w4 = (4.0 * w);
-//     float x = (m._m21 - m._m12) / w4 ;
-//     float y = (m._m02 - m._m20) / w4 ;
-//     float z = (m._m10 - m._m01) / w4 ;
-//     return float4(x,y,z,w);
-// }
-
-
 
 float4 q_from_tangentAndNormal(float3 dx, float3 dz)
 {
-    // float a = -acos(dot( dx, dz));
-    // float4 r = rotate_angle_axis(a, dz);
-
-    // float4 rx = rotate_angle_axis(PI/2, dx) ;
-    // rx = float4(0,0,0,1);
-    // return qmul(rx,r);
-
     dx = normalize(dx);
     dz = normalize(dz);
     float3 dy = -cross(dx, dz);
@@ -205,13 +173,16 @@ void main(uint3 i : SV_DispatchThreadID)
     if(Freeze > 0.5)
         return;
 
-    uint pointCount, pointStride;
-    Points.GetDimensions(pointCount, pointStride);
-    if(i.x >= pointCount) {
+    uint sourcePointCount, pointStride;
+    SourcePoints.GetDimensions(sourcePointCount, pointStride);
+
+    if(sourcePointCount == 0) {
+
+    }
+    else if(i.x >= sourcePointCount) {
         ResultPoints[i.x].w = sqrt(-1);
         return;
     }
-
 
     uint vertexCount, vertexStride; 
     Vertices.GetDimensions(vertexCount, vertexStride);
@@ -219,18 +190,20 @@ void main(uint3 i : SV_DispatchThreadID)
     uint faceCount, faceStride; 
     Indices.GetDimensions(faceCount, faceStride);
 
-    
-    float pointHash = hash11(i.x);
-    float signedPointHash = hash11(i.x);
+    float signedPointHash = hash11(i.x % 123.567 * 123.1) * 2-1;
     Point p = ResultPoints[i.x];
 
     if(RestorePosition > 1) {
-        p = Points[i.x];
+        p = SourcePoints[i.x];
     }
 
-    float3 pos = RestorePosition > 1
-                 ? Points[i.x].position
-                 : lerp( p.position, Points[i.x].position, RestorePosition) ;
+    float3 pos = p.position;
+    if(sourcePointCount > 0) 
+    {
+        pos = RestorePosition > 1
+                ? SourcePoints[i.x].position
+                : lerp( p.position, SourcePoints[i.x].position, RestorePosition) ;
+    }
 
     float3 forward =  rotate_vector( float3(1,0,0), p.rotation);
     float3 pos2 = pos + forward * Speed;
@@ -252,7 +225,12 @@ void main(uint3 i : SV_DispatchThreadID)
     }
 
     float3 movement = targetPosWithDistance - p.position;
-    p.position = targetPosWithDistance;
+    float requiredSpeed= clamp(length(movement), 0.001,99999);
+    float clampedSpeed = min(requiredSpeed, MaxSpeed / 60);
+    float speedFactor = clampedSpeed / requiredSpeed;
+    movement *= speedFactor;
+
+    p.position += movement;
     float4 orientation = q_from_tangentAndNormal(movement, distanceFromSurface);
     float4 mixedOrientation = q_slerp(orientation, p.rotation, 0.96);
 
@@ -263,6 +241,6 @@ void main(uint3 i : SV_DispatchThreadID)
     }
         
     p.rotation = mixedOrientation;
-    ResultPoints[i.x] = p;
+    ResultPoints[i.x] = p;    
 }
 

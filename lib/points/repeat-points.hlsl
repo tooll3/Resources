@@ -9,11 +9,6 @@ cbuffer Params : register(b0)
     float MultiplyTargetW;
 }
 
-// struct Point {
-//     float3 Position;
-//     float W;
-// };
-
 StructuredBuffer<Point> Points1 : t0;         // input
 StructuredBuffer<Point> Points2 : t1;         // input
 RWStructuredBuffer<Point> ResultPoints : u0;    // output

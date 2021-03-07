@@ -3,55 +3,16 @@
 #include "point.hlsl"
 #include "pbr.hlsl"
 
-cbuffer TimeConstants : register(b0)
+cbuffer Params : register(b0)
 {
-    float GlobalTime;
-    float Time;
-    float RunTime;
-    float BeatTime;
-    float LastFrameDuration;
-}; 
- 
-
-cbuffer Params : register(b1)
-{
-    float Amount;
-    float Frequency;
-    float Phase;
-    float Variation;
-    float3 AmountDistribution;
-    float RotationLookupDistance;
-
 }
 
-// struct Point {
-//     float3 Position;
-//     float W;
-// };
 
 StructuredBuffer<Point> Points : t0;         // input
 StructuredBuffer<PbrVertex> Vertices: t1;
 StructuredBuffer<int3> Indices: t2;
 
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
-
-
-
-
-
-
-
-
-
-
-
-
-
-//--------------------------------------------
-
-
-
-
 
 
 
@@ -226,18 +187,6 @@ void main(uint3 i : SV_DispatchThreadID)
             closestPoint = pointOnFace;
         }
     }
-
-
-    // for(uint vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++) 
-    // {
-    //     closesPointOnTriangle();
-        
-    //     float distance2 = length(Vertices[vertexIndex].Position - pos);
-    //     if(distance2 < closestDistance) {
-    //         closestDistance = distance2;
-    //         closestIndex = vertexIndex;
-    //     }
-    // }
 
     if(closestIndex>=0) 
     {
