@@ -30,8 +30,8 @@ struct vsOutput
     float2 texCoord : TEXCOORD;
 };
 
-Texture2D<float4> Image : register(t0);
-Texture2D<float4> DisplaceMap : register(t1);
+Texture2D<float4> DisplaceMap : register(t0);
+Texture2D<float4> Image : register(t1);
 sampler texSampler : register(s0);
 
 
