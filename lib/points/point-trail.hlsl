@@ -2,9 +2,9 @@
 
 cbuffer Params : register(b0)
 {
-    float PointCount;
     float TrailLength;
     float CycleIndex;
+    float HasPointCountChanged;
 }
 
 StructuredBuffer<Point> SourcePoints : t0;         // input
@@ -15,13 +15,16 @@ RWStructuredBuffer<Point> TrailPoints : u0;    // output
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
-    uint pointCount = (uint)(PointCount + 0.5);
+    //uint pointCount = (uint)(PointCount + 0.5);
+    uint pointCount, stride;
+    SourcePoints.GetDimensions(pointCount, stride);
+
     uint sourceIndex = i.x;
     if(i.x >= pointCount)
         return;
 
     uint trailLength = (uint)(TrailLength + 0.5);
-    uint bufferLength = (uint)(PointCount + 0.5) * trailLength;
+    uint bufferLength = (uint)(pointCount + 0.5) * trailLength;
     uint cycleIndex = (uint)(CycleIndex + 0.5);
     uint targetIndex = (cycleIndex + sourceIndex * trailLength) % bufferLength;
 
