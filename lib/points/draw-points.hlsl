@@ -76,12 +76,16 @@ psInput vsMain(uint id: SV_VertexID)
     float4 posInObject = float4(pointDef.position,1);
     float4 quadPosInCamera = mul(posInObject, ObjectToCamera);
     output.color = Color;
-    quadPosInCamera.xy += quadPos.xy*0.050  * pointDef.w * Size;
+
+    // Shrink too close particles
+    float4 posInCamera = mul(posInObject, ObjectToCamera);
+    float tooCloseFactor =  saturate(-posInCamera.z/0.1 -1);
+
+    quadPosInCamera.xy += quadPos.xy*0.050  * pointDef.w * Size * tooCloseFactor;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
     float4 posInWorld = mul(posInObject, ObjectToWorld);
 
     // Fog
-    float4 posInCamera = mul(posInObject, ObjectToCamera);
     output.fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
     return output;
 }
@@ -93,6 +97,7 @@ float4 psMain(psInput input) : SV_TARGET
     if(textureCol.a < CutOffTransparent)
         discard;
 
-    float4 col = lerp(input.color * textureCol, FogColor, input.fog);
+    float4 col = input.color * textureCol;
+    col.rgb = lerp(col.rgb, FogColor.rgb, input.fog);
     return clamp(col, float4(0,0,0,0), float4(1000,1000,1000,1));
 }
