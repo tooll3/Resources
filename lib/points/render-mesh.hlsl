@@ -207,7 +207,7 @@ float4 psMain(psInput pin) : SV_TARGET
     // Final fragment color.
 
 
-    float4 litColor= float4(directLighting + ambientLighting, 1.0) * BaseColor;
-    return lerp(litColor, FogColor, pin.fog)
-         + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
+    float4 litColor= float4(directLighting + ambientLighting, 1.0) * BaseColor * Color;
+    litColor.rgb = lerp(litColor.rgb, FogColor.rgb, pin.fog);
+    return litColor + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
 }

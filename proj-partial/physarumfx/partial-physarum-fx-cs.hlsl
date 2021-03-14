@@ -115,7 +115,7 @@ void main(uint3 i : SV_DispatchThreadID)
     //float fxA = (fxTexture.a -0.5) * FXGreenFor_FrontRadius;
 
     // Sample environment
-    float3 frontSamplePos = pos + float3(sin(angle),cos(angle),0) * CB.FrontRadius / TargetHeight  + (fxTexture.g -0.5);// * FXGreenFor_FrontRadius;
+    float3 frontSamplePos = pos + float3(sin(angle),cos(angle),0) * CB.FrontRadius / TargetHeight;//  + (fxTexture.g -0.5);// * FXGreenFor_FrontRadius;
     float4 frontSample = WriteOutput[CellAddressFromPosition(frontSamplePos)];
     float frontComfort= ComputeComfortZone(frontSample, CB.ComfortZones + fxG);
 
