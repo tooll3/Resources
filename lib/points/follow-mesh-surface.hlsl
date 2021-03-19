@@ -170,6 +170,9 @@ float4 q_from_tangentAndNormal(float3 dx, float3 dz)
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
+    //ResultPoints[i.x].position += float3(0,0.01,0);
+    // return;
+
     if(Freeze > 0.5)
         return;
 
@@ -180,7 +183,7 @@ void main(uint3 i : SV_DispatchThreadID)
 
     }
     else if(i.x >= sourcePointCount) {
-        ResultPoints[i.x].w = sqrt(-1);
+        //esultPoints[i.x].w = sqrt(-1);
         return;
     }
 
@@ -220,13 +223,13 @@ void main(uint3 i : SV_DispatchThreadID)
     float3 targetPosWithDistance = closestSurfacePoint + distanceFromSurface;
 
     
-    if(closestFaceIndex < 0) {
-        return;
-    }
+    // if(closestFaceIndex < 0) {
+    //     return;
+    // }
 
     float3 movement = targetPosWithDistance - p.position;
     float requiredSpeed= clamp(length(movement), 0.001,99999);
-    float clampedSpeed = min(requiredSpeed, MaxSpeed / 60);
+    float clampedSpeed = min(requiredSpeed, Speed );
     float speedFactor = clampedSpeed / requiredSpeed;
     movement *= speedFactor;
 
@@ -237,7 +240,7 @@ void main(uint3 i : SV_DispatchThreadID)
     if(abs(Spin) > 0.001) 
     {
         float randomAngle = signedPointHash  * Spin;
-        mixedOrientation = qmul( mixedOrientation, rotate_angle_axis(randomAngle, distanceFromSurface ));
+        mixedOrientation = normalize(qmul( mixedOrientation, rotate_angle_axis(randomAngle, distanceFromSurface )));
     }
         
     p.rotation = mixedOrientation;
