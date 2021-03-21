@@ -155,8 +155,8 @@ float4 psMain(psInput input) : SV_TARGET
     //return float4(1,1,0,1);
 
 
-    float u = (input.texCoord.x + VisibleRange) / VisibleRange;
-    float4 imgColor = texture2.Sample(texSampler, float2(u, input.texCoord.y));
+    float u = (input.texCoord.x + VisibleRange);// / VisibleRange;
+    float4 imgColor = texture2.Sample(texSampler, float2(u, input.texCoord.y)) * Color;
 
     float f1 = saturate((input.texCoord.x + VisibleRange) * 100  );
     float f2 = 1-saturate( (input.texCoord.x ) * 100);
