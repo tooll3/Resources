@@ -34,7 +34,10 @@ cbuffer Params : register(b2)
     float WMappingScale;
     float __padding;
     float Rotate;
+
     float3 RotateAxis;
+    float ApplyPointOrientaiton;
+
 };
 
 struct psInput
@@ -65,7 +68,9 @@ psInput vsMain(uint id: SV_VertexID)
     axis.xy = (axis.xy + Offset) * Stretch;
     axis.z = 0;
 
-    float4 rotation = qmul(p.rotation, rotate_angle_axis(Rotate/180*PI, RotateAxis));
+    float4 pRotation = ApplyPointOrientaiton > 0.5 ? p.rotation : float4(0,0,0,1);
+    
+    float4 rotation = qmul(pRotation, rotate_angle_axis(Rotate/180*PI, RotateAxis));
     float sizeFromW = SizeOverW.SampleLevel(texSampler, float2(p.w * WMappingScale,0), 0);
 
     axis = rotate_vector(axis, rotation) * Size * sizeFromW;

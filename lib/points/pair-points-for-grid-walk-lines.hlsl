@@ -22,11 +22,11 @@ static const int3 TransitionSteps[] =
 {
     // Source      
     int3(0, 0, 0), // 0
-    int3(1, 0, 0), // 1
+    int3(0, 1, 0), // 1
     int3(1, 1, 0), // 2
     int3(1, 1, 1), // 3
-    int3(2, 1, 1), // 4
-    int3(2, 2, 1), // 5
+    int3(1, 1, 2), // 4
+    int3(2, 1, 2), // 5
     int3(2, 2, 2), // 6
     int3(3, 2, 2), // 7 
     int3(3, 3, 2), // 8 
@@ -62,13 +62,14 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float2 hash = hash21(lineIndex);
 
-    float3 posA = A.position + 0.0001 / GridSize + GridOffset;
-    float3 posB = B.position + 0.0001 / GridSize + GridOffset;
+    float3 randomOffset = (hash31(lineIndex + 321) * 2 -1) * RandomizeGrid;
+    float3 posA = (A.position + 0.0001) / GridSize + fmod(GridOffset , GridSize);
+    float3 posB = (B.position + 0.0001) / GridSize + fmod(GridOffset , GridSize);
 
     float3 transition[] = {
         posA,
-        floor(posA) + (hash.x > 0.5 ? 1 : 0),
-        floor(posB) + (hash.y > 0.5 ? 1 : 0),
+        floor(posA) + (hash.x > 0.5 ? 1 : 0) + randomOffset,
+        floor(posB) + (hash.y > 0.5 ? 1 : 0) + randomOffset,
         posB
     };
 
@@ -94,13 +95,11 @@ void main(uint3 i : SV_DispatchThreadID)
         }
 
         stepPositions[step] = float4(p, 
-                                     1-A.w * Speed * StrokeLength + d / StrokeLength  + PhaseOffset);
-
-        
+                                     1-A.w * Speed * StrokeLength + d / StrokeLength  + PhaseOffset);        
         previousPos = p;
     }
     
-    stepPositions[9].z += 0.1;
+    // ========== INSERT SHARED MEMORY BOUNDARY ===================
 
     float4 prev = stepPositions[ max(0, lineStepIndex-1)];
     float4 current = stepPositions[ lineStepIndex];
@@ -167,54 +166,6 @@ void main(uint3 i : SV_DispatchThreadID)
     }
 
 
-/*
-
-    previousD = previousD / Range.y + A.w + Range.x;
-    d = d / Range.y+ A.w + Range.x;
-
-    ResultPoints[i.x].rotation = A.rotation;
-
-    float w = 1;
-    if(previousD >= 0 &&  d <= 1 ) {
-        //w = 0.1;
-        //p2 = previousD;
-        float t= abs(previousD) / (abs(previousD) + d);
-        //p2 = p2;//lerp(p2, previousPos, 1-d );
-    }
-    else if(
-        //(previousD < 0 && d < 0) 
-        //||
-         (previousD > 1 && d > 1)
-        ) 
-    {
-        w =  sqrt(-1);
-    }    
-    else if(previousD < 0 && d > 1) 
-    {   
-        //w =  sqrt(-1);                
-    }
-    else if(previousD <= 0 && d >= 0) 
-    {                
-        float t= abs(previousD) / (abs(previousD) + d);
-        //p2 = lerp(previousPos,p2, t );
-    }
-    else if(previousD >= 0 && previousD <= 1 && d >= 1)  {
-        float t= (1-previousD)/ (abs(previousD) + abs(d));        
-        //p2 = lerp(previousPos, p2,  t );                
-        
-    }
-    else {
-        //w = 100;
-    }
-    // else {
-    //     float t= (1-previousD + d-1) * (1-previousD);
-    //     p2 = lerp(previousPos, p2,  t );
-    //     //p2.z += 10;
-    // }
-    //p2 = lerp (posA, posB, (float)lineStepIndex/10 );
-    //p2.z = d;
-
-*/
     ResultPoints[i.x].position = (p - GridOffset) * GridSize;
     //ResultPoints[i.x].position.z += current.w;
 
