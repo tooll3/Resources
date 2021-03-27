@@ -33,6 +33,7 @@ cbuffer Params : register(b2)
     float Size;
     float SegmentCount;
     float CutOffTransparent;
+    float FadeNearest;
 };
 
 cbuffer FogParams : register(b3)
@@ -69,7 +70,7 @@ psInput vsMain(uint id: SV_VertexID)
     int particleId = id / 6;
     Point pointDef = Points[particleId];
 
-    float4 aspect = float4(CameraToClipSpace[1][1] / CameraToClipSpace[0][0],1,1,1);
+    //float4 aspect = float4(CameraToClipSpace[1][1] / CameraToClipSpace[0][0],1,1,1);
     float3 quadPos = Corners[quadIndex];
     output.texCoord = (quadPos.xy * 0.5 + 0.5);
 
@@ -79,9 +80,10 @@ psInput vsMain(uint id: SV_VertexID)
 
     // Shrink too close particles
     float4 posInCamera = mul(posInObject, ObjectToCamera);
-    float tooCloseFactor =  saturate(-posInCamera.z/0.1 -1);
+    float tooCloseFactor =  saturate(-posInCamera.z/FadeNearest -1);
+    output.color.a *= tooCloseFactor;
 
-    quadPosInCamera.xy += quadPos.xy*0.050  * pointDef.w * Size * tooCloseFactor;
+    quadPosInCamera.xy += quadPos.xy*0.050  * pointDef.w * Size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
     float4 posInWorld = mul(posInObject, ObjectToWorld);
 

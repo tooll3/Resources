@@ -22,19 +22,27 @@ static const int3 TransitionSteps[] =
 {
     // Source      
     int3(0, 0, 0), // 0
-    int3(0, 1, 0), // 1
-    int3(1, 1, 0), // 2
+    int3(0, 0, 1), // 1
+    int3(1, 0, 1), // 2
     int3(1, 1, 1), // 3
     int3(1, 1, 2), // 4
     int3(2, 1, 2), // 5
     int3(2, 2, 2), // 6
-    int3(3, 2, 2), // 7 
-    int3(3, 3, 2), // 8 
+    int3(2, 2, 3), // 7 
+    int3(3, 2, 3), // 8 
     int3(3, 3, 3), // 9
     int3(3, 3, 3), // 10
 };
 
-
+static const int3 AxisOrders[] = 
+{
+    int3(2, 1, 0), // 0
+    int3(0, 2, 1), // 0
+    int3(1, 0, 2), // 0
+    int3(2, 1, 0), // 0
+    int3(2, 0, 1), // 0
+};
+ 
 StructuredBuffer<Point> StartPoints : t0;
 StructuredBuffer<Point> TargetPoints : t1;
 RWStructuredBuffer<Point> ResultPoints : u0;
@@ -61,6 +69,7 @@ void main(uint3 i : SV_DispatchThreadID)
     Point B = TargetPoints[lineIndex % (uint)countB];
 
     float2 hash = hash21(lineIndex);
+    int3 axisOrder = AxisOrders[(int)(hash.x*4)];
 
     float3 randomOffset = (hash31(lineIndex + 321) * 2 -1) * RandomizeGrid;
     float3 posA = (A.position + 0.0001) / GridSize + fmod(GridOffset , GridSize);
@@ -84,9 +93,9 @@ void main(uint3 i : SV_DispatchThreadID)
         int3 factorsForStep = TransitionSteps[step];
 
         p = float3(
-            transition[factorsForStep.x].x,
-            transition[factorsForStep.y].y,
-            transition[factorsForStep.z].z
+            transition[factorsForStep[axisOrder.x]].x,
+            transition[factorsForStep[axisOrder.y]].y,
+            transition[factorsForStep[axisOrder.z]].z
         );
 
         if(step > 0) 
@@ -166,7 +175,7 @@ void main(uint3 i : SV_DispatchThreadID)
     }
 
 
-    ResultPoints[i.x].position = (p - GridOffset) * GridSize;
+    ResultPoints[i.x].position = (p - fmod(GridOffset,1)) * GridSize;
     //ResultPoints[i.x].position.z += current.w;
 
     ResultPoints[i.x].w =  d * w;
