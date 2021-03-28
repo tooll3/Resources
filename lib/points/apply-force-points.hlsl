@@ -40,6 +40,6 @@ void main(uint3 i : SV_DispatchThreadID)
     float3 radialForce = direction / clamp( pow(distance, ForceDecayRate) , 0.02,1000) * RadialForce;
 
     ResultPoints[i.x].position += (Gravity + radialForce) * effect;
-    ResultPoints[i.x].w += 0 ;
+    ResultPoints[i.x].w += 0;
 }
 

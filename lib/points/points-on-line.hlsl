@@ -46,7 +46,7 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float f = (float)(index)/(pointCount-1);
 
-    ResultPoints[index].position = lerp(Center, Center+Direction, f) * LengthFactor;
+    ResultPoints[index].position = lerp(Center, Center + Direction * LengthFactor, f);
     ResultPoints[index].w = W + WOffset * f;
 
     // FIXME: this rotation is hard to control and feels awkward. 

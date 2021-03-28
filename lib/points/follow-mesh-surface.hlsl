@@ -5,13 +5,13 @@
 
 cbuffer Params : register(b0)
 {
-    float RestorePosition;
     float Speed;
-    float SurfaceDistance;
+    float RandomizeSpeed;
     float Spin;
-    float ScatterSurfaceDistance;
-    float Freeze;
-    float MaxSpeed;
+    float RandomSpin;
+
+    float SurfaceDistance;
+    float RandomSurfaceDistance;
 }
 
 StructuredBuffer<PbrVertex> Vertices: t0;
@@ -170,12 +170,6 @@ float4 q_from_tangentAndNormal(float3 dx, float3 dz)
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
-    //ResultPoints[i.x].position += float3(0,0.01,0);
-    // return;
-
-    if(Freeze > 0.5)
-        return;
-
     uint sourcePointCount, pointStride;
     SourcePoints.GetDimensions(sourcePointCount, pointStride);
 
@@ -196,40 +190,27 @@ void main(uint3 i : SV_DispatchThreadID)
     float signedPointHash = hash11(i.x % 123.567 * 123.1) * 2-1;
     Point p = ResultPoints[i.x];
 
-    if(RestorePosition > 1) {
-        p = SourcePoints[i.x];
-    }
-
     float3 pos = p.position;
-    if(sourcePointCount > 0) 
-    {
-        pos = RestorePosition > 1
-                ? SourcePoints[i.x].position
-                : lerp( p.position, SourcePoints[i.x].position, RestorePosition) ;
-    }
-
     float3 forward =  rotate_vector( float3(1,0,0), p.rotation);
-    float3 pos2 = pos + forward * Speed;
+
+    float usedSpeed = Speed + Speed * (1+signedPointHash) * RandomizeSpeed;
+
+    float3 pos2 = pos + forward * usedSpeed;
 
     int closestFaceIndex;
     float3 closestSurfacePoint;
     findClosestPointAndDistance(faceCount, pos2,  closestFaceIndex, closestSurfacePoint);
 
     // Keep outside
-    float3 distanceFromSurface= normalize(pos2 - closestSurfacePoint) * (SurfaceDistance + signedPointHash * ScatterSurfaceDistance);
+    float3 distanceFromSurface= normalize(pos2 - closestSurfacePoint) * (SurfaceDistance + signedPointHash * RandomSurfaceDistance);
     distanceFromSurface *= dot(distanceFromSurface, Vertices[Indices[closestFaceIndex].x].Normal) > 0 
         ? 1 : -1;
 
     float3 targetPosWithDistance = closestSurfacePoint + distanceFromSurface;
 
-    
-    // if(closestFaceIndex < 0) {
-    //     return;
-    // }
-
     float3 movement = targetPosWithDistance - p.position;
     float requiredSpeed= clamp(length(movement), 0.001,99999);
-    float clampedSpeed = min(requiredSpeed, Speed );
+    float clampedSpeed = min(requiredSpeed, usedSpeed );
     float speedFactor = clampedSpeed / requiredSpeed;
     movement *= speedFactor;
 
@@ -237,9 +218,10 @@ void main(uint3 i : SV_DispatchThreadID)
     float4 orientation = q_from_tangentAndNormal(movement, distanceFromSurface);
     float4 mixedOrientation = q_slerp(orientation, p.rotation, 0.96);
 
-    if(abs(Spin) > 0.001) 
+    float usedSpin = Spin + RandomSpin * signedPointHash;
+    if(abs(usedSpin) > 0.001) 
     {
-        float randomAngle = signedPointHash  * Spin;
+        float randomAngle = signedPointHash  * usedSpin;
         mixedOrientation = normalize(qmul( mixedOrientation, rotate_angle_axis(randomAngle, distanceFromSurface )));
     }
         

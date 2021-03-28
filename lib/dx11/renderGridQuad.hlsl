@@ -82,17 +82,22 @@ float4 psMain(vsOutput input) : SV_TARGET
 
     float smallGrid =  smoothstep( 0.4, 0.9, fadeOutInDistance);
     float grid10 = smoothstep( -0.6, 1.1, fadeOutInDistance);
-    float linesX = lines(p.x, angleX, 1) * smallGrid + lines(p.x, angleX, 10) *grid10;
-    float linesY =  lines(p.y, angleY, 1) * smallGrid + lines(p.y, angleY, 10) * grid10;
+    float axis = smoothstep( -3, 0.3, fadeOutInDistance);
+
+    float linesX = lines(p.x, angleX, 1) * smallGrid + lines(p.x, angleX, 10) *grid10 + lines(p.x, angleX, 100);// * axis * (p.x > 0 ? 1:0);
+    float linesY =  lines(p.y, angleY, 1) * smallGrid + lines(p.y, angleY, 10) * grid10 +  lines(p.y, angleY, 100);// * axis *  (p.y > 0 ? 1:0);;
 
     float lines = max(linesX, linesY);
 
-    float axisX = smoothstep( -0.1, 0.1, saturate(abs(p.x) * (lineWidth + angleX * 100) *1 ));
-    float axisY = smoothstep( -0.1, 0.1, saturate(abs(p.y) * (lineWidth + angleY * 100) *1));
+    float axisX = smoothstep( -0.1, 0.1, saturate(abs(p.y) * (lineWidth + angleY * 100) *1));
+    float axisZ = smoothstep( -0.1, 0.1, saturate(abs(p.x) * ( (p.x > 0 ? 2:1)*  lineWidth + angleX * 100) *1 ));
 
-    float redOrGreen = (axisX > axisY) ? 0:1;
-    float3 axisColor = lerp( float3(1,0,0), float3(0.4,0.4,1), redOrGreen);
-    float isAxis = min(axisX, axisY) < 1 ? 1:0;
+    float redOrBlue = (axisX < axisZ) ? 0:1;
+    float3 axisColor = lerp( 
+        p.x > 0 ? float3(0.8,0,0) : float3(0.8, 0.6, 0.6),
+        p.y < 0 ? float3(0.2,0.2,0.9) : float3(0.5, 0.5, 0.7),  
+        redOrBlue);
+    float isAxis = min(axisZ, axisX) < 0.75 ? 1:0;
     float3 color = lerp( float3(1,1,1), axisColor, isAxis );
     return float4(color, lines * (isAxis ? 2 : 1)) * Color;
 }
