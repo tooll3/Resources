@@ -93,7 +93,7 @@ float4 psMainOnlyColor(vsOutput input) : SV_TARGET
 {
     float3 uvw = input.texCoord;
 
-    const int NUM_SAMPLES = 362;
+    const int NUM_SAMPLES = 25;
     float4 vDir = float4(input.posInWorld - CameraToWorld[3].xyz, 0);
     float3 viewDirInObject = mul(vDir, WorldToObject );
     float3 sampleStep = normalize(viewDirInObject)/float(NUM_SAMPLES);
