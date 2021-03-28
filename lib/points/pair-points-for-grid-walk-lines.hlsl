@@ -69,7 +69,7 @@ void main(uint3 i : SV_DispatchThreadID)
     Point B = TargetPoints[lineIndex % (uint)countB];
 
     float2 hash = hash21(lineIndex);
-    int3 axisOrder = AxisOrders[(int)(hash.x*4)];
+    int3 axisOrder =  AxisOrders[(int)(hash.x*4)]; // int3(2,1,0);
 
     float3 randomOffset = (hash31(lineIndex + 321) * 2 -1) * RandomizeGrid;
     float3 posA = (A.position + 0.0001) / GridSize + fmod(GridOffset , GridSize);
@@ -178,7 +178,7 @@ void main(uint3 i : SV_DispatchThreadID)
     ResultPoints[i.x].position = (p - fmod(GridOffset,1)) * GridSize;
     //ResultPoints[i.x].position.z += current.w;
 
-    ResultPoints[i.x].w =  d * w;
+    ResultPoints[i.x].w =  1-d * w;
 
     if( lineStepIndex == 10)
         ResultPoints[i.x].w = NaN; // NaN for divider
