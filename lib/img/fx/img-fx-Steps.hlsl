@@ -84,7 +84,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     extremes = 1;
 
     float4 colorFromRamp= RampImageA.Sample(texSampler, float2( rampColor ,0.5/2));    
-    if((int)(rampColor * Steps) == (int)(HighlightIndex % Steps) ) {
+    if((int)(rampColor * Steps) == (int)((HighlightIndex +0.01) % Steps) ) {
         colorFromRamp.rgb = lerp(colorFromRamp.rgb, Highlight.rgb, Highlight.a);
     }
 
