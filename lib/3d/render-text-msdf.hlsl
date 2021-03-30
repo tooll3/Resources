@@ -133,14 +133,15 @@ float4 psMain(PsInput input) : SV_TARGET
     float letterShape = clamp( sigDist * toPixels + 0.5, 0.0, 1.0 );
 
 
-    if(Shadow.a < 0.02) {
+    if(Shadow.a < 0.01) {
         return float4(Color.rgb, letterShape * Color.a);
     }
 
-    float glow = pow( smoothstep(0,1, sigDist + 0.3), 0.3);
+    float glow = pow( smoothstep(0, 1, sigDist + 0.3), 0.4);
+    //return float4(letterShape,0,0,1);
 
     return float4(
-        lerp(Shadow.rgb, Color.rgb, letterShape ),
+        lerp(Shadow.rgb, Color.rgb, saturate(pow(letterShape,0.3)) ),
         max( saturate(letterShape*2),glow * Shadow.a) * Color.a
     );
 }
