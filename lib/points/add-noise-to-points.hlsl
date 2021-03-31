@@ -86,7 +86,7 @@ void main(uint3 i : SV_DispatchThreadID)
     float4 newRotation = p.rotation;
 
     float4 posInWorld = mul(float4(p.position ,1), ObjectToWorld);
-    GetTranslationAndRotation(weight, posInWorld.xyz + variationOffset, p.rotation, offset, newRotation);
+    GetTranslationAndRotation(weight , posInWorld.xyz + variationOffset, p.rotation, offset, newRotation);
 
     ResultPoints[i.x].position = p.position + offset ;
     ResultPoints[i.x].rotation = newRotation;

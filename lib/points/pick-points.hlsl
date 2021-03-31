@@ -36,11 +36,11 @@ void main(uint3 i : SV_DispatchThreadID)
     }
 
     uint scatterOffset = Scatter > 0.001 
-                ? (float)sourceCount * Scatter * hash11((float)i.x * 123.456 + Seed + StartIndex)
+                ? (float)sourceCount * Scatter * hash11(i.x+ Seed + StartIndex) //; hash11((float)(i.x * 14.456) / 123.6 + Seed + StartIndex + 0.1)
                 : 0;
     
 
-    uint index = ((uint)StartIndex + i.x + scatterOffset) % sourceCount;
+    uint index = ((uint)StartIndex + i.x + scatterOffset + 0.1) % sourceCount;
     ResultPoints[i.x] = SourcePoints[index];
 }
 
