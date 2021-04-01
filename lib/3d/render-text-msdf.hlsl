@@ -126,12 +126,16 @@ float4 psMain(PsInput input) : SV_TARGET
     fontTexture.GetDimensions(width,height);
 
     // from https://github.com/Chlumsky/msdfgen/issues/22#issuecomment-234958005
-    float dx = ddx( input.texCoord.x ) * width;
-    float dy = ddy( input.texCoord.y ) * height;
-    float toPixels = Params.x * rsqrt( dx * dx + dy * dy );
+
+    float2 dx2 = abs(ddx( input.texCoord.xy ) * width);
+    float2 dy2 = abs(ddy( input.texCoord.xy ) * height);
+    float dx= max(dx2.x, dx2.y);
+    float dy= max(dy2.x, dy2.y);
+    float edge = rsqrt( dx * dx + dy * dy );
+
+    float toPixels = Params.x * edge ;
     float sigDist = median( smpl1.r, smpl1.g, smpl1.b ) - 0.5;
     float letterShape = clamp( sigDist * toPixels + 0.5, 0.0, 1.0 );
-
 
     if(Shadow.a < 0.01) {
         return float4(Color.rgb, letterShape * Color.a);
