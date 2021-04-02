@@ -71,7 +71,8 @@ psInput vsMain(uint id: SV_VertexID)
     float4 pRotation = ApplyPointOrientaiton > 0.5 ? p.rotation : float4(0,0,0,1);
     
     float4 rotation = qmul(pRotation, rotate_angle_axis(Rotate/180*PI, RotateAxis));
-    float sizeFromW = SizeOverW.SampleLevel(texSampler, float2(p.w * WMappingScale,0), 0);
+    float sizeFromW = isnan(p.w) ? 0 : SizeOverW.SampleLevel(texSampler, float2(p.w * WMappingScale,0), 0);
+
 
     axis = rotate_vector(axis, rotation) * Size * sizeFromW;
     float3 pInObject = p.position + axis;

@@ -33,7 +33,9 @@ float3 depthOfField(float2 pixelSize, float2 texCoord, float focusPoint, float f
     float3 color = colorTexture.SampleLevel(texSampler, texCoord, 0).rgb;
     float tot = 1.0;
     float radius = RadiusScale;
-    for (float ang = 0.0; radius < MaxBlurSize; ang += GOLDEN_ANGLE)
+    int samples=0;
+
+    for (float ang = 0.0; radius < MaxBlurSize && samples < 100; ang += GOLDEN_ANGLE)
     {
         float2 tc = texCoord + float2(cos(ang), sin(ang)) * pixelSize * radius;
         float3 sampleColor = colorTexture.SampleLevel(texSampler, tc, 0).rgb;
@@ -45,6 +47,7 @@ float3 depthOfField(float2 pixelSize, float2 texCoord, float focusPoint, float f
         color += lerp(color/tot, sampleColor, m);
         tot += 1.0;   
         radius += RadiusScale/radius;
+        samples++;
     }
     return color /= tot;
 }
