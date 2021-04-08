@@ -1,14 +1,6 @@
 #include "hash-functions.hlsl"
 #include "point.hlsl"
 
-// cbuffer TimeConstants : register(b0)
-// {
-//     float GlobalTime;
-//     float Time;
-//     float RunTime;
-//     float BeatTime;
-//     float LastFrameDuration;
-// }; 
  
 
 cbuffer Params : register(b0)
@@ -36,11 +28,13 @@ void main(uint3 i : SV_DispatchThreadID)
     }
 
     uint scatterOffset = Scatter > 0.001 
-                ? (float)sourceCount * Scatter * hash11(i.x+ Seed + StartIndex) //; hash11((float)(i.x * 14.456) / 123.6 + Seed + StartIndex + 0.1)
+                ? (float)sourceCount * Scatter * hash11(i.x+ Seed%4321 + StartIndex%1234) //; hash11((float)(i.x * 14.456) / 123.6 + Seed + StartIndex + 0.1)
                 : 0;
     
 
+
     uint index = ((uint)StartIndex + i.x + scatterOffset + 0.1) % sourceCount;
     ResultPoints[i.x] = SourcePoints[index];
+    ResultPoints[i.x].w = 1;
 }
 
