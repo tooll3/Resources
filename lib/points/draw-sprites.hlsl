@@ -102,5 +102,5 @@ float4 psMain(psInput input) : SV_TARGET
     float4 imgColor = texture2.Sample(texSampler, input.texCoord);
     float4 color = input.color * imgColor;
 
-    return clamp(float4(color.rgb, color.a), 0, float4(1,100,100,100));
+    return clamp(float4(color.rgb, color.a), 0, float4(100,100,100,1));
 }
