@@ -21,7 +21,7 @@ StructuredBuffer<Point> SourcePoints : t2;         // input
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
 
 
-float3 closesPointOnTriangle( in float3 p0, in float3 p1, in float3 p2, in float3 sourcePosition )
+float3 closestPointOnTriangle( in float3 p0, in float3 p1, in float3 p2, in float3 sourcePosition )
 {
     float3 edge0 = p1 - p0;
     float3 edge1 = p2 - p0;
@@ -133,7 +133,7 @@ void findClosestPointAndDistance(
     for(uint faceIndex = 0; faceIndex < faceCount; faceIndex++) 
     {
         int3 f = Indices[faceIndex];
-        float3 pointOnFace = closesPointOnTriangle(
+        float3 pointOnFace = closestPointOnTriangle(
             Vertices[f[0]].Position,
             Vertices[f[1]].Position,
             Vertices[f[2]].Position,

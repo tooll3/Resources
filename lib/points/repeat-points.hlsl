@@ -9,7 +9,7 @@ cbuffer Params : register(b0)
     float MultiplyTargetW;
 }
 
-StructuredBuffer<Point> Points1 : t0;         // input
+StructuredBuffer<Point> SourcePoints : t0;         // input
 StructuredBuffer<Point> Points2 : t1;         // input
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
 
@@ -25,7 +25,7 @@ void main(uint3 i : SV_DispatchThreadID)
     }
     else {
         uint targetIndex = (i.x / sourcePointsBatch )  % (uint)CountB;
-        Point A = Points1[pointIndex];
+        Point A = SourcePoints[pointIndex];
         Point B = Points2[targetIndex];
         float s = ApplyTargetScaleW > 0.5 ? B.w : 1;
         float3  pLocal = ApplyTargetOrietnation  > 0.5
