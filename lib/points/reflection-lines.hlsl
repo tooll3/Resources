@@ -6,6 +6,8 @@ cbuffer Params : register(b0)
     float StepCount;
     float DecayW;
     float Extend;
+    float SpreadColor;
+    float SpreadColorShift;
 }
 
 StructuredBuffer<Point> SourcePoints : t0;
@@ -91,50 +93,10 @@ bool intersect(
     return ((b[0] >= 0) && (b[1] >= 0) && (b[2] >= 0) && (t >= 0));
 }
 
-
-// void findClosestPointAndDistance(
-//     in uint faceCount,
-//     in float3 orig,
-//     in float3 dir,
-//     out uint closestFaceIndex,
-//     out float3 closestSurfacePoint,
-//     out float2 closestBaryzentricUV)
-// {
-//     closestFaceIndex = -1;
-//     float closestDistance = 99999;
-
-//     for(uint faceIndex = 0; faceIndex < faceCount; faceIndex++)
-//     {
-//         int3 f = Indices[faceIndex];
-//         float3 bary;
-//         float t;
-
-//         if(!intersect(
-//             orig,
-//             dir,
-//             Vertices[f[0]].Position,
-//             Vertices[f[1]].Position,
-//             Vertices[f[2]].Position,
-//             bary,
-//             t
-//         )) {
-//             continue;
-//         }
-
-//         if( t < closestDistance)
-//         {
-//             closestDistance = t;
-//             closestFaceIndex = faceIndex;
-//             closestSurfacePoint = orig + dir * t;
-//             closestBaryzentricUV = bary.zx;
-//         }
-//     }
-// }
+static const float NaN = sqrt(-1);
 
 static const int RAY_THREAD_COUNT = 8;
 static const int FACE_THREAD_COUNT = 512/RAY_THREAD_COUNT;
-
-static const float NaN = sqrt(-1);
 
 groupshared int BestHitIntDistances[RAY_THREAD_COUNT];
 groupshared int BestHitIndices[RAY_THREAD_COUNT];
@@ -169,11 +131,11 @@ void main(uint3 i : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID)
     float3 rayDirection = rotate_vector( float3(0,0,1), p.rotation);
     float w = p.w;
 
+    int _bestHitIndex = -1;
+    float3 _bestHitPosition = rayOrigin + rayDirection * Extend;
+    float2 _bestHitBaryUv = 0;
     for(uint stepIndex=1; stepIndex < (stepCount - 1); stepIndex++ )
     {
-        // int bestHitIndex = -1;
-        // float3 bestHitPosition = rayOrigin + rayDirection * Extend;
-        // float2 bestHitBaryUv = 0;
 
         if(faceThreadId == 0) 
         {
@@ -182,8 +144,10 @@ void main(uint3 i : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID)
                 BestHitIntDistances[rayThreadId] = 99999999;        
                 BestHitIndices[rayThreadId] = -1;
                 BestHitPositions[rayThreadId] = rayOrigin + rayDirection * Extend;
-                // bestHitBaryUv[rayThreadId] = 0;
 
+                _bestHitIndex = -1;
+                _bestHitPosition = rayOrigin + rayDirection * Extend;
+                _bestHitBaryUv = 0;
             }
         }
         GroupMemoryBarrierWithGroupSync();
@@ -215,113 +179,55 @@ void main(uint3 i : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID)
                         BestHitBaryUV[rayThreadId] = bary.zx;
                         BestHitPositions[rayThreadId] = rayOrigin + rayDirection *t;
 
-                        // bestHitIndex = faceId;
-                        // bestHitBaryUv = bary.zx;
-                        // bestHitPosition = rayOrigin + rayDirection *t;
+                        _bestHitIndex = faceId;
+                        _bestHitBaryUv = bary.zx;
+                        _bestHitPosition = rayOrigin + rayDirection *t;
                     }
                 }
             }
-            GroupMemoryBarrierWithGroupSync();
+            //GroupMemoryBarrierWithGroupSync();
         }
         GroupMemoryBarrierWithGroupSync();
 
-        ResultPoints[rayGroupStartIndex + stepIndex] = p;
-        //int closestFaceIndex = BestHitIndices[rayThreadId];
-        float2 bestHitBaryUv = BestHitBaryUV[rayThreadId];
-        int bestHitIndex = BestHitIndices[rayThreadId];
 
-        if(bestHitIndex < 0)
+        _bestHitIndex = BestHitIndices[rayThreadId]; // <----
+        //ResultPoints[rayGroupStartIndex + stepIndex] = p;
+
+        if(_bestHitIndex < 0)
         {
             rayOrigin += rayDirection * Extend;
+            ResultPoints[rayGroupStartIndex + stepIndex].rotation = p.rotation;
             ResultPoints[rayGroupStartIndex + stepIndex].position = rayOrigin;
             ResultPoints[rayGroupStartIndex + stepIndex].w = w;
-            
-            //return;
         }
-        else {
-            //float3 closestSurfacePoint = rayOrigin + rayDirection * BestHitIntDistances[rayThreadId];
-            //rayOrigin= bestHitPosition;
-            rayOrigin = BestHitPositions[rayThreadId];
+        else {            
+            _bestHitPosition = BestHitPositions[rayThreadId];   // <----
+            rayOrigin = _bestHitPosition;
             ResultPoints[rayGroupStartIndex + stepIndex].position = rayOrigin;
             ResultPoints[rayGroupStartIndex + stepIndex].w = w;
 
-            //int v0Index = Indices[bestHitIndex][0];
-            float3 n0 = normalize(Vertices[Indices[bestHitIndex][0]].Normal);
-            float3 n1 = normalize(Vertices[Indices[bestHitIndex][1]].Normal);
-            float3 n2 = normalize(Vertices[Indices[bestHitIndex][2]].Normal);
-            float u = bestHitBaryUv.x;
-            float v = bestHitBaryUv.y;
+            float3 n0 = normalize(Vertices[Indices[_bestHitIndex][0]].Normal);
+            float3 n1 = normalize(Vertices[Indices[_bestHitIndex][1]].Normal);
+            float3 n2 = normalize(Vertices[Indices[_bestHitIndex][2]].Normal);
+
+            _bestHitBaryUv = BestHitBaryUV[rayThreadId]; // <----
+            float u = _bestHitBaryUv.x;
+            float v = _bestHitBaryUv.y;
 
             float3 n = normalize(u*n0 + v*n1 + (1 - u - v)*n2);
+            w *= DecayW;
 
-            rayDirection= reflect( rayDirection, n * 1);
+            //rayDirection= reflect( rayDirection, n * 1);
+            float3 I = rayDirection;
+            //float3 R = I - 2* ( dot(n,I)* n);
 
+            float phi = acos(dot( n,I ));
+            phi += (w- SpreadColorShift) * SpreadColor;
+            float3 R= I - 2*cos(phi) * n;
+            rayDirection = R;
+            //rayDirection= reflect( rayDirection, n);
         }
 
         GroupMemoryBarrierWithGroupSync();
     }
-
-
-
-
-    // if(rayId >= rayCount) 
-    // {
-    //     return;
-    // }
-
-
-
-    // uint vertexCount;
-    // Vertices.GetDimensions(vertexCount, stride);
-
-
-    // uint stepCount = (uint)StepCount; // including separator
-    // uint rayGroupStartIndex= i.x * stepCount;
-
-    // Point p = SourcePoints[i.x];
-
-    // ResultPoints[rayGroupStartIndex + 0] = p;
-    // ResultPoints[rayGroupStartIndex + stepCount -1].w = NaN;
-
-    // float3 orig = p.position;
-    // float3 dir =  rotate_vector( float3(0,0,1), p.rotation);
-    // //float3 dir = 0;
-
-    // int closestFaceIndex;
-    // float3 closestSurfacePoint;
-    // float2 closestBaryzentricUV;
-    // float w = p.w;
-
-    // for(uint stepIndex=1; stepIndex < (stepCount - 1); stepIndex++ )
-    // {
-    //     w *= DecayW;
-
-    //     findClosestPointAndDistance(faceCount, orig, dir, closestFaceIndex, closestSurfacePoint, closestBaryzentricUV);
-
-    //     ResultPoints[rayGroupStartIndex + stepIndex] = p;
-    //     if(closestFaceIndex < 0)
-    //     {
-    //         orig += dir * Extend;
-    //         ResultPoints[rayGroupStartIndex + stepIndex].position = orig;
-    //         ResultPoints[rayGroupStartIndex + stepIndex].w = w;
-    //         return;
-    //         //continue;
-    //     }
-
-    //     orig= closestSurfacePoint;
-
-    //     ResultPoints[rayGroupStartIndex + stepIndex].position = orig;
-    //     ResultPoints[rayGroupStartIndex + stepIndex].w = w;
-
-    //     int v0Index = Indices[closestFaceIndex][0];
-    //     float3 n0 = normalize(Vertices[Indices[closestFaceIndex][0]].Normal);
-    //     float3 n1 = normalize(Vertices[Indices[closestFaceIndex][1]].Normal);
-    //     float3 n2 = normalize(Vertices[Indices[closestFaceIndex][2]].Normal);
-    //     float u = closestBaryzentricUV.x;
-    //     float v = closestBaryzentricUV.y;
-
-    //     float3 n = normalize(u*n0 + v*n1 + (1 - u - v)*n2);
-
-    //     dir= reflect( dir, n * 1);
-    // }
 }
