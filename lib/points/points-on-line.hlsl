@@ -51,7 +51,9 @@ void main(uint3 i : SV_DispatchThreadID)
 
     // FIXME: this rotation is hard to control and feels awkward. 
     // I didn't come up with another method, though
-    float4 rot2 = q_look_at(Direction, float3(0,1,0));
-    ResultPoints[index].rotation = rot2;
+    float4 rotate = rotate_angle_axis(3.141578/2, float3(0,0,1));
+    float4 rot2 = qmul(q_look_at(Direction, float3(1,1,0)), rotate);
+
+    ResultPoints[index].rotation = rotate;
 }
 

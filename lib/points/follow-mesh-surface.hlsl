@@ -226,6 +226,7 @@ void main(uint3 i : SV_DispatchThreadID)
     }
         
     p.rotation = mixedOrientation;
-    ResultPoints[i.x] = p;    
+    ResultPoints[i.x] = p;
+    //ResultPoints[i.x].position += float3(0,0.01,0);
 }
 
