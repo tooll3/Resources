@@ -16,8 +16,11 @@ RWStructuredBuffer<Point> ResultPoints : u0;
 
 
 // Casual Moller-Trumbore GPU Ray-Triangle Intersection Routine
-// Casual Moller-Trumbore GPU Ray-Triangle Intersection Routine
-// float intersect(in float3 orig, in float3 dir, in float3 v0, in float3 v1, in float3 v2, out float2 baryzentricUV)
+// bool intersectMT(
+//     float3 orig, float3 dir,
+//     float3 v0, float3 v1, float3 v2,
+//     out float3 baryzentricUVW,
+//     out float t)
 // {
 //     float3 e1 = v1 -  v0;
 //     float3 e2 = v2 -  v0;
@@ -25,10 +28,10 @@ RWStructuredBuffer<Point> ResultPoints : u0;
 //     float b = dot(normal, dir);
 //     float3 w0 = orig -  v0;
 //     float a = -dot(normal, w0);
-//     float t = a / b;
+//     t = a / b;
 //     float3 p = orig + t * dir;
 //     float uu, vv, uv, wu, wv, inverseD;
-//     baryzentricUV = 0;
+//     //float2 baryzentricUV = 0;
 
 //     uu = dot(e1, e1);
 //     uv = dot(e1, e2);
@@ -40,80 +43,20 @@ RWStructuredBuffer<Point> ResultPoints : u0;
 //     inverseD = 1.0f / inverseD;
 //     float u = (uv * wv -  vv * wu) * inverseD;
 
-//     if (u < 0.0f || u > 1.0f)
-//         return -1.0f;
+//     if (u < 0.0f || u > 1.0f) 
+//         //return -1.0f;
+//         return false;
 
 //     float v = (uv * wu -  uu * wv) * inverseD;
 //     if (v < 0.0f || (u + v) > 1.0f)
-//         return -1.0f;
+//         return false;
+//         //return -1.0f;
 
-//     baryzentricUV = float2(u,v);
-//         return t;
+//     baryzentricUVW = float3(u,v, 1-u-v).xzz;
+//     return true;
 // }
 
 static const float kEpsilon = 0.0001;
-
-// from https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/barycentric-coordinates
-// float intersect(
-//     float3 orig, float3 dir,
-//     float3 v0, float3 v1, float3 v2,
-//     out float2 bary)
-// {
-//     float u,v;
-//     //dir= normalize(dir);
-
-//     // compute plane's normal
-//     float3 v0v1 = v1 - v0;
-//     float3 v0v2 = v2 - v0;
-//     // no need to normalize
-//     float3 N = normalize(cross(v0v1, v0v2)); // N
-//     float denom = dot(N,N);
-
-//     // Step 1: finding P
-
-//     // check if ray and plane are parallel ?
-//     float NdotRayDirection = dot(N, dir);
-//     if (abs(NdotRayDirection) < kEpsilon) // almost 0
-//         return -1; // they are parallel so they don't intersect !
-
-//     // compute d parameter using equation 2
-//     float d = dot(N, v0);
-
-//     // compute t (equation 3)
-//     float t = (dot(N,orig) + d) / NdotRayDirection;
-//     // check if the triangle is in behind the ray
-//     if (t < 0) return -1; // the triangle is behind
-
-//     // compute the intersection point using equation 1
-//     float3 P = orig + t * dir;
-
-//     // Step 2: inside-outside test
-//     float3 C; // vector perpendicular to triangle's plane
-
-//     // edge 0
-//     float3 edge0 = v1 - v0;
-//     float3 vp0 = P - v0;
-//     C = cross(edge0, vp0);
-//     if (dot(N, C) < 0) return -1; // P is on the right side
-
-//     // edge 1
-//     float3 edge1 = v2 - v1;
-//     float3 vp1 = P - v1;
-//     C = cross(edge1, vp1);
-//     if ((u = dot(N, C)) < 0)  return -1; // P is on the right side
-
-//     // edge 2
-//     float3 edge2 = v0 - v2;
-//     float3 vp2 = P - v2;
-//     C = cross(edge2, vp2);
-//     if ((v = dot(N, C)) < 0) return -1; // P is on the right side;
-
-//     u /= denom;
-//     v /= denom;
-//     bary = float2(u,v);
-
-//     return t; // this ray hits the triangle
-// }
 
 // From https://graphicscodex.courses.nvidia.com/app.html?page=_rn_rayCst#section4.2
 bool intersect(
@@ -123,142 +66,262 @@ bool intersect(
     out float t)
 {
     // Edge vectors
-        float3 e_1 = v1 - v0;
-        float3 e_2 = v2 - v0;
+    float3 e_1 = v1 - v0;
+    float3 e_2 = v2 - v0;
 
-        // Face normal
-        float3 n = normalize(cross(e_1, e_2));
+    // Face normal
+    float3 n = normalize(cross(e_1, e_2));
 
-        float3 q = cross(dir, e_2);
-        float a = dot(e_1, q);
+    float3 q = cross(dir, e_2);
+    float a = dot(e_1, q);
 
-        // Backfacing / nearly parallel, or close to the limit of precision?
-        if ((dot(n, dir) >= 0) || (abs(a) <= kEpsilon)) return false;
+    // Backfacing / nearly parallel, or close to the limit of precision?
+    if ((dot(n, dir) >= 0) || (abs(a) <= kEpsilon)) return false;
 
-        float3 s = (orig - v0) / a;
-        float3 r = cross(s, e_1);
+    float3 s = (orig - v0) / a;
+    float3 r = cross(s, e_1);
 
-        b[0] = dot(s, q);
-        b[1] = dot(r, dir);
-        b[2] = 1.0f - b[0] - b[1];
+    b[0] = dot(s, q);
+    b[1] = dot(r, dir);
+    b[2] = 1.0f - b[0] - b[1];
 
-        t = dot(e_2,r);
+    t = dot(e_2,r);
 
-        // Intersected inside triangle?
-        return ((b[0] >= 0) && (b[1] >= 0) && (b[2] >= 0) && (t >= 0));
+    // Intersected inside triangle?
+    return ((b[0] >= 0) && (b[1] >= 0) && (b[2] >= 0) && (t >= 0));
 }
 
 
-void findClosestPointAndDistance(
-    in uint faceCount,
-    in float3 orig,
-    in float3 dir,
-    out uint closestFaceIndex,
-    out float3 closestSurfacePoint,
-    out float2 closestBaryzentricUV)
-{
-    closestFaceIndex = -1;
-    float closestDistance = 99999;
+// void findClosestPointAndDistance(
+//     in uint faceCount,
+//     in float3 orig,
+//     in float3 dir,
+//     out uint closestFaceIndex,
+//     out float3 closestSurfacePoint,
+//     out float2 closestBaryzentricUV)
+// {
+//     closestFaceIndex = -1;
+//     float closestDistance = 99999;
 
-    for(uint faceIndex = 0; faceIndex < faceCount; faceIndex++)
-    {
-        int3 f = Indices[faceIndex];
-        float3 bary;
-        float t;
+//     for(uint faceIndex = 0; faceIndex < faceCount; faceIndex++)
+//     {
+//         int3 f = Indices[faceIndex];
+//         float3 bary;
+//         float t;
 
-        if(!intersect(
-            orig,
-            dir,
-            Vertices[f[0]].Position,
-            Vertices[f[1]].Position,
-            Vertices[f[2]].Position,
-            bary,
-            t
-        )) {
-            continue;
-        }
+//         if(!intersect(
+//             orig,
+//             dir,
+//             Vertices[f[0]].Position,
+//             Vertices[f[1]].Position,
+//             Vertices[f[2]].Position,
+//             bary,
+//             t
+//         )) {
+//             continue;
+//         }
 
-        if( t < closestDistance)
-        {
-            closestDistance = t;
-            closestFaceIndex = faceIndex;
-            closestSurfacePoint = orig + dir * t;
-            closestBaryzentricUV = bary.zx;
-        }
+//         if( t < closestDistance)
+//         {
+//             closestDistance = t;
+//             closestFaceIndex = faceIndex;
+//             closestSurfacePoint = orig + dir * t;
+//             closestBaryzentricUV = bary.zx;
+//         }
+//     }
+// }
 
-        //float distance2 = length(pointOnFace - pos);
-    }
-}
+static const int RAY_THREAD_COUNT = 8;
+static const int FACE_THREAD_COUNT = 512/RAY_THREAD_COUNT;
 
 static const float NaN = sqrt(-1);
 
-[numthreads(64,1,1)]
-void main(uint3 i : SV_DispatchThreadID)
+groupshared int BestHitIntDistances[RAY_THREAD_COUNT];
+groupshared int BestHitIndices[RAY_THREAD_COUNT];
+groupshared float3 BestHitPositions[RAY_THREAD_COUNT];
+groupshared float2 BestHitBaryUV[RAY_THREAD_COUNT];
+
+
+
+[numthreads(RAY_THREAD_COUNT,FACE_THREAD_COUNT,1)]
+void main(uint3 i : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID)
 {
-    uint sourcePointCount, stride;
-    SourcePoints.GetDimensions(sourcePointCount, stride);
-
-    if(sourcePointCount == 0) {
-
-    }
-    else if(i.x >= sourcePointCount) {
-        return;
-    }
-
-    uint vertexCount;
-    Vertices.GetDimensions(vertexCount, stride);
+    uint rayCount, stride;
+    SourcePoints.GetDimensions(rayCount, stride);
 
     uint faceCount;
     Indices.GetDimensions(faceCount, stride);
 
-    uint stepCount = (uint)StepCount; // including separator
+    uint rayId = i.x;
+    uint rayThreadId = GTid.x;
+    uint faceThreadId = i.y;
 
+    uint stepCount = (uint)StepCount; // including separator
     uint rayGroupStartIndex= i.x * stepCount;
 
     Point p = SourcePoints[i.x];
 
+    // Write ray start and seperator
     ResultPoints[rayGroupStartIndex + 0] = p;
     ResultPoints[rayGroupStartIndex + stepCount -1].w = NaN;
 
-    float3 orig = p.position;
-    float3 dir =  rotate_vector( float3(0,0,1), p.rotation);
-    //float3 dir = 0;
-
-    int closestFaceIndex;
-    float3 closestSurfacePoint;
-    float2 closestBaryzentricUV;
+    float3 rayOrigin = p.position;
+    float3 rayDirection = rotate_vector( float3(0,0,1), p.rotation);
     float w = p.w;
 
     for(uint stepIndex=1; stepIndex < (stepCount - 1); stepIndex++ )
     {
-        w *= DecayW;
+        // int bestHitIndex = -1;
+        // float3 bestHitPosition = rayOrigin + rayDirection * Extend;
+        // float2 bestHitBaryUv = 0;
 
-        findClosestPointAndDistance(faceCount, orig, dir, closestFaceIndex, closestSurfacePoint, closestBaryzentricUV);
+        if(faceThreadId == 0) 
+        {
+            if(rayId < rayCount) 
+            {
+                BestHitIntDistances[rayThreadId] = 99999999;        
+                BestHitIndices[rayThreadId] = -1;
+                BestHitPositions[rayThreadId] = rayOrigin + rayDirection * Extend;
+                // bestHitBaryUv[rayThreadId] = 0;
+
+            }
+        }
+        GroupMemoryBarrierWithGroupSync();
+
+        int faceGroupCount = faceCount/FACE_THREAD_COUNT;
+        for(uint faceGroupStartIndex = 0 ; faceGroupStartIndex < faceCount ; faceGroupStartIndex += FACE_THREAD_COUNT ) 
+        {
+            uint faceId = faceThreadId + faceGroupStartIndex;
+            if(faceId < faceCount) 
+            {
+                int3 f = Indices[faceId];
+                float3 bary;
+                float t;
+
+                if(intersect(
+                    rayOrigin,
+                    rayDirection,
+                    Vertices[f[0]].Position,
+                    Vertices[f[1]].Position,
+                    Vertices[f[2]].Position,
+                    bary,
+                    t
+                )) {
+                    float org;
+                    int intt = t * 1000;
+                    InterlockedMin(BestHitIntDistances[rayThreadId], intt, org);
+                    if(org > intt) {
+                        BestHitIndices[rayThreadId] = faceId;
+                        BestHitBaryUV[rayThreadId] = bary.zx;
+                        BestHitPositions[rayThreadId] = rayOrigin + rayDirection *t;
+
+                        // bestHitIndex = faceId;
+                        // bestHitBaryUv = bary.zx;
+                        // bestHitPosition = rayOrigin + rayDirection *t;
+                    }
+                }
+            }
+            GroupMemoryBarrierWithGroupSync();
+        }
+        GroupMemoryBarrierWithGroupSync();
 
         ResultPoints[rayGroupStartIndex + stepIndex] = p;
-        if(closestFaceIndex < 0)
+        //int closestFaceIndex = BestHitIndices[rayThreadId];
+        float2 bestHitBaryUv = BestHitBaryUV[rayThreadId];
+        int bestHitIndex = BestHitIndices[rayThreadId];
+
+        if(bestHitIndex < 0)
         {
-            orig += dir * Extend;
-            ResultPoints[rayGroupStartIndex + stepIndex].position = orig;
+            rayOrigin += rayDirection * Extend;
+            ResultPoints[rayGroupStartIndex + stepIndex].position = rayOrigin;
             ResultPoints[rayGroupStartIndex + stepIndex].w = w;
-            return;
-            //continue;
+            
+            //return;
+        }
+        else {
+            //float3 closestSurfacePoint = rayOrigin + rayDirection * BestHitIntDistances[rayThreadId];
+            //rayOrigin= bestHitPosition;
+            rayOrigin = BestHitPositions[rayThreadId];
+            ResultPoints[rayGroupStartIndex + stepIndex].position = rayOrigin;
+            ResultPoints[rayGroupStartIndex + stepIndex].w = w;
+
+            //int v0Index = Indices[bestHitIndex][0];
+            float3 n0 = normalize(Vertices[Indices[bestHitIndex][0]].Normal);
+            float3 n1 = normalize(Vertices[Indices[bestHitIndex][1]].Normal);
+            float3 n2 = normalize(Vertices[Indices[bestHitIndex][2]].Normal);
+            float u = bestHitBaryUv.x;
+            float v = bestHitBaryUv.y;
+
+            float3 n = normalize(u*n0 + v*n1 + (1 - u - v)*n2);
+
+            rayDirection= reflect( rayDirection, n * 1);
+
         }
 
-        orig= closestSurfacePoint;
-
-        ResultPoints[rayGroupStartIndex + stepIndex].position = orig;
-        ResultPoints[rayGroupStartIndex + stepIndex].w = w;
-
-        int v0Index = Indices[closestFaceIndex][0];
-        float3 n0 = normalize(Vertices[Indices[closestFaceIndex][0]].Normal);
-        float3 n1 = normalize(Vertices[Indices[closestFaceIndex][1]].Normal);
-        float3 n2 = normalize(Vertices[Indices[closestFaceIndex][2]].Normal);
-        float u = closestBaryzentricUV.x;
-        float v = closestBaryzentricUV.y;
-
-        float3 n = normalize(u*n0 + v*n1 + (1 - u - v)*n2);
-
-        dir= reflect( dir, n * 1);
+        GroupMemoryBarrierWithGroupSync();
     }
+
+
+
+
+    // if(rayId >= rayCount) 
+    // {
+    //     return;
+    // }
+
+
+
+    // uint vertexCount;
+    // Vertices.GetDimensions(vertexCount, stride);
+
+
+    // uint stepCount = (uint)StepCount; // including separator
+    // uint rayGroupStartIndex= i.x * stepCount;
+
+    // Point p = SourcePoints[i.x];
+
+    // ResultPoints[rayGroupStartIndex + 0] = p;
+    // ResultPoints[rayGroupStartIndex + stepCount -1].w = NaN;
+
+    // float3 orig = p.position;
+    // float3 dir =  rotate_vector( float3(0,0,1), p.rotation);
+    // //float3 dir = 0;
+
+    // int closestFaceIndex;
+    // float3 closestSurfacePoint;
+    // float2 closestBaryzentricUV;
+    // float w = p.w;
+
+    // for(uint stepIndex=1; stepIndex < (stepCount - 1); stepIndex++ )
+    // {
+    //     w *= DecayW;
+
+    //     findClosestPointAndDistance(faceCount, orig, dir, closestFaceIndex, closestSurfacePoint, closestBaryzentricUV);
+
+    //     ResultPoints[rayGroupStartIndex + stepIndex] = p;
+    //     if(closestFaceIndex < 0)
+    //     {
+    //         orig += dir * Extend;
+    //         ResultPoints[rayGroupStartIndex + stepIndex].position = orig;
+    //         ResultPoints[rayGroupStartIndex + stepIndex].w = w;
+    //         return;
+    //         //continue;
+    //     }
+
+    //     orig= closestSurfacePoint;
+
+    //     ResultPoints[rayGroupStartIndex + stepIndex].position = orig;
+    //     ResultPoints[rayGroupStartIndex + stepIndex].w = w;
+
+    //     int v0Index = Indices[closestFaceIndex][0];
+    //     float3 n0 = normalize(Vertices[Indices[closestFaceIndex][0]].Normal);
+    //     float3 n1 = normalize(Vertices[Indices[closestFaceIndex][1]].Normal);
+    //     float3 n2 = normalize(Vertices[Indices[closestFaceIndex][2]].Normal);
+    //     float u = closestBaryzentricUV.x;
+    //     float v = closestBaryzentricUV.y;
+
+    //     float3 n = normalize(u*n0 + v*n1 + (1 - u - v)*n2);
+
+    //     dir= reflect( dir, n * 1);
+    // }
 }
