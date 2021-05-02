@@ -104,7 +104,7 @@ psInput vsMain(uint id: SV_VertexID)
 float4 psMain(psInput pin) : SV_TARGET
 {
     // Sample input textures to get shading model params.
-    float3 albedo = BaseColorMap.Sample(texSampler, pin.texCoord).rgb;
+    float4 albedo = BaseColorMap.Sample(texSampler, pin.texCoord);
     float4 roughnessSpecularMetallic = RSMOMap.Sample(texSampler, pin.texCoord);
     float metalness = roughnessSpecularMetallic.z + Metal;
     float normalStrength = roughnessSpecularMetallic.y;
@@ -162,7 +162,7 @@ float4 psMain(psInput pin) : SV_TARGET
         // Lambert diffuse BRDF.
         // We don't scale by 1/PI for lighting & material units to be more convenient.
         // See: https://seblagarde.wordpress.com/2012/01/08/pi-or-not-to-pi-in-game-lighting-equation/
-        float3 diffuseBRDF = kd * albedo ;
+        float3 diffuseBRDF = kd * albedo.rgb ;
 
         // Cook-Torrance specular microfacet BRDF.
         float3 specularBRDF = ((F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo)) * Specular;
@@ -209,5 +209,7 @@ float4 psMain(psInput pin) : SV_TARGET
 
     float4 litColor= float4(directLighting + ambientLighting, 1.0) * BaseColor * Color;
     litColor.rgb = lerp(litColor.rgb, FogColor.rgb, pin.fog);
-    return litColor + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
+    litColor += float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
+    litColor.a *= albedo.a;
+    return litColor;
 }

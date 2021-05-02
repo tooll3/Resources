@@ -23,10 +23,16 @@ cbuffer Params : register(b1)
     float Frequency;
     float Phase;
     float Variation;
+
     float3 AmountDistribution;
     float RotationLookupDistance;
+
     float UseWAsWeight;
     float Space;
+    float Direction;
+    float OffsetDirection;
+
+    float UseVertexSelection;
 
 }
 
@@ -36,7 +42,8 @@ RWStructuredBuffer<PbrVertex> ResultVertices : u0;
 float3 GetNoise(float3 pos, float3 variation) 
 {
     float3 noiseLookup = (pos * 0.91 + variation + Phase ) * Frequency;
-    return snoiseVec3(noiseLookup) * Amount/100 * AmountDistribution ;
+    float3 noise = snoiseVec3(noiseLookup);
+    return (noise + OffsetDirection) * Amount/100 * AmountDistribution ;
 }
 
 static float3 variationOffset;
@@ -68,6 +75,18 @@ void main(uint3 i : SV_DispatchThreadID)
     }
 
     offset = GetNoise(posInWorld, variationOffset) * weight;
+    //offset += offset * Amount/100 * 2;
+
+    if(Direction > 0.5)
+    {
+        float3x3 TBN = float3x3(v.Tangent, v.Bitangent, v.Normal);
+        TBN = mul(TBN, (float3x3)ObjectToWorld);
+        offset = mul(offset,TBN);
+    }
+
+    float selection = UseVertexSelection > 0.5 ? v.Selected : 1;
+    offset *= selection;
+
     float3 newPos = posInWorld + offset;
 
     float3 tAnchor = posInWorld + v.Tangent * RotationLookupDistance;
