@@ -170,13 +170,10 @@ float4 q_from_tangentAndNormal(float3 dx, float3 dz)
 [numthreads(64,1,1)]
 void main(uint3 i : SV_DispatchThreadID)
 {
-    uint sourcePointCount, pointStride;
-    SourcePoints.GetDimensions(sourcePointCount, pointStride);
+    uint pointCount, pointStride;
+    ResultPoints.GetDimensions(pointCount, pointStride);
 
-    if(sourcePointCount == 0) {
-
-    }
-    else if(i.x >= sourcePointCount) {
+    if(i.x >= pointCount) {
         //esultPoints[i.x].w = sqrt(-1);
         return;
     }
@@ -213,19 +210,21 @@ void main(uint3 i : SV_DispatchThreadID)
     float clampedSpeed = min(requiredSpeed, usedSpeed );
     float speedFactor = clampedSpeed / requiredSpeed;
     movement *= speedFactor;
-
-    p.position += movement;
-    float4 orientation = q_from_tangentAndNormal(movement, distanceFromSurface);
-    float4 mixedOrientation = q_slerp(orientation, p.rotation, 0.96);
-
-    float usedSpin = Spin + RandomSpin * signedPointHash;
-    if(abs(usedSpin) > 0.001) 
+    if(!isnan(movement.x) ) 
     {
-        float randomAngle = signedPointHash  * usedSpin;
-        mixedOrientation = normalize(qmul( mixedOrientation, rotate_angle_axis(randomAngle, distanceFromSurface )));
+        p.position += movement;
+        float4 orientation = q_from_tangentAndNormal(movement, distanceFromSurface);
+        float4 mixedOrientation = q_slerp(orientation, p.rotation, 0.96);
+
+        float usedSpin = Spin + RandomSpin * signedPointHash;
+        if(abs(usedSpin) > 0.001) 
+        {
+            float randomAngle = signedPointHash  * usedSpin;
+            mixedOrientation = normalize(qmul( mixedOrientation, rotate_angle_axis(randomAngle, distanceFromSurface )));
+        }
+            
+        p.rotation = mixedOrientation;
     }
-        
-    p.rotation = mixedOrientation;
     ResultPoints[i.x] = p;
     //ResultPoints[i.x].position += float3(0,0.01,0);
 }

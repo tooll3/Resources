@@ -69,6 +69,8 @@ float3 hash31(float p)
 }
 
 
+
+
 //----------------------------------------------------------------------------------------
 ///  3 out, 2 in...
 float3 hash32(float2 p)
@@ -85,8 +87,22 @@ float3 hash33(float3 p3)
 	p3 = frac(p3 * float3(.1031, .1030, .0973));
     p3 += dot(p3, p3.yxz+33.33);
     return frac((p3.xxy + p3.yxx)*p3.zyx);
-
 }
+
+
+// 2017 Inigo Quilez
+// https://www.shadertoy.com/view/XlXcW4
+float3 hash33u( uint3 x )
+{
+    const uint k = 1103515245U;  // GLIB C
+    x = ((x>>8U)^x.yzx)*k;
+    x = ((x>>8U)^x.yzx)*k;
+    x = ((x>>8U)^x.yzx)*k;
+    
+    return float3(x)*(1.0/float(0xffffffffU));
+}
+
+
 
 //----------------------------------------------------------------------------------------
 // 4 out, 1 in...

@@ -1,14 +1,5 @@
-//-------------------------------------------------------------------
-// BUILD GRID
 #include "point.hlsl"
 #include "hash-functions.hlsl"
-//#include "lib/cs/spatial-grid-functions.hlsl"
-
-// layout(std430) buffer   DispatchCommandBuffer { DispatchCommand dispatchCommandBuffer[]; };
-// layout(std430) buffer   AliveIndexBuffer      { uint            aliveIndexBuffer[];      };
-// layout(std430) buffer   AliveIndexCountBuffer { uint            aliveIndexCountBuffer[]; };
-// layout(std430) buffer   PositionBuffer        { vec4            positionBuffer[];        };
-
 
 StructuredBuffer<uint> particleGridBuffer :register(t0);
 StructuredBuffer<uint> particleGridCellBuffer :register(t1);
@@ -18,51 +9,22 @@ StructuredBuffer<uint> particleGridIndexBuffer :register(t4);
 
 RWStructuredBuffer<Point> points :register(u0);
 
-//uniform uint GroupSize;
 
 #define THREADS_PER_GROUP 512
-
-//StructuredBuffer<uint> particleGridHashBuffer :register(t0);
-//StructuredBuffer<uint> particleGridCountBuffer :register(t1);
 
 cbuffer Params : register(b0)
 {
     float Threshold;
     float Dispersion;
+    float ParticleGridCellSize;
+    float ClampAccelleration;
 }
 
-//-------------------------------------------------------------------------
-static const uint            ParticleGridEntryCount = 10;
+static const uint            ParticleGridEntryCount = 32;
 static const uint            ParticleGridCellCount = 10000;
-static const float           ParticleGridCellSize = 0.1f;
+//static const float           ParticleGridCellSize = 0.1f;
 
 
-// bool ParticleGridInsert(in uint index, in float3 position)
-// {
-//     uint i;
-//     int3 cell = int3(position / ParticleGridCellSize);
-//     uint cellIndex = (pcg(cell.x + pcg(cell.y + pcg(cell.z))) % ParticleGridCellCount);
-//     uint hashValue = max(xxhash(cell.x + xxhash(cell.y + xxhash(cell.z))), 1);
-//     uint cellBegin = cellIndex * ParticleGridEntryCount;
-//     uint cellEnd = cellBegin + ParticleGridEntryCount;
-//     for(i = cellBegin; i < cellEnd; ++i)
-//     {
-//         uint entryValue;
-//         InterlockedCompareExchange(particleGridHashBuffer[i], 0, hashValue, entryValue);
-//         if(entryValue == 0 || entryValue == hashValue)
-//             break;  // found an available entry
-//     }
-//     if(i >= cellEnd)
-//         return false;   // out of memory
-
-//     //const uint particleOffset = atomicAdd(particleGridCountBuffer[i], 1);
-
-//     uint particleOffset;        
-//     InterlockedAdd(particleGridCountBuffer[i], 1, particleOffset);
-
-//     particleGridCellBuffer[index] = uint2(i, particleOffset);
-//     return true;
-// }
 
 bool ParticleGridFind(in float3 position, out uint startIndex, out uint endIndex)
 {
@@ -89,44 +51,19 @@ bool ParticleGridFind(in float3 position, out uint startIndex, out uint endIndex
 
 
 
-//----------------------------------------------------------------------
-
-// [numthreads( THREADS_PER_GROUP, 1, 1 )]
-// void ClearParticleGrid(uint DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
-// {
-//     particleGridHashBuffer[GI.x] = 0;
-//     particleGridCountBuffer[GI.x] = 0;
-// }
-
-
-// [numthreads( THREADS_PER_GROUP, 1, 1 )]
-// void CountParticlesPerCell(uint DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
-// {
-//     uint pointCount, stride;
-//     points.GetDimensions(pointCount, stride);
-    
-//     //if(GI >= pointCount)
-//     if(false)
-//         return; // out of bounds
-
-//     //const uint particleIndex = aliveIndexBuffer[GI.x];
-//     const float3 position = points[GI.x].position;
-
-//     if(!ParticleGridInsert(GI.x, position))
-//         particleGridCellBuffer[GI.x] = uint2(uint(-1), 0);
-// }
-
 [numthreads( THREADS_PER_GROUP, 1, 1 )]
-void DispersePoints(uint DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
+void DispersePoints(uint3 DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
 {
     uint pointCount, stride;
     points.GetDimensions(pointCount, stride);
         
-    if(GI.x >= pointCount)
+    if(DTid.x >= pointCount)
         return; // out of bounds
 
 
-    float3 position = points[GI].position;
+    float3 position = points[DTid.x].position;
+    float3 jitter = (hash33u( uint3(DTid.x, DTid.x + 134775813U, DTid.x + 1664525U) + position * 1000 ) -0.5f)  * ParticleGridCellSize * 1;
+    position+= jitter;
 
     uint startIndex, endIndex;
     if(ParticleGridFind(position, startIndex, endIndex)) 
@@ -135,16 +72,29 @@ void DispersePoints(uint DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
         int count =0;
         float3 sumPosition = 0;
 
+        endIndex = max(startIndex + 32 , endIndex);
+
         for(uint i=startIndex; i < endIndex; ++i) 
         {
-            if( i == GI)
+            uint pointIndex = particleGridBuffer[i];
+            if( pointIndex == DTid.x)
                 continue;
 
-            float3 otherPos = points[i].position;
-            float3 direction = otherPos - position;
+            float3 otherPos = points[pointIndex].position;
+            float3 direction = position - otherPos;
             float distance = length(direction);
-            if(distance < Threshold)
+            if(distance <= 0.0001) {
+                distance = 0.001;
+            }
+
+            if(distance > Threshold)
                 continue;
+            
+            float fallOff = max(pow(1/ (distance/Threshold), 1), 0.0001);
+            direction *= fallOff;
+            float l = length(direction);
+            direction /=l;
+            direction *= min(l, ClampAccelleration);
 
             sumPosition += direction;
             count++;
@@ -153,7 +103,7 @@ void DispersePoints(uint DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
         if(count > 0) {
 
             sumPosition /= count;
-            points[GI].position += sumPosition * Dispersion;
+            points[DTid.x].position += sumPosition * Dispersion;
         }
     }
 }
