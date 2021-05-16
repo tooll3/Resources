@@ -231,5 +231,5 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     if(hashForCelHighlight < HighlightProbability) {
         color = Highlight;
     }
-    return color;
+    return clamp(color,0,float4(100,100,100,1));
 }

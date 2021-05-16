@@ -1,4 +1,7 @@
 
+// #ifndef HASH_H
+// #define HASH_H
+
 //----------------------------------------------------------------------------------------
 //  1 out, 1 in...
 float hash11(float p)
@@ -122,3 +125,33 @@ float4 hash44(float4 p4)
     p4 += dot(p4, p4.wzxy+33.33);
     return frac((p4.xxyz+p4.yzzw)*p4.zywx);
 }
+
+
+
+
+
+uint pcg(in uint v)
+{
+    const uint state = v * 747796405u + 2891336453u;
+    const uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+
+    return (word >> 22u) ^ word;
+}
+
+uint xxhash(in uint p)
+{
+    const uint PRIME32_2 = 2246822519U, PRIME32_3 = 3266489917U;
+    const uint PRIME32_4 = 668265263U,  PRIME32_5 = 374761393U;
+
+    uint h32 = p + PRIME32_5;
+    h32 = PRIME32_4 * ((h32 << 17) | (h32 >> (32 - 17)));
+    h32 = PRIME32_2 * (h32 ^ (h32 >> 15));
+    h32 = PRIME32_3 * (h32 ^ (h32 >> 13));
+
+    return h32 ^ (h32 >> 16);
+}
+
+
+
+
+// #endif
