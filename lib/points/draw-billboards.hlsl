@@ -26,7 +26,7 @@ cbuffer Transforms : register(b0)
 };
 
 
-cbuffer Params : register(b2)
+cbuffer Params : register(b1)
 {
     float4 Color;
 
@@ -41,12 +41,22 @@ cbuffer Params : register(b2)
 
 };
 
+cbuffer FogParams : register(b2)
+{
+    float4 FogColor;
+    float FogDistance;
+    float FogBias;   
+}
+
 struct psInput
 {
     float4 position : SV_POSITION;
     float4 color : COLOR;
     float2 texCoord : TEXCOORD;
+    float fog : FOG;
 };
+
+
 
 sampler texSampler : register(s0);
 
@@ -113,6 +123,16 @@ psInput vsMain(uint id: SV_VertexID)
     // output.texCoord = cornerFactors.xy /2 +0.5;
     float4 colorFromPoint = ((int)UsePointOrientation == 2) ? p.rotation : 1;
     output.color = Color * ColorOverW.SampleLevel(texSampler, float2(p.w * WMappingScale,0), 0) * colorFromPoint;    
+
+    // Fog
+    // if(FogDistance > 0) 
+    // {
+    //     float4 posInCamera = mul(posInObject, ObjectToCamera);
+    //     float fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
+    //     output.fog = fog;
+    // }
+
+    output.fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
     return output;    
 }
 
@@ -120,6 +140,6 @@ float4 psMain(psInput input) : SV_TARGET
 {
     float4 imgColor = SpriteTexture.Sample(texSampler, input.texCoord);
     float4 color = input.color * imgColor;
-
-    return clamp(float4(color.rgb, color.a), 0, float4(1,100,100,100));
+    color.rgb = lerp(color.rgb, FogColor.rgb, input.fog);
+    return clamp(color, 0, float4(100,100,100,1));
 }
