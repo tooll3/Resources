@@ -64,6 +64,7 @@ Texture2D<float4> EmissiveColorMap : register(t3);
 Texture2D<float4> RSMOMap : register(t4);
 Texture2D<float4> NormalMap : register(t5);
 
+TextureCube<float4> PrefilteredSpecular: register(t6);
 
 psInput vsMain(uint id: SV_VertexID)
 {
