@@ -205,5 +205,6 @@ float4 psMain(in gsOutput i) : SV_TARGET0
     //return float4( abs(i.normal.rgb),1);
     //return float4(0,1,0,1);
     float2 uv = ComputeUvFromNormal(i.normal);//     + float2(Orientation, 0);
-    return Image.Sample(texSampler,uv);
+    float4 col = Image.Sample(texSampler,uv);
+    return col;
 }

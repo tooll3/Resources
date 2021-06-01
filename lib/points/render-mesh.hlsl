@@ -101,6 +101,8 @@ psInput vsMain(uint id: SV_VertexID)
     return output;
 }
 
+//
+// based on https://github.com/Nadrin/PBR/blob/master/data/shaders/hlsl/pbr.hlsl
 
 float4 psMain(psInput pin) : SV_TARGET
 {
@@ -174,36 +176,41 @@ float4 psMain(psInput pin) : SV_TARGET
 
     // Ambient lighting (IBL).
     float3 ambientLighting = 0;
-    // {
-    //     // Sample diffuse irradiance at normal direction.
-    //     float3 irradiance = 0;// irradianceTexture.Sample(texSampler, N).rgb;
+    {
+        // Sample diffuse irradiance at normal direction.
+        float3 irradiance = 0;// irradianceTexture.Sample(texSampler, N).rgb;
 
-    //     // Calculate Fresnel term for ambient lighting.
-    //     // Since we use pre-filtered cubemap(s) and irradiance is coming from many directions
-    //     // use cosLo instead of angle with light's half-vector (cosLh above).
-    //     // See: https://seblagarde.wordpress.com/2011/08/17/hello-world/
-    //     float3 F = fresnelSchlick(F0, cosLo);
+        // Calculate Fresnel term for ambient lighting.
+        // Since we use pre-filtered cubemap(s) and irradiance is coming from many directions
+        // use cosLo instead of angle with light's half-vector (cosLh above).
+        // See: https://seblagarde.wordpress.com/2011/08/17/hello-world/
+        float3 F = fresnelSchlick(F0, cosLo);
 
-    //     // Get diffuse contribution factor (as with direct lighting).
-    //     float3 kd = lerp(1.0 - F, 0.0, metalness);
+        // Get diffuse contribution factor (as with direct lighting).
+        float3 kd = lerp(1.0 - F, 0.0, metalness);
 
-    //     // Irradiance map contains exitant radiance assuming Lambertian BRDF, no need to scale by 1/PI here either.
-    //     float3 diffuseIBL = kd * albedo * irradiance;
+        // Irradiance map contains exitant radiance assuming Lambertian BRDF, no need to scale by 1/PI here either.
+        float3 diffuseIBL = kd * albedo.rgb * irradiance;
 
-    //     // Sample pre-filtered specular reflection environment at correct mipmap level.
-    //     //uint specularTextureLevels = querySpecularTextureLevels(BaseColorMap);
-    //     //float3 specularIrradiance = BaseColorMap.SampleLevel(texSampler, Lr.xy, roughness * specularTextureLevels).rgb;
-    //     float3 specularIrradiance = 0;
+        // Sample pre-filtered specular reflection environment at correct mipmap level.
+        //uint specularTextureLevels = querySpecularTextureLevels(BaseColorMap);
+        uint width, height, levels;
+        PrefilteredSpecular.GetDimensions(0, width, height, levels);
 
-    //     // Split-sum approximation factors for Cook-Torrance specular BRDF.
-    //     float2 specularBRDF = 0.4; //specularBRDF_LUT.Sample(spBRDF_Sampler, float2(cosLo, roughness)).rg;
+        float3 specularIrradiance = PrefilteredSpecular.SampleLevel(texSampler, Lr.xyz, roughness * levels).rgb;
+        //float3 specularIrradiance = 0;
 
-    //     // Total specular IBL contribution.
-    //     float3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
+        //return float4(specularIrradiance * 1, 1);
 
-    //     // Total ambient lighting contribution.
-    //     ambientLighting = diffuseIBL + specularIBL;
-    // }
+        // Split-sum approximation factors for Cook-Torrance specular BRDF.
+        float2 specularBRDF = 0.4; //specularBRDF_LUT.Sample(spBRDF_Sampler, float2(cosLo, roughness)).rg;
+
+        // Total specular IBL contribution.
+        float3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
+
+        // Total ambient lighting contribution.
+        ambientLighting = diffuseIBL + specularIBL;
+    }
 
     // Final fragment color.
 
