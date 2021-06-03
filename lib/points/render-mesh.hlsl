@@ -65,6 +65,7 @@ Texture2D<float4> RSMOMap : register(t4);
 Texture2D<float4> NormalMap : register(t5);
 
 TextureCube<float4> PrefilteredSpecular: register(t6);
+Texture2D<float4> BRDFLookup : register(t7);
 
 psInput vsMain(uint id: SV_VertexID)
 {
@@ -203,7 +204,8 @@ float4 psMain(psInput pin) : SV_TARGET
         //return float4(specularIrradiance * 1, 1);
 
         // Split-sum approximation factors for Cook-Torrance specular BRDF.
-        float2 specularBRDF = 0.4; //specularBRDF_LUT.Sample(spBRDF_Sampler, float2(cosLo, roughness)).rg;
+        float2 specularBRDF = BRDFLookup.Sample(texSampler, float2(cosLo, roughness)).rg;
+        //return float4(cosLo, roughness,0,1);
 
         // Total specular IBL contribution.
         float3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
