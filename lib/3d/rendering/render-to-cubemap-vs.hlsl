@@ -7,7 +7,7 @@ float4x4 textureMatrix;
 TextureCube CubeMap : register(t0);;
 //Texture2D txDiffuse;
 
-Texture2D Image : register(t0);
+//Texture2D Image : register(t0);
 sampler texSampler : register(s0);
 
 float g_CubeSize = 256;
