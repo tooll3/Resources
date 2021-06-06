@@ -179,7 +179,10 @@ float4 psMain(psInput pin) : SV_TARGET
     float3 ambientLighting = 0;
     {
         // Sample diffuse irradiance at normal direction.
-        float3 irradiance = 0;// irradianceTexture.Sample(texSampler, N).rgb;
+        //float3 irradiance = 0;// irradianceTexture.Sample(texSampler, N).rgb;
+        uint width, height, levels;
+        PrefilteredSpecular.GetDimensions(0, width, height, levels);
+        float3 irradiance = PrefilteredSpecular.SampleLevel(texSampler, Lr.xyz, 0.8 * levels).rgb;
 
         // Calculate Fresnel term for ambient lighting.
         // Since we use pre-filtered cubemap(s) and irradiance is coming from many directions
@@ -195,8 +198,7 @@ float4 psMain(psInput pin) : SV_TARGET
 
         // Sample pre-filtered specular reflection environment at correct mipmap level.
         //uint specularTextureLevels = querySpecularTextureLevels(BaseColorMap);
-        uint width, height, levels;
-        PrefilteredSpecular.GetDimensions(0, width, height, levels);
+
 
         float3 specularIrradiance = PrefilteredSpecular.SampleLevel(texSampler, Lr.xyz, roughness * levels).rgb;
         //float3 specularIrradiance = 0;

@@ -8,8 +8,9 @@ cbuffer Params : register(b0)
     float LengthFactor;
 
     float3 Direction;
-    float W;
+    float Pivot;
 
+    float W;
     float WOffset;
     float OrientationAngle;
     float Twist;
@@ -44,7 +45,7 @@ void main(uint3 i : SV_DispatchThreadID)
         return;
     }
 
-    float f = (float)(index)/(pointCount-1);
+    float f = (float)(index)/(pointCount-1) - Pivot;
 
     ResultPoints[index].position = lerp(Center, Center + Direction * LengthFactor, f);
     ResultPoints[index].w = W + WOffset * f;

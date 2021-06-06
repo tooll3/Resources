@@ -18,6 +18,7 @@ cbuffer Params : register(b0)
     float Dispersion;
     float ParticleGridCellSize;
     float ClampAccelleration;
+    float Time;
 }
 
 static const uint            ParticleGridEntryCount = 32;
@@ -62,7 +63,7 @@ void DispersePoints(uint3 DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
 
 
     float3 position = points[DTid.x].position;
-    float3 jitter = (hash33u( uint3(DTid.x, DTid.x + 134775813U, DTid.x + 1664525U) + position * 1000 ) -0.5f)  * ParticleGridCellSize * 1;
+    float3 jitter = (hash33u( uint3(DTid.x, DTid.x + 134775813U, DTid.x + 1664525U) + position * 1000 + Time % 123 ) -0.5f)  * ParticleGridCellSize * 2;
     position+= jitter;
 
     uint startIndex, endIndex;
@@ -90,7 +91,7 @@ void DispersePoints(uint3 DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
             if(distance > Threshold)
                 continue;
             
-            float fallOff = max(pow(1/ (distance/Threshold), 1), 0.0001);
+            float fallOff = max(pow(((distance)/Threshold), 0.5), 0.0001);
             direction *= fallOff;
             float l = length(direction);
             direction /=l;
