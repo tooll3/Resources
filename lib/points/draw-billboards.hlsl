@@ -39,6 +39,8 @@ cbuffer Params : register(b1)
     float RotateRandomly;
     float UsePointOrientation;
 
+    float AlphaCutOff;
+
 };
 
 cbuffer FogParams : register(b2)
@@ -140,6 +142,9 @@ float4 psMain(psInput input) : SV_TARGET
 {
     float4 imgColor = SpriteTexture.Sample(texSampler, input.texCoord);
     float4 color = input.color * imgColor;
+    if(color.a < AlphaCutOff) 
+        discard;
+
     color.rgb = lerp(color.rgb, FogColor.rgb, input.fog);
     return clamp(color, 0, float4(100,100,100,1));
 }

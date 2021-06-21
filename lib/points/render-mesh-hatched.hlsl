@@ -19,6 +19,8 @@ cbuffer Transforms : register(b0)
 
 cbuffer Params : register(b1)
 {
+    float4 ForegroundColor;
+    float4 BackgroundColor;
     float RandomFaceOffset;
     float FollowSurface;
     float OffsetDirection;
@@ -177,6 +179,7 @@ float4 psMain(psInput pin) : SV_TARGET
     float3 p = pin.pixelPosition.xyz;// + float3(0.5, -0.5, 0);
     
     float brightness = (directLighting.r + directLighting.g+ directLighting.b)/3 + randFaceOffset * RandomFaceLighting;
+    brightness = lerp(brightness , (FogColor.r + FogColor.g + FogColor.b)/3, pin.fog);
 
     //float followSurfaceAngle = atan2(Norg.x, 1) * (FollowSurface * PI/ 180);
     float followSurfaceAngle = dot(Norg.x, float3(0,1,0.1)) * (FollowSurface * PI/ 180);
@@ -188,20 +191,13 @@ float4 psMain(psInput pin) : SV_TARGET
     float cosa = cos(-imageRotationRad - 3.141578/2);
 
     p += RequestedResolutionHeight /2;
-    //p.y = 0;
     p.xy = float2(
         cosa * p.x - sina * p.y,
         cosa * p.y + sina * p.x 
     );
-    //p.xy -= 0.1;
 
     float4 shadingOffset = ShadingGradient.Sample(texSampler, float2(brightness, 0));
     float hatch = saturate( (sin(p.x / (LineWidth * RequestedResolutionHeight / 500 /  (2 * PI))) + (shadingOffset * 3 -1)) * 1);
-    return float4(hatch.xxx,1);
-
-    // float4 litColor= float4(directLighting , 1.0) * hatch;
-    // litColor.rgb = lerp(litColor.rgb, FogColor.rgb, pin.fog);
-    // //litColor += float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb, 0);
-    // litColor.a *= albedo.a;
-    // return litColor;
+    return lerp(BackgroundColor, ForegroundColor, hatch);
+    //return float4(hatch.xxx,1);
 }

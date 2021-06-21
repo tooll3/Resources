@@ -7,7 +7,8 @@ cbuffer ParamConstants : register(b0)
     float4 ColorA;
     float4 ColorB;
     float2 Offset;
-    float2 Scale;
+    float2 Stretch;
+    float Scale;
     float Evolution;
     float Bias;
 }
@@ -198,13 +199,17 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float aspectRatio = TargetWidth/TargetHeight; 
 	float2 uv = psInput.texCoord;     
     uv-= 0.5;
-    uv/= Scale; 
+    uv/= Stretch * Scale; 
     uv+= Offset * float2(-1 / aspectRatio,1);
     uv.x*= aspectRatio;
     float3 pos = float3(uv, Evolution/10);
     float f = noise_sum_abs(pos);
-    float f2 = noise_sum_abs(pos /2 + float3(2,3,0));
-    f *= sin(f2)/2 + 0.5;
+    float f2 = noise_sum_abs(pos / 5 + float3(2,3,0));
+    float f3 = noise_sum_abs(pos / 0.1 + float3(20,3,0));
+    
+    f *= sin(f2 )/2 + 0.5;
+    f *= sin(f3) / 2 + 0.5;
+    //f = (f * f2 *f3)* 10;
 
     float fBiased = Bias>= 0 
         ? pow( f, Bias+1)
