@@ -1,15 +1,10 @@
 cbuffer ParamConstants : register(b0)
 {
     float4 Fill;
-    float4 OutlineColor;
     float4 Background;
-
-    float2 Stretch;
-    float2 Center;
-
-    float Scale;
+    float2 Size;
+    float2 Position;
     float Round;
-    float Stroke;
     float Feather;
     float GradientBias;
     float Rotate;
@@ -53,6 +48,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float aspectRatio = TargetWidth/TargetHeight;
 
     float2 p = psInput.texCoord;
+    //p.x -= 0.5;
     p -= 0.5;
     p.x *= aspectRatio;
 
@@ -62,38 +58,33 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float sina = sin(-imageRotationRad - 3.141578/2);
     float cosa = cos(-imageRotationRad - 3.141578/2);
 
-    p-=Center * float2(1,-1);
+    //p.x *=aspectRatio;
+
     p = float2(
         cosa * p.x - sina * p.y,
         cosa * p.y + sina * p.x 
     );
 
-    float2 size = Stretch * Scale;
-    float minSize = min(size.x, size.y);
-    float roundOffset= minSize * Round;
-    float2 rsize = size - roundOffset;
+    p-=Position * float2(1,-1);
     
-    float d = sdBox(p, rsize/2 );
+    float d = sdBox(p, Size/2);
+    
 
-    float feather = minSize * Feather/2;
-    float dInside = smoothstep(-feather,  0, d - roundOffset/2);
+    d = smoothstep(Round/2 - Feather/4, Round/2 + Feather/4, d);
 
-    float stroke = max(Stroke * minSize,0);
-    float dStroke = smoothstep(-feather,  0, d - roundOffset/2 - stroke);
+    float dBiased = GradientBias>= 0 
+        ? pow( d, GradientBias+1)
+        : 1-pow( clamp(1-d,0,10), -GradientBias+1);
 
-    // Prevent spill into background if stroke size is 0
-    float showStroke = saturate(abs(stroke) * 100);
-    float4 outlineColor = lerp( Fill, OutlineColor, showStroke);
-
-    float4 cInside= lerp(Fill, outlineColor,  dInside);
-
-
-    float4 cStroke= lerp(Background, outlineColor, 1-dStroke);
-    float4 c = lerp(cInside, cStroke, dStroke);
+    float4 c= lerp(Fill, Background,  dBiased);
 
     float4 orgColor = ImageA.Sample(texSampler, psInput.texCoord);
+    //orgColor = float4(1,1,1,0);
     float a = clamp(orgColor.a + c.a - orgColor.a*c.a, 0,1);
 
+    // FIXME: blend
+    //float mixA = a;
+    //float3 rgb = lerp(orgColor.rgb, c.rgb,  mixA);    
     float3 rgb = (1.0 - c.a)*orgColor.rgb + c.a*c.rgb;   
     return float4(rgb,a);
 }
