@@ -201,10 +201,11 @@ void gsMain(triangle vsOutput input[3], inout TriangleStream<gsOutput> output)
 
 float4 psMain(in gsOutput i) : SV_TARGET0
 {
+    //return float4(Orientation,0,0,1);
     //return i.color;
     //return float4( abs(i.normal.rgb),1);
     //return float4(0,1,0,1);
-    float2 uv = ComputeUvFromNormal(i.normal);//     + float2(Orientation, 0);
+    float2 uv = ComputeUvFromNormal(i.normal) + float2(Orientation, 0);
     float4 col = Image.Sample(texSampler,uv);
     return col;
 }

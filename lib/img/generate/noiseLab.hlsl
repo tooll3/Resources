@@ -6,11 +6,17 @@ cbuffer ParamConstants : register(b0)
 {
     float4 ColorA;
     float4 ColorB;
+
     float2 Offset;
     float2 Stretch;
+
     float Scale;
     float Evolution;
     float Bias;
+    float Iterations;
+
+    float3 WarpOffset;
+    float TestParam;
 }
 
 cbuffer Resolution : register(b1)
@@ -170,7 +176,7 @@ float noise_sum(float3 p)
 	f += 0.1250 * noise(p); p = 2.0 * p;
 	f += 0.0625 * noise(p); p = 2.0 * p;
     
-    return f;
+    return f/2+1;
 }
 
 float noise_sum_abs(float3 p)
@@ -203,12 +209,27 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     uv+= Offset * float2(-1 / aspectRatio,1);
     uv.x*= aspectRatio;
     float3 pos = float3(uv, Evolution/10);
-    float f = noise_sum_abs(pos);
-    float f2 = noise_sum_abs(pos / 5 + float3(2,3,0));
-    float f3 = noise_sum_abs(pos / 0.1 + float3(20,3,0));
-    
-    f *= sin(f2 )/2 + 0.5;
-    f *= sin(f3) / 2 + 0.5;
+
+    int steps = clamp( Iterations + 0.5, 1.1,5.1);
+
+    float f = 0.7;
+    float scaleFactor = 1;
+    for(int i = 0; i < steps ; i++) 
+    {
+        float f1 = noise_sum_abs(pos * scaleFactor + float3(12.4,3,0) * i);
+        scaleFactor *= TestParam;
+        pos += f * WarpOffset;
+        f *= sin(f1 )/2 + 0.5;
+        f+=0.2;
+    }
+    f *= 2;
+    f -=1;
+
+    // float f2 = noise_sum_abs(pos / 0.2 + float3(12.4,3,0));    
+    // pos += f2 * WarpOffset;
+
+    // float f3 = noise_sum_abs(pos / 5 + float3(2,3,0));    
+    // f *= sin(f3) / 2 + 0.5;
     //f = (f * f2 *f3)* 10;
 
     float fBiased = Bias>= 0 
