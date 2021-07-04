@@ -90,7 +90,10 @@ void main(uint3 i : SV_DispatchThreadID)
                           ? sqrt(-1) // NaN
                           : W + WOffset * f;
 
-    float4 orientation = normalize(rotate_angle_axis(OrientationAngle * 3.141578/180 , normalize(OrientationAxis)));
+    //float4 orientation = normalize(rotate_angle_axis(OrientationAngle * 3.141578/180 , normalize(OrientationAxis)));
+    float4 orientation = rotate_angle_axis(3.141578/2 * 1, normalize(OrientationAxis));
+    orientation = qmul( orientation, rotate_angle_axis( (OrientationAngle) / 180 * 3.141578, float3(1,0,0)));
+
     float4 quat = qmul(  rotate_angle_axis(angle, normalize(Axis)), orientation);
     ResultPoints[index].rotation = normalize(quat);
     //ResultPoints[index].w = quat.w+ 0.5;
