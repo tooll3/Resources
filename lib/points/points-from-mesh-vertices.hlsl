@@ -1,6 +1,6 @@
 #include "hash-functions.hlsl"
 #include "point.hlsl"
-
+#include "pbr.hlsl"
 
 cbuffer Params : register(b0)
 {
@@ -8,16 +8,15 @@ cbuffer Params : register(b0)
     float OffsetScale;
 }
 
- 
-struct PbrVertex
-{
-    float3 Position;
-    float3 Normal;
-    float3 Tangent;
-    float3 Bitangent;
-    float2 TexCoord;
-    float2 __padding;
-};
+// struct PbrVertex
+// {
+//     float3 Position;
+//     float3 Normal;
+//     float3 Tangent;
+//     float3 Bitangent;
+//     float2 TexCoord;
+//     float2 __padding;
+// };
 
 StructuredBuffer<PbrVertex> Vertices : t0;         // input
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
@@ -47,7 +46,7 @@ void main(uint3 i : SV_DispatchThreadID)
         + OffsetByTBN.y * v.Bitangent * OffsetScale
         + OffsetByTBN.z * v.Normal * OffsetScale;
 
-    ResultPoints[index].w = 1;
+    ResultPoints[index].w = v.Selected;
     float3x3 m = float3x3(v.Tangent, v.Bitangent, v.Normal);
     float4 rot = quad_from_Mat3(m[0], m[1], m[2]);
     ResultPoints[index].rotation = normalize(rot);

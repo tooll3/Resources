@@ -48,41 +48,46 @@ void main(uint3 i : SV_DispatchThreadID)
     Point railPoint = RailPoints[columnIndex];
     Point shapePoint = ShapePoints[rowIndex];
 
-    float4 rotation = normalize(qmul(railPoint.rotation, shapePoint.rotation ));
-    float3 position = rotate_vector(shapePoint.position, railPoint.rotation) + railPoint.position;
+    float4 rotation = normalize(qmul(shapePoint.rotation, railPoint.rotation ));
+    float3 position = rotate_vector(shapePoint.position * railPoint.w, railPoint.rotation) + railPoint.position;
 
     v.Position =  position;
-    v.Normal = rotate_vector(float3(1,0,0), rotation);
-    v.Tangent = rotate_vector(float3(0,0,-1), rotation);
+    v.Normal = rotate_vector(float3(0,0,1), rotation);
+    v.Tangent = rotate_vector(float3(1,0,0), rotation);
     v.Bitangent = rotate_vector(float3(0,1,0), rotation);
     v.TexCoord = float2((float)columnIndex/(columns-1),(float)rowIndex/(rows-1));
     v.Selected = 1;
     v.__padding =0;
 
     Vertices[vertexIndex] = v;
-
-    if( isnan(RailPoints[vertexIndex].w) 
-     || isnan(RailPoints[vertexIndex+1].w)
-     || isnan(RailPoints[vertexIndex+rows].w)
-     || isnan(RailPoints[vertexIndex+rows+1].w)) 
-    {
-        int faceIndex =  2 * (rowIndex + columnIndex * (rows-1));
-        if (columnIndex < columns - 1 && rowIndex < rows - 1) 
-        {
-            TriangleIndices[faceIndex + 0] = int3(0, 0, 0);
-            TriangleIndices[faceIndex + 1] = int3(0, 0, 0);
-            //TriangleIndices[faceIndex - 1] = int3(0, 0, 0);
-        }
-        return;
-    }
-
+    if(isnan(railPoint.w ) || isnan(shapePoint.w) )
+        Vertices[vertexIndex].Position = float3(0,0,0);
+    
 
     // Write face indices
     if (columnIndex < columns - 1 && rowIndex < rows - 1) 
     {
         int faceIndex =  2 * (rowIndex + columnIndex * (rows-1));
-        TriangleIndices[faceIndex + 0] = int3(vertexIndex, vertexIndex + rows, vertexIndex + 1);
-        TriangleIndices[faceIndex + 1] = int3(vertexIndex + rows, vertexIndex + rows+1, vertexIndex + 1);
+
+        if(
+            isnan(railPoint.w) 
+            || isnan(RailPoints[columnIndex+1].w) 
+            || isnan(shapePoint.w) 
+            || isnan(ShapePoints[rowIndex+1].w) 
+         ) 
+        {
+            if (columnIndex < columns - 1 && rowIndex < rows - 1) 
+            {
+                TriangleIndices[faceIndex + 0] = int3(0, 0, 0);
+                TriangleIndices[faceIndex + 1] = int3(0, 0, 0);
+                TriangleIndices[faceIndex + 1] = int3(0, 0, 0);
+            }
+             if(isnan(railPoint.w ) || isnan(shapePoint.w) )
+                 Vertices[vertexIndex].Position = float3(0,0,0);
+            return;
+        }        
+        TriangleIndices[faceIndex + 0] = int3(vertexIndex+1, vertexIndex + rows, vertexIndex );
+        TriangleIndices[faceIndex + 1] = int3(vertexIndex + 1, vertexIndex + rows+1, vertexIndex + rows);
     }
 }
 

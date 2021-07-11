@@ -73,7 +73,7 @@ void main(uint3 i : SV_DispatchThreadID)
         if(t > 0.999) {
             upVector = float3(0,1,0);
         }
-        float4 lookAt = q_look_at(Direction, upVector);
+        float4 lookAt = q_look_at(normalize(Direction), upVector);
 
         
         rot2 = normalize(qmul(rotate, lookAt));

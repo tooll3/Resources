@@ -41,7 +41,7 @@ RWStructuredBuffer<PbrVertex> ResultVertices : u0;
 
 float3 GetNoise(float3 pos, float3 variation) 
 {
-    float3 noiseLookup = (pos * 0.91 + variation + Phase ) * Frequency;
+    float3 noiseLookup = (pos * 0.91 + variation) * Frequency +  Phase ;
     float3 noise = snoiseVec3(noiseLookup);
     return (noise + OffsetDirection) * Amount/100 * AmountDistribution ;
 }
@@ -88,16 +88,17 @@ void main(uint3 i : SV_DispatchThreadID)
     offset *= selection;
 
     float3 newPos = posInWorld + offset;
+    float lookUpDistance = RotationLookupDistance / Frequency;
 
-    float3 tAnchor = posInWorld + v.Tangent * RotationLookupDistance;
-    float3 tAnchor2 = posInWorld - v.Tangent * RotationLookupDistance;
+    float3 tAnchor = posInWorld + v.Tangent * lookUpDistance;
+    float3 tAnchor2 = posInWorld - v.Tangent * lookUpDistance;
 
     float3 newTangent  = normalize( tAnchor + GetNoise(tAnchor, variationOffset) * weight - newPos);
     float3 newTangent2  = -normalize( tAnchor2 + GetNoise(tAnchor2, variationOffset) * weight - newPos);
     ResultVertices[i.x].Tangent = lerp(newTangent, newTangent2, 0.5);
 
-    float3 bAnchor = posInWorld + v.Bitangent * RotationLookupDistance;
-    float3 bAnchor2 = posInWorld - v.Bitangent * RotationLookupDistance;
+    float3 bAnchor = posInWorld + v.Bitangent * lookUpDistance;
+    float3 bAnchor2 = posInWorld - v.Bitangent * lookUpDistance;
 
     float3 newBitangent  = normalize( bAnchor + GetNoise(bAnchor, variationOffset) * weight - newPos);
     float3 newBitangent2  = -normalize( bAnchor2 + GetNoise(bAnchor2, variationOffset) * weight - newPos);
