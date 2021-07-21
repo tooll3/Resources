@@ -36,5 +36,7 @@ void main(uint3 i : SV_DispatchThreadID)
     ResultVerts[i.x].Bitangent = lerp(bitangent, normalize(mul(float4(bitangent,0), TransformMatrix).xyz), s);
 
     ResultVerts[i.x].TexCoord = SourceVerts[i.x].TexCoord;
+
+    ResultVerts[i.x].Selected = SourceVerts[i.x].Selected;
 }
 
