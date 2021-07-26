@@ -51,34 +51,36 @@ float3 RotatePointAroundAxis(float3 In, float3 Axis, float Rotation)
     return mul(rot_mat,  In);
 }
 
+static float phi = PI *  (3. - sqrt(5.));  // golden angle in radians
+
 [numthreads(256,4,1)]
-void main(uint3 i : SV_DispatchThreadID)
+void main(uint3 dtID : SV_DispatchThreadID)
 //void main(uint i : SV_GroupIndex)
 {
-    uint index = i.x; 
-    bool closeCircle =  CloseCircle > 0.5;
-    float count = closeCircle ? (Count -2) : Count;
+    uint count, stride;
+    ResultPoints.GetDimensions(count, stride);
 
-    float f = (float)(index)/count;
-    float l = Radius + RadiusOffset * f;
-    float angle = (StartAngle * 3.141578/180 + Cycles * 2 *3.141578 * f);
-    float3 direction = normalize(cross(Axis, Axis.y > 0.7 ? float3(0,0,1) :  float3(0,1,0)));
-    //float direction = normalize(Axis);
+    float i = dtID.x;
 
-    float3 v = RotatePointAroundAxis(direction * l , Axis, angle) + Center + CenterOffset * f;
+    float t = i / float(count - 1);
+    float y = 1 - t * 2;  // y goes from 1 to -1
+    float radius = sqrt(1 - y * y);  // radius at y
 
+    float theta = phi * i;  // golden angle increment
+
+    float x = cos(theta) * radius;
+    float z = sin(theta) * radius;
+
+    //float points.append((x, y, z))
+
+    ResultPoints[dtID.x].position = float3(x,y,z);
+    ResultPoints[dtID.x].w = 1;
+ 
+    //float3 axis = float3(x,0,z);
+    //float angle = -atan2( length(float2(x,z)), y) + PI/2;
+    float4 rot = rotate_angle_axis( -theta, float3(0,1,0));
+    float4 rot2 = rotate_angle_axis( (2-t) * PI, float3(0,0,1));
     
-    ResultPoints[index].position = v;
-    ResultPoints[index].w = (closeCircle && index == Count -1)
-                          ? sqrt(-1) // NaN
-                          : W + WOffset * f;
-
-    //float4 orientation = normalize(rotate_angle_axis(OrientationAngle * 3.141578/180 , normalize(OrientationAxis)));
-    float4 orientation = rotate_angle_axis(3.141578/2 * 1, normalize(OrientationAxis));
-    orientation = qmul( orientation, rotate_angle_axis( (OrientationAngle) / 180 * 3.141578, float3(1,0,0)));
-
-    float4 quat = qmul(  rotate_angle_axis(angle, normalize(Axis)), orientation);
-    ResultPoints[index].rotation = normalize(quat);
-    //ResultPoints[index].w = quat.w+ 0.5;
+    ResultPoints[dtID.x].rotation = qmul(rot,rot2); // normalize(rotate_angle_axis(lerp(0, PI, t) , axis));
 }
 
