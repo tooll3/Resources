@@ -18,12 +18,15 @@ static const float3 Corners[] =
 cbuffer Params : register(b0)
 {
     float4 Color;
-
     float Size;
-    float ShrinkWithDistance;
-    float OffsetU;
-    float UseWForWidth;
-    float UseWForU;
+
+    float CurrentStep;
+    float StepCount;
+    float LinesPerStep;
+    // float ShrinkWithDistance;
+    // float OffsetU;
+    // float UseWForWidth;
+    // float UseWForU;
 };
 
 
@@ -58,8 +61,16 @@ struct psInput
 
 sampler texSampler : register(s0);
 
+// struct LinePointsIndices {
+//     int StartIndex;
+//     int EndIndex;
+// };
+
+
 StructuredBuffer<Point> Points : t0;
-Texture2D<float4> texture2 : register(t1);
+StructuredBuffer<uint2> LinePoints : t1;
+Texture2D<float4> texture2 : register(t2);
+Texture2D<float4> progressTexture : register(t3);
 
 psInput vsMain(uint id: SV_VertexID)
 {
@@ -67,17 +78,18 @@ psInput vsMain(uint id: SV_VertexID)
     psInput output;
     float discardFactor = 1;
 
-    uint SegmentCount, Stride;
-    Points.GetDimensions(SegmentCount, Stride);
+    uint pointCount, stride;
+    Points.GetDimensions(pointCount, stride);
 
     float4 aspect = float4(CameraToClipSpace[1][1] / CameraToClipSpace[0][0],1,1,1);
     int quadIndex = id % 6;
     uint particleId = id / 6;
     float3 cornerFactors = Corners[quadIndex];
     
-    //Point pointAA = Points[ particleId<1 ? 0: particleId-1];
-    Point pointA = Points[particleId];
-    Point pointB = Points[particleId+1];
+    uint2 indexPair = LinePoints[particleId];
+    
+    Point pointA = Points[indexPair.x];
+    Point pointB = Points[indexPair.y];
 
     if(isnan(pointA.w) || isnan(pointB.w) ) 
     {
@@ -86,40 +98,37 @@ psInput vsMain(uint id: SV_VertexID)
     }
 
     float4 forward = mul(float4(0,0,-1,0), CameraToWorld);
-    //forward.xyz/= forward.w;
-
     forward = mul(float4(forward.xyz,0), WorldToObject);
-    //forward.xyz /= forward.w;
-    float4 camUpInWorld = mul(float4(0,1,0,0), CameraToWorld);
-    float4 camUpInObject = mul(camUpInWorld, WorldToObject);
 
+    float3 posInObject = cornerFactors.x < 0.5
+        ? pointA.position
+        : pointB.position;
 
-    //float3 forward = float3(0,1,0);
-
-    float3 posInObject = cornerFactors.x < 0.5 ? pointA.position : pointB.position;
-    float3 posAInCamera = mul(float4(pointA.position,1), ObjectToCamera).xyz;
-    float3 posBInCamera = mul(float4(pointB.position,1), ObjectToCamera).xyz;
-    float4 lineInCamera = float4(posAInCamera - posBInCamera, 1);
-    float3 forwardInCamera = float3(0,0,-1);
-
-    float3 lineCenterInCamera = lerp(posAInCamera, posBInCamera, 0.5);
-    float3 sideInCamera = normalize(cross(lineCenterInCamera, lineInCamera.xyz)); 
+    float3 side = normalize(cross(forward.xyz, pointA.position- pointB.position));
 
     output.texCoord = float2(lerp( pointA.w  , pointB.w , cornerFactors.x), cornerFactors.y /2 +0.5);
 
-    float4 posInCamera = mul(float4(posInObject,1), ObjectToCamera);
-    posInCamera.xyz += sideInCamera * Size * cornerFactors.y;
 
-    output.position = mul(posInCamera, CameraToClipSpace);
+    float stepIndex = (id /6) / LinesPerStep;
+    
+    float animationProgress = ((CurrentStep - stepIndex + StepCount)  % StepCount) / StepCount;
+    float4 progressColor = progressTexture.SampleLevel(texSampler, float2(animationProgress, 0),0);
 
-    // float4 posInCamSpace = mul(float4(posInObject,1), ObjectToCamera);
-    // posInCamera.xyz /= posInCamera.w;
-    // posInCamera.w = 1;
+    //float3 side = float3(1,0,0);
 
-    output.fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
-    output.color.rgb = Color.rgb;
+    float hide = (indexPair.x== 0 || indexPair.y == 0 || indexPair.x >= pointCount || indexPair.y >= pointCount) ? sqrt(-1) : 1;
 
-    output.color.a = Color.a;
+    posInObject += side * Size * cornerFactors.y * hide;
+
+    //output.position =  float4(corner.xyz,1);
+    output.position = mul(float4(posInObject,1), ObjectToClipSpace);
+
+    float4 posInCamSpace = mul(float4(posInObject,1), ObjectToCamera);
+    posInCamSpace.xyz /= posInCamSpace.w;
+    posInCamSpace.w = 1;
+
+    output.fog = pow(saturate(-posInCamSpace.z/FogDistance), FogBias);
+    output.color =  Color.rgba * progressColor.rgba;
     return output;    
 }
 
