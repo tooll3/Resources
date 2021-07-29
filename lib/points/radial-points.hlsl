@@ -62,10 +62,14 @@ void main(uint3 i : SV_DispatchThreadID)
     float f = (float)(index)/count;
     float l = Radius + RadiusOffset * f;
     float angle = (StartAngle * 3.141578/180 + Cycles * 2 *3.141578 * f);
-    float3 direction = normalize(cross(Axis, Axis.y > 0.7 ? float3(0,0,1) :  float3(0,1,0)));
+    float3 up = Axis.y > 0.7 ? float3(0,0,1) :  float3(0,1,0);
+    float3 direction = normalize(cross(Axis, up));
     //float direction = normalize(Axis);
 
-    float3 v = RotatePointAroundAxis(direction * l , Axis, angle) + Center + CenterOffset * f;
+    float3 v2 = RotatePointAroundAxis(direction * l , Axis, angle);
+
+    float3 c= Center + CenterOffset * f;
+    float3 v =  v2 + c;
 
     
     ResultPoints[index].position = v;
@@ -75,10 +79,16 @@ void main(uint3 i : SV_DispatchThreadID)
 
     //float4 orientation = normalize(rotate_angle_axis(OrientationAngle * 3.141578/180 , normalize(OrientationAxis)));
     float4 orientation = rotate_angle_axis(3.141578/2 * 1, normalize(OrientationAxis));
+
     orientation = qmul( orientation, rotate_angle_axis( (OrientationAngle) / 180 * 3.141578, float3(1,0,0)));
 
-    float4 quat = qmul(  rotate_angle_axis(angle, normalize(Axis)), orientation);
-    ResultPoints[index].rotation = normalize(quat);
-    //ResultPoints[index].w = quat.w+ 0.5;
+    float4 lookat = q_look_at(Axis, up);
+
+    float4 quat = qmul(   orientation, rotate_angle_axis(angle, normalize(Axis)));
+
+    float4 spin = rotate_angle_axis( (OrientationAngle) / 180 * 3.141578, normalize(OrientationAxis));
+    float4 spin2 = rotate_angle_axis( angle, float3(Axis));
+
+    ResultPoints[index].rotation = qmul(normalize(qmul(spin2, lookat)), spin);
 }
 

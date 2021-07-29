@@ -71,13 +71,15 @@ void DispersePoints(uint3 DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
 
     uint pairIndex = stepIndex * (int)(LinesPerSteps + 0.5) + indexWithingStep;
 
-    uint pointIndex = (CurrentStep * 1237 + indexWithingStep ) % pointCount;
+    uint shuffle = hash11(CurrentStep % pointCount - indexWithingStep) * 1 * pointCount;
+
+    uint pointIndex = (CurrentStep + shuffle + indexWithingStep ) % pointCount;
 
     if(pairIndex >= pairCount)
         return;
 
     float3 position = points[pointIndex].position;
-    float3 jitter = (hash33u( uint3(DTid.x, DTid.x + 134775813U, DTid.x + 1664525U) + position * 1000 + Time % 123.1 ) -0.5f)  * ParticleGridCellSize;
+    float3 jitter = (hash33u( uint3(DTid.x, DTid.x + 134775813U, DTid.x + 1664525U) + position * 100 + Time % 123.1 ) -0.5f)  * ParticleGridCellSize;
     position+= jitter;
 
     uint startIndex, endIndex;
@@ -116,7 +118,7 @@ void DispersePoints(uint3 DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
             //pointIndexPairs[pairIndex] = uint2( pointIndex, pointIndex+5);
         }
         else {
-            pointIndexPairs[pairIndex] = int2( 1, 2);
+            pointIndexPairs[pairIndex] = int2( 0, 0);
         }
     }
 }

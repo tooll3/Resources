@@ -34,7 +34,7 @@ void main(uint3 i : SV_DispatchThreadID)
 
         ResultPoints[i.x].position = pLocal  * s + B.position;
         ResultPoints[i.x].w = MultiplyTargetW > 0.5 ? A.w * B.w : A.w;
-        ResultPoints[i.x].rotation = ApplyTargetOrietnation  > 0.5 ? qmul(A.rotation, B.rotation)
+        ResultPoints[i.x].rotation = ApplyTargetOrietnation  > 0.5 ? qmul(B.rotation, A.rotation)
                                                                 : A.rotation;
     }
 

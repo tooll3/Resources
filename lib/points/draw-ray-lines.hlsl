@@ -108,7 +108,7 @@ psInput vsMain(uint id: SV_VertexID)
     output.texCoord = float2(lerp( pointA.w  , pointB.w , cornerFactors.x), cornerFactors.y /2 +0.5);
 
     float4 posInCamera = mul(float4(posInObject,1), ObjectToCamera);
-    posInCamera.xyz += sideInCamera * Size * cornerFactors.y;
+    posInCamera.xyz += sideInCamera * Size / 1000 * cornerFactors.y;
 
     output.position = mul(posInCamera, CameraToClipSpace);
 

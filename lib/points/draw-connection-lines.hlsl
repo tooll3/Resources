@@ -96,40 +96,47 @@ psInput vsMain(uint id: SV_VertexID)
         output.position = 0;
         return output;
     }
-
-    float4 forward = mul(float4(0,0,-1,0), CameraToWorld);
-    forward = mul(float4(forward.xyz,0), WorldToObject);
-
-    float3 posInObject = cornerFactors.x < 0.5
-        ? pointA.position
-        : pointB.position;
-
-    float3 side = normalize(cross(forward.xyz, pointA.position- pointB.position));
-
-    output.texCoord = float2(lerp( pointA.w  , pointB.w , cornerFactors.x), cornerFactors.y /2 +0.5);
-
-
     float stepIndex = (id /6) / LinesPerStep;
     
     float animationProgress = ((CurrentStep - stepIndex + StepCount)  % StepCount) / StepCount;
     float4 progressColor = progressTexture.SampleLevel(texSampler, float2(animationProgress, 0),0);
-
-    //float3 side = float3(1,0,0);
-
     float hide = (indexPair.x== 0 || indexPair.y == 0 || indexPair.x >= pointCount || indexPair.y >= pointCount) ? sqrt(-1) : 1;
 
-    posInObject += side * Size * cornerFactors.y * hide;
+    float4 forward = mul(float4(0,0,-1,0), CameraToWorld);
+    //forward.xyz/= forward.w;
 
-    //output.position =  float4(corner.xyz,1);
-    output.position = mul(float4(posInObject,1), ObjectToClipSpace);
+    forward = mul(float4(forward.xyz,0), WorldToObject); 
+    //forward.xyz /= forward.w;
+    float4 camUpInWorld = mul(float4(0,1,0,0), CameraToWorld);
+    float4 camUpInObject = mul(camUpInWorld, WorldToObject);
 
-    float4 posInCamSpace = mul(float4(posInObject,1), ObjectToCamera);
-    posInCamSpace.xyz /= posInCamSpace.w;
-    posInCamSpace.w = 1;
 
-    output.fog = pow(saturate(-posInCamSpace.z/FogDistance), FogBias);
-    output.color =  Color.rgba * progressColor.rgba;
-    return output;    
+    //float3 forward = float3(0,1,0);
+
+    float3 posInObject = cornerFactors.x < 0.5 ? pointA.position : pointB.position;
+    float3 posAInCamera = mul(float4(pointA.position,1), ObjectToCamera).xyz;
+    float3 posBInCamera = mul(float4(pointB.position,1), ObjectToCamera).xyz;
+    float4 lineInCamera = float4(posAInCamera - posBInCamera, 1);
+    float3 forwardInCamera = float3(0,0,-1);
+
+    float3 lineCenterInCamera = lerp(posAInCamera, posBInCamera, 0.5);
+    float3 sideInCamera = normalize(cross(lineCenterInCamera, lineInCamera.xyz)); 
+
+    output.texCoord = float2(lerp( pointA.w  , pointB.w , cornerFactors.x), cornerFactors.y /2 +0.5);
+
+    float4 posInCamera = mul(float4(posInObject,1), ObjectToCamera);
+    posInCamera.xyz += sideInCamera * Size / 1000 * cornerFactors.y * hide;
+
+    output.position = mul(posInCamera, CameraToClipSpace);
+
+    // float4 posInCamSpace = mul(float4(posInObject,1), ObjectToCamera);
+    // posInCamera.xyz /= posInCamera.w;
+    // posInCamera.w = 1;
+
+    output.fog = pow(saturate(-posInCamera.z/FogDistance), FogBias);
+    output.color = Color * progressColor;
+
+    return output;   
 }
 
 float4 psMain(psInput input) : SV_TARGET
