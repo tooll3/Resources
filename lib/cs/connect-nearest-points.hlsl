@@ -22,6 +22,7 @@ cbuffer Params : register(b0)
     float ParticleGridCellSize;
     // float ClampAccelleration;
     float Time;
+    float ScatterLookUp;
 }
 
 static const uint            ParticleGridEntryCount = 32;
@@ -71,7 +72,7 @@ void DispersePoints(uint3 DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
 
     uint pairIndex = stepIndex * (int)(LinesPerSteps + 0.5) + indexWithingStep;
 
-    uint shuffle = hash11(CurrentStep % pointCount - indexWithingStep) * 1 * pointCount;
+    uint shuffle = hash11(CurrentStep * 0.123 - indexWithingStep ) * ScatterLookUp * pointCount;
 
     uint pointIndex = (CurrentStep + shuffle + indexWithingStep ) % pointCount;
 

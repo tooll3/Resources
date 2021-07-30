@@ -122,7 +122,10 @@ psInput vsMain(uint id: SV_VertexID)
     float3 lineCenterInCamera = lerp(posAInCamera, posBInCamera, 0.5);
     float3 sideInCamera = normalize(cross(lineCenterInCamera, lineInCamera.xyz)); 
 
-    output.texCoord = float2(lerp( pointA.w  , pointB.w , cornerFactors.x), cornerFactors.y /2 +0.5);
+    output.texCoord = float2(
+        lerp( 0, 1 , cornerFactors.x) + animationProgress * 3 -1, 
+        cornerFactors.y /2 +2);
+
 
     float4 posInCamera = mul(float4(posInObject,1), ObjectToCamera);
     posInCamera.xyz += sideInCamera * Size / 1000 * cornerFactors.y * hide;
