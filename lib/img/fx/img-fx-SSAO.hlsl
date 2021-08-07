@@ -79,14 +79,15 @@ float4 psMain(vsOutput psInput) : SV_TARGET
 {    
     //return float4(Passes, 0,0,1);
     //return DepthTexture.Sample(samLinear, psInput.texCoord.xy);
-    float refDepth = DepthTexture.Sample(samLinear, psInput.texCoord).r;
+    float refDepth = DepthTexture.SampleLevel(samLinear, psInput.texCoord,0).r;
     float2 texelSize = float2(1.0/textureSize.x, 1.0/textureSize.y);
     float factor = 0;
     float factorIncrement = 1.0/(Passes*float(KERNEL_SIZE));
     
     //float refSceneZ = ( DepthRange.x) / (DepthRange.y + DepthRange.x - refDepth * (DepthRange.y - DepthRange.x));    
     float refSceneZ = DepthToLinear(refDepth);
-    //return float4(refSceneZ.rrr,1);
+    
+    //return float4(refSceneZ.rrr * 2,1);
 
     for (int j = 0; j < Passes; j++)
     {
@@ -98,7 +99,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         {
             float3 vRotatedKernel = normalize(reflect( avKernel[i], random ));// * vKernelScale;
             float2 offset = vRotatedKernel.xy * KernelSize * texelSize + psInput.texCoord.xy;
-            float depth = DepthTexture.Sample(samLinear, offset).r;
+            float depth = DepthTexture.SampleLevel(samLinear, offset,0).r;
                         
             //float sceneZ = ( DepthRange.x) / (DepthRange.y + DepthRange.x - depth * (DepthRange.y - DepthRange.x));    
             float sceneZ = DepthToLinear(depth);
@@ -108,6 +109,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
             }
         }
     }
+
     float4 orgColor= ImageTexture.Sample(samLinear, psInput.texCoord);
     //return float4(factor * 0.5,0,0,1);
     

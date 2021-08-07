@@ -48,9 +48,9 @@ cbuffer Params : register(b1)
     // float A;
     // float AFactor;
     // float AOffset;
-    float __padding;
 
     float3 Center;
+    float __padding;
 
     float Phase;
     float Frequency;
@@ -81,12 +81,12 @@ void main(uint3 i : SV_DispatchThreadID)
     float3 pos = P.position;
     pos -= Center;
     
-    float3 posInObject = mul(float4(pos.xyz,0), WorldToObject).xyz;
+    //float3 posInObject = mul(float4(pos.xyz,0), WorldToObject).xyz;
   
     //float4 c = inputTexture.SampleLevel(texSampler, posInObject.xy * float2(1,-1) + float2(0.5, 0.5) , 0.0);
 
     float3 variationOffset = hash31((float)(i.x%1234)/0.123 ) * Variation;
-    float3 c = GetNoise(P.position, variationOffset);
+    float3 c = GetNoise(P.position + Center, variationOffset);
 
     float gray = (c.r + c.g + c.b)/3;
 

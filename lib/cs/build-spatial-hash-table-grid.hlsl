@@ -31,7 +31,7 @@ cbuffer Params : register(b0)
 
 //-------------------------------------------------------------------------
 static const uint            ParticleGridEntryCount = 32;
-static const uint            ParticleGridCellCount = 10000;
+static const uint            ParticleGridCellCount = 30000;
 //static const float           ParticleGridCellSize = 0.1f;
 
 

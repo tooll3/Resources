@@ -26,7 +26,7 @@ cbuffer Params : register(b0)
 }
 
 static const uint            ParticleGridEntryCount = 32;
-static const uint            ParticleGridCellCount = 10000;
+static const uint            ParticleGridCellCount = 30000;
 //static const float           ParticleGridCellSize = 0.1f;
 
 
@@ -53,10 +53,15 @@ bool ParticleGridFind(in float3 position, out uint startIndex, out uint endIndex
     return true;
 }
 
+[numthreads( THREADS_PER_GROUP, 1, 1 )]
+void ClearPoints(uint3 DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
+{
+    pointIndexPairs[DTid.x] = int2( 0, 0);
+}
 
 
 [numthreads( THREADS_PER_GROUP, 1, 1 )]
-void DispersePoints(uint3 DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
+void ConnectPoints(uint3 DTid : SV_DispatchThreadID, uint GI: SV_GroupIndex)
 {
     uint pointCount, stride;
     points.GetDimensions(pointCount, stride);
