@@ -56,20 +56,22 @@ cbuffer Params : register(b1)
     float Frequency;
     float Amount;
     float Variation;
+
+    float UseRemapCurve;
 }
 
 
 float3 GetNoise(float3 pos, float3 variation) 
 {
     float3 noiseLookup = (pos * 0.91 + variation + Phase ) * Frequency;
-    return snoiseVec3(noiseLookup) * Amount / 100;
+    return snoiseVec3(noiseLookup);
 }
 
 StructuredBuffer<Point> Points : t0;
 RWStructuredBuffer<Point> ResultPoints : u0;    // output
 
 
-Texture2D<float4> inputTexture : register(t1);
+Texture2D<float4> remapCurveTexture : register(t1);
 sampler texSampler : register(s0);
 
 [numthreads(256,4,1)]
@@ -83,10 +85,20 @@ void main(uint3 i : SV_DispatchThreadID)
     
     //float3 posInObject = mul(float4(pos.xyz,0), WorldToObject).xyz;
   
-    //float4 c = inputTexture.SampleLevel(texSampler, posInObject.xy * float2(1,-1) + float2(0.5, 0.5) , 0.0);
 
     float3 variationOffset = hash31((float)(i.x%1234)/0.123 ) * Variation;
     float3 c = GetNoise(P.position + Center, variationOffset);
+    if(UseRemapCurve > 0.5) 
+    {
+        //c *= 0.200;
+        c.r = (remapCurveTexture.SampleLevel(texSampler, float2(c.r/2+0.5, 0.5) , 0).r*2-1)  * Amount / 100;
+        c.g = (remapCurveTexture.SampleLevel(texSampler, float2(c.g/2+0.5, 0.5) , 0).g*2-1) * Amount / 100;
+        c.b = (remapCurveTexture.SampleLevel(texSampler, float2(c.b/2+0.5, 0.5) , 0).b*2-1) * Amount / 100;
+    }
+    else {
+        c *= Amount / 100;
+    }
+    //c*= remapCurveTexture.SampleLevel(texSampler, float2(0.5,0.5) , 0);
 
     float gray = (c.r + c.g + c.b)/3;
 
