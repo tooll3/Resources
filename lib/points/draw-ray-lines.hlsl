@@ -105,7 +105,10 @@ psInput vsMain(uint id: SV_VertexID)
     float3 lineCenterInCamera = lerp(posAInCamera, posBInCamera, 0.5);
     float3 sideInCamera = normalize(cross(lineCenterInCamera, lineInCamera.xyz)); 
 
-    output.texCoord = float2(lerp( pointA.w  , pointB.w , cornerFactors.x), cornerFactors.y /2 +0.5);
+    output.texCoord = float2(
+        //lerp( pointA.w  , pointB.w , cornerFactors.x), 
+        cornerFactors.x ,
+        cornerFactors.y /2 +0.5);
 
     float4 posInCamera = mul(float4(posInObject,1), ObjectToCamera);
     posInCamera.xyz += sideInCamera * Size / 1000 * cornerFactors.y;
@@ -127,6 +130,7 @@ float4 psMain(psInput input) : SV_TARGET
 {
     //return float4(1,1,0,1);
     float4 imgColor = texture2.Sample(texSampler, input.texCoord);
+    //return float4(input.texCoord.xx,0,1);
     float dFromLineCenter= abs(input.texCoord.y -0.5)*2;
     //float a= 1;//smoothstep(1,0.95,dFromLineCenter) ;
 
