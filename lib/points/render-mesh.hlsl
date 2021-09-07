@@ -87,7 +87,12 @@ psInput vsMain(uint id: SV_VertexID)
     // Pass tangent space basis vectors (for normal mapping).
     float3x3 TBN = float3x3(vertex.Tangent, vertex.Bitangent, vertex.Normal);
     TBN = mul(TBN, (float3x3)ObjectToWorld);
-    output.tbnToWorld = TBN;
+    
+    output.tbnToWorld = float3x3(
+        normalize(TBN._m00_m01_m02),
+        normalize(TBN._m10_m11_m12),
+        normalize(TBN._m20_m21_m22)
+    );
 
     output.worldPosition =  mul(posInObject, ObjectToWorld); 
 
