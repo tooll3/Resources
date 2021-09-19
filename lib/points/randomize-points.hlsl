@@ -28,6 +28,7 @@ cbuffer Params : register(b1)
     float Seed;
 
     float Bias;
+    float Offset;
 }
 
 StructuredBuffer<Point> SourcePoints : t0;        
@@ -78,9 +79,9 @@ void main(uint3 i : SV_DispatchThreadID)
 
     float3 randomRotate = hashRot.xyz * (RandomizeRotation / 180 * PI) * Amount;
 
-    rot = normalize(qmul(rot, rotate_angle_axis(randomRotate.x, float3(1,0,0))));
-    rot = normalize(qmul(rot, rotate_angle_axis(randomRotate.y, float3(0,1,0))));
-    rot = normalize(qmul(rot, rotate_angle_axis(randomRotate.z, float3(0,0,1))));
+    rot = normalize(qmul(rot, rotate_angle_axis(randomRotate.x * Offset, float3(1,0,0))));
+    rot = normalize(qmul(rot, rotate_angle_axis(randomRotate.y * Offset, float3(0,1,0))));
+    rot = normalize(qmul(rot, rotate_angle_axis(randomRotate.z * Offset, float3(0,0,1))));
 
     ResultPoints[i.x].rotation = rot;
 

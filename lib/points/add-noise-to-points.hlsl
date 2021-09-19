@@ -91,6 +91,6 @@ void main(uint3 i : SV_DispatchThreadID)
     ResultPoints[i.x].position = p.position + offset ;
     ResultPoints[i.x].rotation = newRotation;
 
-    ResultPoints[i.x].w =  SourcePoints[i.x].w;
+    ResultPoints[i.x].w =  SourcePoints[i.x].w ;
 }
 
