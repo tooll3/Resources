@@ -53,6 +53,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float dist=  dot(p-Center, angle) / Width;
 
 
+
     if(dist < 0) {
         dist = -dist;
         angle *= -1;
@@ -64,6 +65,8 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         p -= (dist - 1) * Width * angle;
         colorEffect = Background;
     }
+    p += float2(0.5 / aspectRatio, 0.5);
+    p.x *= aspectRatio;
 
     float line2= smoothstep(1,0, abs(1-dist)*1000*Width-LineThickness+1);
     colorEffect = lerp(colorEffect, LineColor, line2);

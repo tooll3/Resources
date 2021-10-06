@@ -102,22 +102,24 @@ psInput vsMain(uint id: SV_VertexID)
     float4 sourceColor1 = texture2.SampleLevel(texSampler, centerUv,0);
     float4 sourceColor2 = texture2.SampleLevel(texSampler, centerUv+ float2(0.01,0),0);
 
+    float brightness1 = (sourceColor1.r + sourceColor1.g + sourceColor1.b) / 3 * sourceColor1.a;
+    float brightness2 = (sourceColor2.r + sourceColor2.g + sourceColor2.b) / 3 * sourceColor2.a;
 
     float displaceFactor = 0; ;// saturate(sourceColor.r - sourceColor2.r) * 10;
     if(Mode < ModeStatic) {
 
     }
     else if(Mode < ModeHighlights) {
-        displaceFactor = saturate(sourceColor1.r - Threshold);
+        displaceFactor = saturate(brightness1 - Threshold);
     }
     else if(Mode < ModeShadows) {
-        displaceFactor = saturate(1-sourceColor1.r - Threshold);
+        displaceFactor = saturate(1-brightness1 - Threshold);
     }
     else if(Mode < ModeEdgeLeft) {
-        displaceFactor = saturate(sourceColor2.r - sourceColor1.r - Threshold) * 3;
+        displaceFactor = saturate(brightness2 - brightness1 - Threshold) * 3;
     }
     else if(Mode < ModeEdgeRight) {
-        displaceFactor = saturate(sourceColor1.r - sourceColor2.r - Threshold) * 3;
+        displaceFactor = saturate(brightness1 - brightness2 - Threshold) * 3;
     }
     displaceFactor *= Amount;
 
