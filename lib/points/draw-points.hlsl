@@ -34,6 +34,7 @@ cbuffer Params : register(b2)
     float SegmentCount;
     float CutOffTransparent;
     float FadeNearest;
+    float UseWForSize;
 };
 
 cbuffer FogParams : register(b3)
@@ -83,7 +84,9 @@ psInput vsMain(uint id: SV_VertexID)
     float tooCloseFactor =  saturate(-posInCamera.z/FadeNearest -1);
     output.color.a *= tooCloseFactor;
 
-    quadPosInCamera.xy += quadPos.xy*0.050  * pointDef.w * Size;
+    float sizeFactor = UseWForSize > 0.5 ? pointDef.w : 1;
+
+    quadPosInCamera.xy += quadPos.xy*0.050  * sizeFactor * Size;
     output.position = mul(quadPosInCamera, CameraToClipSpace);
     float4 posInWorld = mul(posInObject, ObjectToWorld);
 

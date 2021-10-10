@@ -2,7 +2,7 @@
 
 cbuffer ParamConstants : register(b0)
 {
-    float Impacted;
+    float Impact;
     float Shade;
     float Twist;
     float SampleRadius;
@@ -63,31 +63,14 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     d+= Offset/10;
 
     float4 uvImage = DisplaceMap.Sample(texSampler, uv);
-    //d = (uvImage.xy-0.5) * float2(1,-1);
-    //d.x =0;
-    //return float4(-d.xxx,1);
-
-    //d = pow(1*d,3);
-    //d= 1/d;
-    //d=smoothstep(0,1,d);
     float angle = (d.x == 0 && d.y==0) ? 0 :  atan2(d.x, d.y) + Twist / 180 * 3.14158;
-    //return float4((d * Impacted+0.5),0.5,1);
-
     float2 direction = float2( sin(angle), cos(angle));
 
-    //float distanceFromCenter = length(uv- float2(-2,1));
-    float len = length(d); //1 * pow(distanceFromCenter,DirectionImpact);
-    float4 cc= Image.Sample(texSampler, -direction * len * 10* Impacted + 0.5);
-    
-    //float4 cc= Image.Sample(texSampler, d.xy * Impacted +0.5 );
+    float len = length(d);
+    float4 cc= Image.Sample(texSampler, -direction * len * 10* Impact + 0.5);
+    cc.rgb = lerp(uvImage.rgb, uvImage.rgb + cc.rgb - 0.5, Shade );
+    return cc;
 
-    //return float4(distanceFromCenter, 0,0,1);
-    //return float4(uvImage.bbb,1);
-
-    //cc.rgb *= 1-len*Shade*100 * (Shade/5) * (uvImage.r + uvImage.g + uvImage.b)/3;
-    cc.rgb = lerp(uvImage.rgb, uvImage.rgb+cc.rbg - 0.5, Shade );
-
-    ///return clamp(cc, 0, float4(10,10,10,uvImage.a));
     cc.a *= uvImage.a;
     return float4( clamp(cc, float4(0,0,0,0) , float4(100,100,100,1)));
 }
