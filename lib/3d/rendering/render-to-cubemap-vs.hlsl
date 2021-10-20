@@ -30,6 +30,7 @@ cbuffer Params : register(b0)
     float Roughness;
     int BaseMip;
     int NumSamples;
+    float Exposure;
 }
 
 
@@ -352,7 +353,7 @@ float4 psMain(in gsOutput i) : SV_TARGET0
         }
     }
 //return float4(Roughness, Roughness, Roughness, 1);
-    return float4(totalRadiance.rgb / totalRadiance.w, 1);
+    return float4(totalRadiance.rgb / totalRadiance.w * Exposure, 1);
 }
 
 
