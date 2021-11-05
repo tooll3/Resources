@@ -75,6 +75,7 @@ float4 psMain(vsOutput psInput) : SV_TARGET
         : 1-pow( clamp(1-c,0,10), -Bias+1);
     
     dBiased= clamp(dBiased,0.001, 0.999);
+    //dBiased = c;
     //return float4(dBiased,0,0,1);
     //float4 cOut= lerp(Fill, Background, dBiased);
 

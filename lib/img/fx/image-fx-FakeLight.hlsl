@@ -1,4 +1,5 @@
 //#include "hash-functions.hlsl"
+#include "hash-functions.hlsl"
 
 cbuffer ParamConstants : register(b0)
 {
@@ -42,17 +43,26 @@ float IsBetween( float value, float low, float high) {
 
 float4 psMain(vsOutput psInput) : SV_TARGET
 {   
+    float2 uv = psInput.texCoord;
+    float4 uvImage = DisplaceMap.Sample(texSampler, uv);
     float displaceMapWidth, displaceMapHeight;
     DisplaceMap.GetDimensions(displaceMapWidth, displaceMapHeight);
+    displaceMapWidth = TargetWidth;
+    displaceMapHeight = TargetHeight;
+    float2 texel = 1 / float2(displaceMapWidth, displaceMapHeight);
+    //float p = (uv.x / texel.x % 2) <= 1 ? 1 :0;
+    //return float4(p.xxx,1);
 
-    float2 uv = psInput.texCoord;
-    
-    float sx = SampleRadius / (float)displaceMapWidth;
-    float sy = SampleRadius / (float)displaceMapHeight;
-    float4 cx1= DisplaceMap.Sample(texSampler,  float2(uv.x + sx, uv.y));
-    float4 cx2= DisplaceMap.Sample(texSampler,  float2(uv.x - sx, uv.y)); 
-    float4 cy1= DisplaceMap.Sample(texSampler, float2(uv.x,       uv.y + sy));
-    float4 cy2= DisplaceMap.Sample(texSampler, float2(uv.x,       uv.y - sy));    
+    //texel = 1.0/512.0;
+    float2 sampleOffset = texel * SampleRadius;
+    float2 subHashX = hash22(psInput.texCoord * 100 + (beatTime * 10.1 % 10.1)); 
+    // float subHashY = hash12(psInput.texCoord * 101 + (beatTime * 101.013 % 12.1)); 
+    //uv += subHashX * texel*2;
+    //uv += texel*10;
+    float4 cx1= DisplaceMap.Sample(texSampler,  float2(uv.x + sampleOffset.x, uv.y));
+    float4 cx2= DisplaceMap.Sample(texSampler,  float2(uv.x - sampleOffset.x, uv.y)); 
+    float4 cy1= DisplaceMap.Sample(texSampler, float2(uv.x,       uv.y + sampleOffset.y));
+    float4 cy2= DisplaceMap.Sample(texSampler, float2(uv.x,       uv.y - sampleOffset.y));    
 
     float x1= (cx1.r + cx1.g + cx1.b) / 3;
     float x2= (cx2.r + cx2.g + cx2.b) / 3;
@@ -60,16 +70,17 @@ float4 psMain(vsOutput psInput) : SV_TARGET
     float y2= (cy2.r + cy2.g + cy2.b) / 3;
 
     float2 d = float2( (x1-x2) , (y1-y2));
-    d+= Offset/10;
+    d-= Offset/10;
 
-    float4 uvImage = DisplaceMap.Sample(texSampler, uv);
+
     float angle = (d.x == 0 && d.y==0) ? 0 :  atan2(d.x, d.y) + Twist / 180 * 3.14158;
     float2 direction = float2( sin(angle), cos(angle));
 
     float len = length(d);
-    float4 cc= Image.Sample(texSampler, -direction * len * 10* Impact + 0.5);
-    cc.rgb = lerp(uvImage.rgb, uvImage.rgb + cc.rgb - 0.5, Shade );
-    return cc;
+    float2 uv2 = 0.5 -direction * len * 10* Impact;
+    float4 cc= Image.Sample(texSampler,  uv2);
+    cc.rgb = lerp(uvImage.rgb,  cc.rgb, Shade );
+    //return cc;
 
     cc.a *= uvImage.a;
     return float4( clamp(cc, float4(0,0,0,0) , float4(100,100,100,1)));

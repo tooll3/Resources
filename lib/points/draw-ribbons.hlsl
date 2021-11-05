@@ -77,6 +77,9 @@ Texture2D<float4> EmissiveColorMap : register(t2);
 Texture2D<float4> RSMOMap : register(t3);
 Texture2D<float4> NormalMap : register(t4);
 
+TextureCube<float4> PrefilteredSpecular: register(t5);
+Texture2D<float4> BRDFLookup : register(t6);
+
 psInput vsMain(uint id: SV_VertexID)
 {
     uint pointCount, pointStride;
@@ -94,7 +97,8 @@ psInput vsMain(uint id: SV_VertexID)
     Point p = Points[particleId+offset];
 
     float spinRad = (Spin + Twist *f) * 3.141578/180;
-    float3 side = float3(0, cos(spinRad), sin(spinRad)) * cornerFactors.y;
+    //float3 side = float3(0, cos(spinRad), sin(spinRad)) * cornerFactors.y;
+    float3 side = float3(cos(spinRad), 0, sin(spinRad)) * cornerFactors.y;
 
     float3 widthV = rotate_vector(side, p.rotation) * Width * p.w;;
     float3 pInObject = p.position + widthV;
@@ -219,36 +223,44 @@ float4 psMain(psInput pin) : SV_TARGET
 
     // Ambient lighting (IBL).
     float3 ambientLighting = 0;
-    // {
-    //     // Sample diffuse irradiance at normal direction.
-    //     float3 irradiance = 0;// irradianceTexture.Sample(texSampler, N).rgb;
+    {
+        // Sample diffuse irradiance at normal direction.
+        //float3 irradiance = 0;// irradianceTexture.Sample(texSampler, N).rgb;
+        uint width, height, levels;
+        PrefilteredSpecular.GetDimensions(0, width, height, levels);
+        float3 irradiance = PrefilteredSpecular.SampleLevel(texSampler, Lr.xyz, 0.8 * levels).rgb;
 
-    //     // Calculate Fresnel term for ambient lighting.
-    //     // Since we use pre-filtered cubemap(s) and irradiance is coming from many directions
-    //     // use cosLo instead of angle with light's half-vector (cosLh above).
-    //     // See: https://seblagarde.wordpress.com/2011/08/17/hello-world/
-    //     float3 F = fresnelSchlick(F0, cosLo);
+        // Calculate Fresnel term for ambient lighting.
+        // Since we use pre-filtered cubemap(s) and irradiance is coming from many directions
+        // use cosLo instead of angle with light's half-vector (cosLh above).
+        // See: https://seblagarde.wordpress.com/2011/08/17/hello-world/
+        float3 F = fresnelSchlick(F0, cosLo);
 
-    //     // Get diffuse contribution factor (as with direct lighting).
-    //     float3 kd = lerp(1.0 - F, 0.0, metalness);
+        // Get diffuse contribution factor (as with direct lighting).
+        float3 kd = lerp(1.0 - F, 0.0, metalness);
 
-    //     // Irradiance map contains exitant radiance assuming Lambertian BRDF, no need to scale by 1/PI here either.
-    //     float3 diffuseIBL = kd * albedo * irradiance;
+        // Irradiance map contains exitant radiance assuming Lambertian BRDF, no need to scale by 1/PI here either.
+        float3 diffuseIBL = kd * albedo.rgb * irradiance;
 
-    //     // Sample pre-filtered specular reflection environment at correct mipmap level.
-    //     //uint specularTextureLevels = querySpecularTextureLevels(BaseColorMap);
-    //     //float3 specularIrradiance = BaseColorMap.SampleLevel(texSampler, Lr.xy, roughness * specularTextureLevels).rgb;
-    //     float3 specularIrradiance = 0;
+        // Sample pre-filtered specular reflection environment at correct mipmap level.
+        //uint specularTextureLevels = querySpecularTextureLevels(BaseColorMap);
 
-    //     // Split-sum approximation factors for Cook-Torrance specular BRDF.
-    //     float2 specularBRDF = 0.4; //specularBRDF_LUT.Sample(spBRDF_Sampler, float2(cosLo, roughness)).rg;
 
-    //     // Total specular IBL contribution.
-    //     float3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
+        float3 specularIrradiance = PrefilteredSpecular.SampleLevel(texSampler, Lr.xyz, roughness * levels).rgb;
+        //float3 specularIrradiance = 0;
 
-    //     // Total ambient lighting contribution.
-    //     ambientLighting = diffuseIBL + specularIBL;
-    // }
+        //return float4(specularIrradiance * 1, 1);
+
+        // Split-sum approximation factors for Cook-Torrance specular BRDF.
+        float2 specularBRDF = BRDFLookup.Sample(texSampler, float2(cosLo, roughness)).rg;
+        //return float4(cosLo, roughness,0,1);
+
+        // Total specular IBL contribution.
+        float3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
+
+        // Total ambient lighting contribution.
+        ambientLighting = diffuseIBL + specularIBL;
+    }
 
     // Final fragment color.    
 
@@ -256,7 +268,13 @@ float4 psMain(psInput pin) : SV_TARGET
     //return float4(directLighting + ambientLighting, 1.0) * BaseColor * Color * float4(1,1,1,albedo.a)
     //     + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
 
-    float4 litColor= float4(directLighting + ambientLighting, 1.0) * BaseColor;
-    return lerp(litColor, FogColor, pin.fog)
-         + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);    
+    // float4 litColor= float4(directLighting + ambientLighting, 1.0) * BaseColor;
+    // return lerp(litColor, FogColor, pin.fog)
+    //      + float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);    
+
+    float4 litColor= float4(directLighting + ambientLighting, 1.0) * BaseColor * Color;
+    litColor.rgb = lerp(litColor.rgb, FogColor.rgb, pin.fog);
+    litColor += float4(EmissiveColorMap.Sample(texSampler, pin.texCoord).rgb * EmissiveColor.rgb, 0);
+    litColor.a *= albedo.a;
+    return litColor;
 }

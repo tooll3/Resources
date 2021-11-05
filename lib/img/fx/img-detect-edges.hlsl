@@ -4,6 +4,7 @@ cbuffer ParamConstants : register(b0)
     float SampleRadius;
     float Strength;
     float Contrast;
+    float MixOriginal;
 }
 
 cbuffer Resolution : register(b1)
@@ -52,5 +53,6 @@ float4 psMain(vsOutput input) : SV_TARGET
     ||y<= sy*8 || y>= 1-sy*8) {
     average=0;
     }
-    return  clamp(float4(average,average,average,1),0 , 10000) * Color;
+    float4 edgeColor = clamp(float4(average,average,average,1),0 , 10000) * Color;
+    return lerp(edgeColor, m, MixOriginal);
 }
